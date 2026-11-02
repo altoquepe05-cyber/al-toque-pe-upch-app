@@ -45,6 +45,94 @@ test('serves the Reel watermark image as a public PNG asset', async (t) => {
   assert.equal(image.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
 });
 
+test('sends an opt-in confirmation through Resend without exposing provider credentials', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  const requestedEmails = [];
+  let resendStatus = 200;
+  const server = createAlToqueServer({
+    ordersFile: join(testDataDir, 'orders.json'),
+    reelsFile: join(testDataDir, 'reels.json'),
+    reelsVideosDir: join(testDataDir, 'reels-videos'),
+    resendApiKey: 'test-resend-api-key',
+    emailFrom: 'Al Toque Pe <hola@example.com>',
+    fetchImpl: async (url, options) => {
+      requestedEmails.push({ url: new URL(url), options, body: JSON.parse(options.body) });
+      return new Response(JSON.stringify(resendStatus === 200 ? { id: 'email-test-id' } : { message: 'Provider error details' }), {
+        status: resendStatus,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+  });
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  t.after(async () => {
+    await new Promise((resolve, reject) => {
+      server.close((error) => error ? reject(error) : resolve());
+    });
+    await rm(testDataDir, { recursive: true, force: true });
+  });
+
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const subscribe = (origin, email) => fetch(`${baseUrl}/api/marketing/subscribe`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: origin },
+    body: JSON.stringify({ email })
+  });
+  const sentResponse = await subscribe(baseUrl, 'student@example.com');
+  assert.equal(sentResponse.status, 200);
+  assert.deepEqual(await sentResponse.json(), { sent: true });
+  assert.equal(requestedEmails[0].url.href, 'https://api.resend.com/emails');
+  assert.equal(requestedEmails[0].options.headers.Authorization, 'Bearer test-resend-api-key');
+  assert.deepEqual(requestedEmails[0].body.to, ['student@example.com']);
+  assert.equal(requestedEmails[0].body.from, 'Al Toque Pe <hola@example.com>');
+  assert.match(requestedEmails[0].body.subject, /Al Toque Pe/);
+  assert.match(requestedEmails[0].body.text, /Estás inscrito a Al Toque Pe/);
+
+  const invalidEmailResponse = await subscribe(baseUrl, 'not-an-email');
+  assert.equal(invalidEmailResponse.status, 400);
+  assert.equal(requestedEmails.length, 1);
+  const crossOriginResponse = await subscribe('https://malicious.example', 'student@example.com');
+  assert.equal(crossOriginResponse.status, 403);
+  assert.equal(requestedEmails.length, 1);
+
+  resendStatus = 422;
+  const providerFailureResponse = await subscribe(baseUrl, 'another-student@example.com');
+  assert.equal(providerFailureResponse.status, 502);
+  assert.match((await providerFailureResponse.json()).error, /No se pudo enviar el correo/);
+});
+
+test('does not activate marketing opt-in when email delivery is not configured', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  const server = createAlToqueServer({
+    ordersFile: join(testDataDir, 'orders.json'),
+    reelsFile: join(testDataDir, 'reels.json'),
+    reelsVideosDir: join(testDataDir, 'reels-videos'),
+    resendApiKey: '',
+    emailFrom: ''
+  });
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  t.after(async () => {
+    await new Promise((resolve, reject) => {
+      server.close((error) => error ? reject(error) : resolve());
+    });
+    await rm(testDataDir, { recursive: true, force: true });
+  });
+
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const response = await fetch(`${baseUrl}/api/marketing/subscribe`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: baseUrl },
+    body: JSON.stringify({ email: 'student@example.com' })
+  });
+  assert.equal(response.status, 503);
+  assert.match((await response.json()).error, /no está configurado/i);
+});
+
 test('streams the order guide video with byte-range support', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);
@@ -796,6 +884,114 @@ test('keeps previous conversation context separate from assistant instructions',
   assert.match(prompt[1].content, /"Bowl de quinua": 1/);
 });
 
+test('gives all three AI personas recent order history for direct purchase questions', async (t) => {
+  const testDataDir = await mkdtemp(join(tmpdir(), 'altoque-order-history-ai-test-'));
+  const requestedBodies = [];
+  const server = createAlToqueServer({
+    ordersFile: join(testDataDir, 'orders.json'),
+    reelsFile: join(testDataDir, 'reels.json'),
+    reelsVideosDir: join(testDataDir, 'reels-videos'),
+    openAIApiKey: 'test-openai-api-key',
+    fetchImpl: async (url, options) => {
+      requestedBodies.push({ url: new URL(url), body: JSON.parse(options.body) });
+      return new Response(JSON.stringify({
+        output_text: 'Según tus pedidos recientes, compras más Jugo de Maracuyá: 3 unidades.'
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+  });
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  t.after(async () => {
+    await new Promise((resolve, reject) => {
+      server.close((error) => error ? reject(error) : resolve());
+    });
+    await rm(testDataDir, { recursive: true, force: true });
+  });
+
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  for (const provider of ['ChatGPT', 'Copilot', 'Gemini']) {
+    const response = await fetch(`${baseUrl}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: baseUrl },
+      body: JSON.stringify({
+        provider,
+        text: 'Según mis recientes pedidos, ¿qué es lo que más compro?',
+        history: [],
+        memory: '',
+        orderHistory: [
+          { name: 'Jugo de Maracuyá', quantity: 3 },
+          { name: 'Bowl de quinua', quantity: 1 }
+        ]
+      })
+    });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    assert.equal(payload.reply, 'Según tus pedidos recientes, compras más Jugo de Maracuyá: 3 unidades.');
+    assert.equal(payload.dishId, null);
+  }
+
+  assert.equal(requestedBodies.length, 3);
+  for (const { url, body } of requestedBodies) {
+    assert.equal(url.origin, 'https://api.openai.com');
+    assert.match(body.input[0].content, /pregunta qué compra más, responde directamente/);
+    assert.match(body.input[1].content, /Resumen de los productos comprados en los 10 pedidos guardados más recientes/);
+    assert.match(body.input[1].content, /"Jugo de Maracuyá": 3/);
+    assert.match(body.input[1].content, /"Bowl de quinua": 1/);
+    assert.match(body.input[1].content, /Según mis recientes pedidos/);
+    assert.doesNotMatch(body.input[0].content, /Recomienda únicamente este producto/);
+  }
+});
+
+test('tells the AI not to invent purchase history when no orders are saved', async (t) => {
+  const testDataDir = await mkdtemp(join(tmpdir(), 'altoque-empty-order-history-ai-test-'));
+  let requestedBody;
+  const server = createAlToqueServer({
+    ordersFile: join(testDataDir, 'orders.json'),
+    reelsFile: join(testDataDir, 'reels.json'),
+    reelsVideosDir: join(testDataDir, 'reels-videos'),
+    openAIApiKey: 'test-openai-api-key',
+    fetchImpl: async (url, options) => {
+      requestedBody = JSON.parse(options.body);
+      return new Response(JSON.stringify({ output_text: 'Todavía no tienes pedidos guardados para identificarlo.' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+  });
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  t.after(async () => {
+    await new Promise((resolve, reject) => {
+      server.close((error) => error ? reject(error) : resolve());
+    });
+    await rm(testDataDir, { recursive: true, force: true });
+  });
+
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const response = await fetch(`${baseUrl}/api/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: baseUrl },
+    body: JSON.stringify({
+      provider: 'Gemini',
+      text: 'Según mis recientes pedidos, ¿qué es lo que más compro?',
+      history: [],
+      memory: '',
+      orderHistory: []
+    })
+  });
+  assert.equal(response.status, 200);
+  assert.match((await response.json()).reply, /no tienes pedidos guardados/i);
+  assert.match(requestedBody.input[0].content, /no tiene pedidos guardados recientes disponibles/);
+  assert.match(requestedBody.input[0].content, /no inventes compras/i);
+});
+
 test('omits personalized context when history and memory are disabled', () => {
   const prompt = composePrompt('Responde en español.', [], '', 'Hola', null);
   assert.equal(prompt[1].content, 'Mensaje actual:\nHola');
@@ -1055,11 +1251,17 @@ test('shares customer orders with the rider queue and enforces delivery transiti
 
   const pickupResponse = await postAction('picked-up');
   assert.equal(pickupResponse.status, 200);
-  assert.equal((await pickupResponse.json()).order.status, 'picked_up');
+  const pickedUpOrder = (await pickupResponse.json()).order;
+  assert.equal(pickedUpOrder.status, 'picked_up');
+  assert.ok(Number.isFinite(pickedUpOrder.pickedUpAt));
   assert.equal((await reviewOrder(5, 'Muy amable')).status, 409);
   const deliveryResponse = await postAction('deliver');
   assert.equal(deliveryResponse.status, 200);
-  assert.equal((await deliveryResponse.json()).order.status, 'delivered');
+  const deliveredOrder = (await deliveryResponse.json()).order;
+  assert.equal(deliveredOrder.status, 'delivered');
+  assert.ok(Number.isFinite(deliveredOrder.deliveredAt));
+  assert.ok(deliveredOrder.deliveredAt >= pickedUpOrder.pickedUpAt);
+  assert.equal((await postAction('deliver')).status, 409);
   const reviewResponse = await reviewOrder(5, 'Muy amable y puntual');
   assert.equal(reviewResponse.status, 201);
   assert.equal((await reviewOrder(4, 'Otra opinión')).status, 409);

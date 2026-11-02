@@ -10,6 +10,11 @@ las rutas `/api`; no se puede alojar como una pagina estatica en GitHub Pages.
 - Copia `.env.example` a `.env` para configurar integraciones opcionales.
 - Define `REELS_DELETE_PASSWORD` con una clave privada para habilitar la
   eliminacion de Reels. Sin ella, esa operacion falla de forma cerrada.
+- Para enviar la confirmacion de suscripcion a recomendaciones, configura
+  `RESEND_API_KEY` y `EMAIL_FROM` con una clave de Resend y una direccion de
+  remitente cuyo dominio este verificado. La clave permanece solo en el
+  servidor. Sin ambas variables, el envio responde con un error visible y no
+  activa la casilla.
 
 ## Persistencia gratuita con Supabase
 
@@ -26,6 +31,9 @@ Configura estas variables en el servidor:
   ni en el navegador.
 - `REELS_DELETE_PASSWORD`: contraseña privada para habilitar la eliminación
   de Reels.
+- `RESEND_API_KEY`: clave privada de Resend para los correos de confirmacion.
+- `EMAIL_FROM`: remitente de Resend con dominio verificado, por ejemplo
+  `Al Toque Pe <hola@tudominio.pe>`.
 
 El plan gratuito de Supabase tiene límites de base de datos y archivos; consulta
 https://supabase.com/pricing. Los videos se limitan a 50 MiB para ajustarse al

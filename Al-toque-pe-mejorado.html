@@ -5592,19 +5592,26 @@
         try {
           const savedProfile = JSON.parse(localStorage.getItem('altoque_profile'));
           if (savedProfile && typeof savedProfile === 'object' && !Array.isArray(savedProfile)) {
-            return { ...savedProfile, useOrderHistoryForRecommendations: true };
+            const hasExplicitSalesConsent = Number.isFinite(savedProfile.salesUpdatesConsentAt);
+            return {
+              ...savedProfile,
+              salesUpdates: savedProfile.salesUpdates === true && hasExplicitSalesConsent,
+              salesUpdatesConsentAt: hasExplicitSalesConsent ? savedProfile.salesUpdatesConsentAt : null,
+              useOrderHistoryForRecommendations: true
+            };
           }
           return {
             fullName: '',
             career: '',
             nickname: '',
             email: '',
-            salesUpdates: true,
+            salesUpdates: false,
+            salesUpdatesConsentAt: null,
             privacyAccepted: false,
             useOrderHistoryForRecommendations: true
           };
         } catch {
-          return { fullName: '', career: '', nickname: '', email: '', salesUpdates: true, privacyAccepted: false, useOrderHistoryForRecommendations: true };
+          return { fullName: '', career: '', nickname: '', email: '', salesUpdates: false, salesUpdatesConsentAt: null, privacyAccepted: false, useOrderHistoryForRecommendations: true };
         }
       });
       const [splashTheme, setSplashTheme] = useState(() => getStartupSplashTheme(profile.splashPreference || 'random'));
@@ -5954,6 +5961,7 @@
                 clearCart={clearCart}
                 pickupPoint={pickupPoint}
                 profile={profile}
+                setProfile={setProfile}
                 onOrderRegistered={registerCompletedOrder}
               />
             )}
@@ -8506,12 +8514,16 @@
       const [promoFontIndex, setPromoFontIndex] = useState(() => Math.floor(Math.random() * AI_PROMO_FONTS.length));
       const orderHistoryForAI = useMemo(() => {
         const products = new Map();
-        orderHistory.forEach((order) => {
-          order.items.forEach((item) => {
-            const previous = products.get(item.name) || 0;
-            products.set(item.name, Math.min(1_000_000, previous + item.quantity));
+        orderHistory
+          .slice()
+          .sort((first, second) => second.createdAt - first.createdAt)
+          .slice(0, 10)
+          .forEach((order) => {
+            order.items.forEach((item) => {
+              const previous = products.get(item.name) || 0;
+              products.set(item.name, Math.min(1_000_000, previous + item.quantity));
+            });
           });
-        });
         return [...products.entries()]
           .map(([name, quantity]) => ({ name, quantity }))
           .sort((first, second) => second.quantity - first.quantity || first.name.localeCompare(second.name, 'es'));
@@ -9372,7 +9384,7 @@
               text,
               history: conversationHistory.slice(-6).map(({ sender, text: messageText }) => ({ sender, text: messageText.slice(-500) })),
               memory: getLearnedPreferences().slice(-1600),
-              ...(orderHistoryForAI.length > 0 ? { orderHistory: orderHistoryForAI } : {})
+              orderHistory: orderHistoryForAI
             })
           });
           const result = await response.json();
@@ -9826,7 +9838,7 @@
       );
     }
 
-    function CartScreen({ cart, updateQuantity, removeFromCart, onNavigate, orderConfirmed, setOrderConfirmed, liveOrderId, setLiveOrderId, clearCart, pickupPoint, profile, onOrderRegistered }) {
+    function CartScreen({ cart, updateQuantity, removeFromCart, onNavigate, orderConfirmed, setOrderConfirmed, liveOrderId, setLiveOrderId, clearCart, pickupPoint, profile, setProfile, onOrderRegistered }) {
       const deliveryDuration = 300000;
       const deliveryProgressKey = liveOrderId ? `altoque_delivery_progress_${liveOrderId}` : '';
       const readSavedDeliveryProgress = () => {
@@ -9858,6 +9870,10 @@
       const [isSubmittingRating, setIsSubmittingRating] = useState(false);
       const [assignedRider, setAssignedRider] = useState(null);
       const [orderStatus, setOrderStatus] = useState('available');
+      const [orderPickedUpAt, setOrderPickedUpAt] = useState(null);
+      const [orderDeliveredAt, setOrderDeliveredAt] = useState(null);
+      const [lateDeliveryRewardOrderId, setLateDeliveryRewardOrderId] = useState('');
+      const lateDeliveryRewardProcessedRef = useRef(new Set());
       const deliveryStartedAtRef = useRef(0);
       const assignedRiderRefreshRef = useRef(null);
       const [isRiderChatOpen, setIsRiderChatOpen] = useState(false);
@@ -9909,6 +9925,15 @@
       }, [isRiderChatOpen]);
 
       useEffect(() => {
+        if (!lateDeliveryRewardOrderId) return undefined;
+        const closeOnEscape = (event) => {
+          if (event.key === 'Escape') setLateDeliveryRewardOrderId('');
+        };
+        window.addEventListener('keydown', closeOnEscape);
+        return () => window.removeEventListener('keydown', closeOnEscape);
+      }, [lateDeliveryRewardOrderId]);
+
+      useEffect(() => {
         if (!orderConfirmed || !liveOrderId) return;
         let isMounted = true;
         let isRefreshing = false;
@@ -9922,6 +9947,10 @@
             const assignedOrder = orderPayload.order;
             const status = assignedOrder?.status || 'available';
             if (isMounted) setOrderStatus(status);
+            if (isMounted) {
+              setOrderPickedUpAt(Number.isFinite(assignedOrder?.pickedUpAt) ? assignedOrder.pickedUpAt : null);
+              setOrderDeliveredAt(Number.isFinite(assignedOrder?.deliveredAt) ? assignedOrder.deliveredAt : null);
+            }
             if (status === 'available' || status === 'accepted') {
               deliveryStartedAtRef.current = 0;
               if (isMounted) {
@@ -10138,6 +10167,41 @@
 
         return () => clearInterval(timer);
       }, [deliveryPhase]);
+
+      useEffect(() => {
+        if (
+          orderStatus !== 'delivered'
+          || !liveOrderId
+          || !Number.isFinite(orderPickedUpAt)
+          || !Number.isFinite(orderDeliveredAt)
+          || orderDeliveredAt - orderPickedUpAt < deliveryDuration
+          || lateDeliveryRewardProcessedRef.current.has(liveOrderId)
+        ) return;
+
+        lateDeliveryRewardProcessedRef.current.add(liveOrderId);
+        const rewardMovementId = `late-delivery-${liveOrderId}`;
+        if ((Array.isArray(profile.gorritosActivity) ? profile.gorritosActivity : []).some((movement) => movement.id === rewardMovementId)) {
+          return;
+        }
+
+        setProfile((current) => {
+          const activity = Array.isArray(current.gorritosActivity) ? current.gorritosActivity : [];
+          if (activity.some((movement) => movement.id === rewardMovementId)) return current;
+          return {
+            ...current,
+            gorritos: Math.max(0, Number(current.gorritos) || 0) + 1,
+            gorritosActivity: [...activity, {
+              id: rewardMovementId,
+              orderId: liveOrderId,
+              label: 'Recompensa por demora',
+              detail: `Pedido ${liveOrderId} entregado después de 5 minutos desde el recojo`,
+              points: 1,
+              createdAt: orderDeliveredAt
+            }]
+          };
+        });
+        setLateDeliveryRewardOrderId(liveOrderId);
+      }, [deliveryDuration, liveOrderId, orderDeliveredAt, orderPickedUpAt, orderStatus, profile.gorritosActivity, setProfile]);
 
       const gorritosItems = cart.filter((item) => item.gorritosRedemption);
       const isGorritosOrder = cart.length > 0 && gorritosItems.length === cart.length;
@@ -10645,6 +10709,35 @@
           >
             Volver al inicio
           </button>
+          {lateDeliveryRewardOrderId && (
+            <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/60 p-5">
+              <section
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="late-delivery-reward-title"
+                className="w-full max-w-sm rounded-[28px] bg-white px-6 py-7 text-center shadow-2xl"
+              >
+                <div className="mx-auto mb-2 flex h-32 w-32 items-center justify-center">
+                  <AlToqueCoinMark sizeClass="h-28 w-28" />
+                </div>
+                <h2 id="late-delivery-reward-title" className="font-title text-2xl font-bold text-dark">
+                  Recibiste un gorrito
+                </h2>
+                <p className="mx-auto mt-3 max-w-xs text-sm leading-relaxed text-gray-600">
+                  ¡Gracias por esperarnos, te recompensamos por tu espera!
+                </p>
+                <p className="mt-3 text-xs font-bold text-brand" role="status">Sumamos 1 Gorrito a tu saldo.</p>
+                <button
+                  type="button"
+                  autoFocus
+                  onClick={() => setLateDeliveryRewardOrderId('')}
+                  className="mt-6 w-full rounded-2xl bg-brand px-5 py-3 text-sm font-bold text-white transition hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                >
+                  ¡Gracias!
+                </button>
+              </section>
+            </div>
+          )}
         </div>
       );
 
@@ -12235,6 +12328,9 @@
     function ProfileScreen({ onNavigate, onBecomeRider, onRestoreClassicHome, pickupPoint, setPickupPoint, notifications, setNotifications, profile, setProfile, orderHistory, orderHistoryStorageError, onClearOrderHistory }) {
       const [showQuestionnaire, setShowQuestionnaire] = useState(!profile.privacyAccepted);
       const [showThankYou, setShowThankYou] = useState(false);
+      const [isSendingMarketingConfirmation, setIsSendingMarketingConfirmation] = useState(false);
+      const [marketingEmailError, setMarketingEmailError] = useState('');
+      const [marketingEmailStatus, setMarketingEmailStatus] = useState('');
       const [showHelp, setShowHelp] = useState(false);
       const [showOrderHistory, setShowOrderHistory] = useState(false);
       const [showThemePicker, setShowThemePicker] = useState(false);
@@ -12246,6 +12342,44 @@
       const [isCheckingRiderPin, setIsCheckingRiderPin] = useState(false);
       const photoInputRef = useRef(null);
       const updateProfile = (field, value) => setProfile((current) => ({ ...current, [field]: value }));
+      const handleSalesUpdatesChange = async (event) => {
+        if (!event.target.checked) {
+          setProfile((current) => ({ ...current, salesUpdates: false, salesUpdatesConsentAt: null }));
+          setMarketingEmailError('');
+          setMarketingEmailStatus('');
+          return;
+        }
+
+        const email = typeof profile.email === 'string' ? profile.email.trim() : '';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
+          setMarketingEmailError('Ingresa un correo válido para enviarte la confirmación.');
+          document.getElementById('profile-email')?.focus();
+          return;
+        }
+
+        setIsSendingMarketingConfirmation(true);
+        setMarketingEmailError('');
+        setMarketingEmailStatus('');
+        try {
+          const response = await fetch('/api/marketing/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+          });
+          const payload = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(payload.error || `Error ${response.status}`);
+          setProfile((current) => ({
+            ...current,
+            salesUpdates: true,
+            salesUpdatesConsentAt: Date.now()
+          }));
+          setMarketingEmailStatus('¡Listo! Te enviamos un correo para confirmar tu inscripción a Al Toque Pe.');
+        } catch (error) {
+          setMarketingEmailError(error.message || 'No se pudo enviar el correo de confirmación.');
+        } finally {
+          setIsSendingMarketingConfirmation(false);
+        }
+      };
       const closeRiderAccess = () => {
         setShowRiderAccess(false);
         setRiderPin('');
@@ -12600,8 +12734,8 @@
                 <input id="profile-nickname" value={profile.nickname} onChange={(e) => updateProfile('nickname', e.target.value)} placeholder="Cómo quieres que te llamemos" className="w-full rounded-xl border border-gray-200 px-3 py-2 text-xs focus:outline-none focus:border-brand" />
               </div>
               <div>
-                <label htmlFor="profile-email" className="block text-[10px] font-bold text-gray-500 mb-1">Correo para tu pedido (opcional)</label>
-                <input id="profile-email" type="email" value={profile.email} onChange={(e) => updateProfile('email', e.target.value)} placeholder="tucorreo@upch.pe" className="w-full rounded-xl border border-gray-200 px-3 py-2 text-xs focus:outline-none focus:border-brand" />
+                <label htmlFor="profile-email" className="block text-[10px] font-bold text-gray-500 mb-1">Correo para tu pedido o promociones (opcional)</label>
+                <input id="profile-email" type="email" autoComplete="email" value={profile.email || ''} onChange={(e) => { const email = e.target.value; setProfile((current) => ({ ...current, email, ...(current.salesUpdates && current.email !== email ? { salesUpdates: false, salesUpdatesConsentAt: null } : {}) })); setMarketingEmailError(''); setMarketingEmailStatus(''); }} placeholder="tucorreo@upch.pe" className="w-full rounded-xl border border-gray-200 px-3 py-2 text-xs focus:outline-none focus:border-brand" />
               </div>
               <div>
                 <label htmlFor="profile-phone" className="block text-[10px] font-bold text-gray-500 mb-1">Celular de contacto (opcional)</label>
@@ -12613,9 +12747,12 @@
                 <span>Acepto que mis datos se recopilen de manera no invasiva y se usen solo para mejorar ventas, promociones y la atención de mis pedidos.</span>
               </label>
               <label className="flex items-center gap-2 text-[10px] text-gray-500">
-                <input type="checkbox" checked={profile.salesUpdates} onChange={(e) => updateProfile('salesUpdates', e.target.checked)} className="accent-brand" />
+                <input type="checkbox" checked={profile.salesUpdates || isSendingMarketingConfirmation} onChange={handleSalesUpdatesChange} disabled={isSendingMarketingConfirmation} aria-describedby="sales-updates-feedback" className="accent-brand" />
                 Quiero recibir recomendaciones y promociones de Al Toque.
               </label>
+              <p id="sales-updates-feedback" className="text-[9px] leading-relaxed text-gray-500" aria-live="polite">
+                {isSendingMarketingConfirmation ? 'Enviando el correo de confirmación…' : marketingEmailError || marketingEmailStatus || 'Ingresa tu correo para recibir la confirmación.'}
+              </p>
               <button type="button" onClick={affiliateProfile} disabled={!profile.privacyAccepted} className="w-full rounded-xl bg-brand text-white py-2.5 text-xs font-bold disabled:opacity-40">Afiliar mi perfil</button>
               <p className="text-[9px] text-gray-500">Puedes cambiar o borrar estos datos desde tu perfil cuando quieras.</p>
             </div>
