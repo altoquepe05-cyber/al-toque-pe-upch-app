@@ -394,6 +394,54 @@
   <script src="/vendor/lucide.js" defer></script>
 
   <style>
+    .bg-brand { background-color: #a50f2d; }
+    .bg-brand\/5 { background-color: rgba(165, 15, 45, 0.05); }
+    .bg-dark { background-color: #2b1718; }
+    .bg-cream { background-color: #fff3d1; }
+    .bg-cream\/40 { background-color: rgba(255, 243, 209, 0.4); }
+    .bg-cream\/50 { background-color: rgba(255, 243, 209, 0.5); }
+    .bg-cream\/60 { background-color: rgba(255, 243, 209, 0.6); }
+    .bg-yellow-accent { background-color: #ffc61a; }
+    .text-brand { color: #a50f2d; }
+    .text-dark { color: #2b1718; }
+    .text-yellow-accent { color: #ffc61a; }
+    .border-brand { border-color: #a50f2d; }
+    .border-brand\/20 { border-color: rgba(165, 15, 45, 0.2); }
+    .border-brand\/30 { border-color: rgba(165, 15, 45, 0.3); }
+    .border-brand\/40 { border-color: rgba(165, 15, 45, 0.4); }
+    .border-cream { border-color: #fff3d1; }
+
+    #root :where([class~="text-[8px]"], [class~="text-[9px]"], [class~="text-[10px]"], [class~="text-[11px]"]) {
+      font-size: 12px !important;
+      line-height: 1.35 !important;
+    }
+
+    #root :where(.text-xs) {
+      font-size: 14px !important;
+      line-height: 1.4 !important;
+    }
+
+    #root [aria-label="Navegación principal"] button,
+    #root [aria-label="Selecciona cómo te sientes hoy"] button,
+    #root button[aria-label^="Promos "],
+    #root button[aria-label^="Todos:"],
+    #root button[aria-label^="Menús:"],
+    #root button[aria-label^="Combos:"],
+    #root button[aria-label^="Bebidas:"],
+    #root button[aria-label^="Añadir "],
+    #root button[aria-label^="Cerrar"],
+    #root button[aria-label="Buscar en el menú"],
+    #root .home-profile-avatar,
+    #root .home-luxury-card button {
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    #root .menu-add-button {
+      min-width: 44px !important;
+      min-height: 44px !important;
+    }
+
     body {
       font-family: 'Outfit', sans-serif;
       background: #f3f4f6;
@@ -819,10 +867,16 @@
     }
 
     .home-mood-option {
+      border-color: #e5e7eb;
+      background-color: #fff;
+      color: #6b7280;
       transition: color 220ms ease, background-color 220ms ease, border-color 220ms ease, transform 220ms ease, box-shadow 220ms ease;
     }
 
     .home-mood-option[aria-pressed="true"] {
+      border-color: #a50f2d;
+      background-color: #a50f2d;
+      color: #fff;
       animation: homeMoodSelect 360ms ease-out;
       box-shadow: 0 3px 10px rgba(157, 14, 50, 0.16);
     }
@@ -1938,7 +1992,7 @@
       width: 100%;
       background: #ffffff;
       text-align: center;
-      color: #9ca3af;
+      color: #6b7280;
       font-family: 'Outfit', sans-serif;
       font-size: 7px;
       line-height: 12px;
@@ -4105,7 +4159,7 @@
                 </div>
               );
             })}
-            {messages.length === 0 && <p className="py-8 text-center text-[10px] text-gray-400">{emptyMessage}</p>}
+            {messages.length === 0 && <p className="py-8 text-center text-[10px] text-gray-500">{emptyMessage}</p>}
           </div>
 
           {(sendError || composerError) && (
@@ -4861,7 +4915,7 @@
                   type="button"
                   onClick={() => setActiveTab(item.id)}
                   aria-current={isActive ? 'page' : undefined}
-                  className={`relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-1.5 text-[10px] font-bold transition ${item.id === 'ai' ? 'bottom-nav-ai-option' : isActive ? 'text-[#a90000]' : 'text-gray-400 hover:text-gray-600'}`}
+                  className={`relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-1.5 text-[10px] font-bold transition ${item.id === 'ai' ? 'bottom-nav-ai-option' : isActive ? 'text-[#a90000]' : 'text-gray-500 hover:text-gray-600'}`}
                 >
                   <span className={`relative inline-flex items-center justify-center ${item.id === 'affiliation' || item.id === 'ai' ? 'h-7 w-7' : 'h-4 w-4'} ${item.id === 'ai' ? 'bottom-nav-ai-icon' : ''}`}>
                     {item.id === 'affiliation' ? (
@@ -5068,7 +5122,7 @@
                   </span>
                 </span>
               </button>
-              <p className="text-center text-[9px] font-medium text-gray-400">Toca la tarjeta para ver el reverso</p>
+              <p className="text-center text-[9px] font-medium text-gray-500">Toca la tarjeta para ver el reverso</p>
 
               <div className="flex items-center justify-between rounded-2xl border border-[#eadfc8] bg-[#fffaf1] p-3 shadow-sm">
                 <div className="flex min-w-0 items-center gap-2">
@@ -7401,7 +7455,7 @@
                 <div className="my-3 border-t border-gray-200"></div>
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <p className="text-xs font-bold text-gray-700">Preparar para una red social</p>
-                  <span className="shrink-0 text-[9px] text-gray-400">Desliza para ver más →</span>
+                  <span className="shrink-0 text-[9px] text-gray-500">Desliza para ver más →</span>
                 </div>
                 <div className="no-scrollbar flex snap-x snap-mandatory gap-2 overflow-x-auto overscroll-x-contain py-1 touch-pan-x" role="group" aria-label="Redes sociales; desliza horizontalmente para verlas">
                   {shareNetworks.map((network) => (
@@ -7724,7 +7778,7 @@
               <img src="Captura de pantalla 2026-09-24 145818.png" alt="Logo Al Toque" className="w-10 h-10 rounded-full object-cover border border-brand/20" />
               <div>
                 <h1 className="font-title font-bold text-sm leading-none">al toque</h1>
-                <p className="text-[10px] text-gray-400 font-medium">UPCH campus</p>
+                <p className="text-[10px] text-gray-500 font-medium">UPCH campus</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -7811,7 +7865,7 @@
             <div className="flex justify-between items-end mb-2">
               <div>
                 <h3 className="font-title font-bold text-base">Lo más pedido</h3>
-                <p className="text-[11px] text-gray-400">Listo para recoger en 5 minutos</p>
+                <p className="text-[11px] text-gray-500">Listo para recoger en 5 minutos</p>
               </div>
               <button onClick={() => onNavigate('menu')} className="text-xs font-bold text-brand hover:underline">Ver todo</button>
             </div>
@@ -7828,7 +7882,7 @@
                       <h4 className="font-bold text-xs">{dish.name}</h4>
                       <span className="font-bold text-xs">S/{dish.price.toFixed(2)}</span>
                     </div>
-                    <p className="text-[10px] text-gray-400 line-clamp-1 mt-0.5">{dish.description}</p>
+                    <p className="text-[10px] text-gray-500 line-clamp-1 mt-0.5">{dish.description}</p>
                   </div>
                   <div className="flex justify-between items-center mt-3 pt-1">
                     <span className="text-[10px] text-green-600 font-medium flex items-center">
@@ -7847,7 +7901,7 @@
           <div>
             <div className="mb-2">
               <h3 className="font-title font-bold text-base">Combos que rinden</h3>
-              <p className="text-[11px] text-gray-400">Para tu día a día en campus</p>
+              <p className="text-[11px] text-gray-500">Para tu día a día en campus</p>
             </div>
             <div className="flex space-x-3 overflow-x-auto no-scrollbar pb-2 -mx-4 px-4">
               {INITIAL_MENU.filter((m) => m.category === 'combos').map((dish) => (
@@ -7861,7 +7915,7 @@
                       <h4 className="font-bold text-xs">{dish.name}</h4>
                       <span className="font-bold text-xs">S/{dish.price.toFixed(2)}</span>
                     </div>
-                    <p className="text-[10px] text-gray-400 line-clamp-1 mt-0.5">{dish.description}</p>
+                    <p className="text-[10px] text-gray-500 line-clamp-1 mt-0.5">{dish.description}</p>
                   </div>
                   <div className="flex justify-between items-center mt-3 pt-1">
                     <span className="text-[10px] text-green-600 font-medium flex items-center">
@@ -7932,7 +7986,7 @@
               }`}
             >
               Promos Bembos
-              <span className={`ml-1.5 text-[10px] font-medium ${filter === 'bembos' ? 'text-white/60' : 'text-gray-400'}`}>
+              <span className={`ml-1.5 text-[10px] font-medium ${filter === 'bembos' ? 'text-white/60' : 'text-gray-500'}`}>
                 {BEMBOS_PROMOTIONS.length}
               </span>
             </button>
@@ -7946,7 +8000,7 @@
               }`}
             >
               Promos Starbucks
-              <span className={`ml-1.5 text-[10px] font-medium ${filter === 'starbucks' ? 'text-white/70' : 'text-gray-400'}`}>
+              <span className={`ml-1.5 text-[10px] font-medium ${filter === 'starbucks' ? 'text-white/70' : 'text-gray-500'}`}>
                 {STARBUCKS_PRODUCTS.length}
               </span>
             </button>
@@ -7963,7 +8017,7 @@
                 }`}
               >
                 {chip.label}
-                <span className={`ml-1.5 text-[10px] font-medium ${filter === chip.id ? 'text-white/60' : 'text-gray-400'}`}>
+                <span className={`ml-1.5 text-[10px] font-medium ${filter === chip.id ? 'text-white/60' : 'text-gray-500'}`}>
                   {chip.count}
                 </span>
               </button>
@@ -8017,7 +8071,7 @@
                           <p className="mt-1 text-xs text-gray-500">{promo.description}</p>
                           <div className="mt-3 flex items-center justify-between gap-2">
                             <div className="flex items-center gap-1.5">
-                              <span className="text-xs font-semibold text-gray-400 line-through">S/{promo.originalPrice.toFixed(2)}</span>
+                              <span className="text-xs font-semibold text-gray-500 line-through">S/{promo.originalPrice.toFixed(2)}</span>
                               <span className="rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-extrabold text-white">-{promo.discount}%</span>
                             </div>
                             <button
@@ -8057,7 +8111,7 @@
                   <div key={category} className="space-y-2.5">
                     <div className="flex items-center justify-between border-b border-gray-200 pb-2">
                       <h3 className="font-title text-lg font-bold">{category}</h3>
-                      <span className="text-[10px] font-semibold text-gray-400">{products.length}</span>
+                      <span className="text-[10px] font-semibold text-gray-500">{products.length}</span>
                     </div>
                     <div className="grid grid-cols-2 gap-2.5">
                       {products.map((product) => (
@@ -8136,7 +8190,7 @@
                         <span className="font-bold text-base">S/{dish.price.toFixed(2)}</span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-400 mt-0.5">{dish.description}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{dish.description}</p>
                   </div>
                   <div className="flex justify-between items-center pt-2">
                     <span className="text-xs text-green-600 font-medium flex items-center">
@@ -8190,15 +8244,15 @@
                   <div
                     key={idx}
                     onClick={() => toggleComponent(comp)}
-                    className={`flex items-center justify-between p-3 rounded-2xl border cursor-pointer transition ${isRemoved ? 'bg-gray-50 border-gray-200 opacity-60' : 'bg-cream/40 border-brand/30'}`}
+                    className={`flex items-center justify-between p-3 rounded-2xl border cursor-pointer transition ${isRemoved ? 'bg-gray-50 border-gray-200' : 'bg-cream/40 border-brand/30'}`}
                   >
                     <div className="flex items-center space-x-3">
                       <div className={`w-5 h-5 rounded-md flex items-center justify-center transition ${isRemoved ? 'border border-gray-400' : 'bg-brand text-white'}`}>
                         {!isRemoved && <i data-lucide="check" className="w-3.5 h-3.5"></i>}
                       </div>
-                      <span className={`text-xs font-semibold ${isRemoved ? 'line-through text-gray-400' : 'text-dark'}`}>{comp}</span>
+                      <span className={`text-xs font-semibold ${isRemoved ? 'line-through text-gray-500' : 'text-dark'}`}>{comp}</span>
                     </div>
-                    <span className={`text-[10px] font-bold ${isRemoved ? 'text-gray-400' : 'text-brand'}`}>{isRemoved ? 'Quitado' : 'Incluido'}</span>
+                    <span className={`text-[10px] font-bold ${isRemoved ? 'text-gray-500' : 'text-brand'}`}>{isRemoved ? 'Quitado' : 'Incluido'}</span>
                   </div>
                 );
               })}
@@ -8207,7 +8261,7 @@
             <div className="bg-dark text-white p-3.5 rounded-2xl flex justify-between items-center">
               <div>
                 <p className="text-xs font-bold">Total del plato</p>
-                <p className="text-[10px] text-gray-400">{isCustomized ? 'Menú personalizado' : 'Menú completo'}</p>
+                <p className="text-[10px] text-gray-300">{isCustomized ? 'Menú personalizado' : 'Menú completo'}</p>
               </div>
               <span className="font-title text-xl font-bold text-yellow-accent">S/{finalPrice.toFixed(2)}</span>
             </div>
@@ -9329,7 +9383,7 @@
             </div>
             <div className="mb-2 flex items-center justify-between px-1">
               <span className="text-[10px] text-gray-500">{foodMode ? 'Modo peruano con comida' : 'Modo aliento'}</span>
-              <span className={`text-[9px] font-semibold ${foodMode ? 'text-green-700' : 'text-gray-400'}`}>{foodMode ? 'ACTIVADO' : 'ACTÍVALO'}</span>
+              <span className={`text-[9px] font-semibold ${foodMode ? 'text-green-700' : 'text-gray-500'}`}>{foodMode ? 'ACTIVADO' : 'ACTÍVALO'}</span>
             </div>
             <div key={currentEncouragement.id} className="encouragement-card-stage">
               <div className="encouragement-card-shadow encouragement-card-shadow-back"></div>
@@ -9367,7 +9421,7 @@
               </article>
             </div>
             <div className="mt-1 flex items-center justify-between px-1">
-              <span className="text-[9px] text-gray-400">Una nueva tarjeta aparece cada pocos segundos</span>
+              <span className="text-[9px] text-gray-500">Una nueva tarjeta aparece cada pocos segundos</span>
               <button
                 type="button"
                 onClick={() => advanceEncouragement()}
@@ -9382,7 +9436,7 @@
             <div className="flex justify-between items-center mb-1.5">
               <div>
                 <h4 className="font-bold text-xs">Escribe a tu asistente</h4>
-                <p className="text-[10px] text-gray-400">Elige quién te responde</p>
+                <p className="text-[10px] text-gray-500">Elige quién te responde</p>
               </div>
               <i data-lucide="grid" className="w-4 h-4 text-brand"></i>
             </div>
@@ -9460,7 +9514,7 @@
               <>
                 <div ref={chatMessagesRef} className="space-y-2.5 max-h-[220px] overflow-y-auto no-scrollbar p-1">
                   {messages.length === 0 && (
-                    <p className="py-8 text-center text-xs text-gray-400">
+                    <p className="py-8 text-center text-xs text-gray-500">
                       {provider} está listo. Escribe un mensaje para iniciar una conversación nueva.
                     </p>
                   )}
@@ -9580,7 +9634,7 @@
                         disabled={isRestartingBotpress}
                         aria-label={`Borrar conversación ${conversation.title}`}
                         title="Borrar conversación"
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-400 transition hover:bg-red-50 hover:text-red-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-40"
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-500 transition hover:bg-red-50 hover:text-red-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-40"
                       >
                         <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m4 4v6m6-6v6" />
@@ -9589,7 +9643,7 @@
                     </div>
                   ))}
                 </div>
-                <p className="text-center text-[10px] text-gray-400">
+                <p className="text-center text-[10px] text-gray-500">
                   {provider === 'Botpress'
                     ? 'Este historial guarda una copia local de cada conversación. Borrar una copia la quita de este navegador; no elimina registros del servidor de Botpress.'
                     : `Este historial pertenece solo a ${provider} y se guarda en este navegador. Puedes borrarlo desde aquí.`}
@@ -9617,10 +9671,10 @@
                     </div>
                     <div>
                       <h5 className="font-bold text-xs">{shortcut.title}</h5>
-                      <p className="text-[10px] text-gray-400">{shortcut.sub}</p>
+                      <p className="text-[10px] text-gray-500">{shortcut.sub}</p>
                     </div>
                   </div>
-                  <i data-lucide="chevron-right" className="w-4 h-4 text-gray-400"></i>
+                  <i data-lucide="chevron-right" className="w-4 h-4 text-gray-500"></i>
                 </div>
               ))}
             </div>
@@ -10164,7 +10218,7 @@
               disabled={!assignedRider || ['incoming', 'ringing', 'connecting', 'connected'].includes(voiceCall.call.status)}
               title={!assignedRider ? 'La llamada estará disponible cuando el motorizado acepte el pedido.' : 'Iniciar llamada de voz dentro de la app'}
               aria-label="Llamar al motorizado dentro de la app"
-              className={`flex flex-col items-center gap-1.5 py-1 text-center text-[10px] font-bold ${assignedRider ? 'text-[#a90000]' : 'text-gray-400'}`}
+              className={`flex flex-col items-center gap-1.5 py-1 text-center text-[10px] font-bold ${assignedRider ? 'text-[#a90000]' : 'text-gray-500'}`}
             >
               <span className={`flex h-14 w-14 items-center justify-center rounded-full border-2 bg-white shadow-sm ${assignedRider ? 'border-[#a90000]' : 'border-gray-300'}`}>
                 <i data-lucide="phone" className="h-6 w-6"></i>
@@ -10241,7 +10295,7 @@
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#fff2df] text-lg">🛵</div>
             <div className="min-w-0 flex-1">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-gray-400">Tu motorizado</p>
+              <p className="text-[9px] font-bold uppercase tracking-wider text-gray-500">Tu motorizado</p>
               <h3 className="truncate text-sm font-bold text-dark">
                 {assignedRider?.name || 'Repartidor UPCH'}
               </h3>
@@ -10354,7 +10408,7 @@
                   className="w-full resize-none rounded-xl border border-gray-200 p-3 text-left text-[11px] focus:border-brand focus:outline-none"
                   required
                 />
-                <p className="text-right text-[9px] text-gray-400">{ratingComment.length}/500</p>
+                <p className="text-right text-[9px] text-gray-500">{ratingComment.length}/500</p>
                 {ratingError && <p className="text-[10px] text-red-600" role="alert">{ratingError}</p>}
                 <button
                   type="button"
@@ -10395,7 +10449,7 @@
             <p className="text-xs text-gray-500">
               Procesando tu pedido mediante <span className="font-bold uppercase text-brand">{paymentMethod}</span>.
             </p>
-            <span className="text-[10px] text-gray-400 break-all px-4">{redirectUrl}</span>
+            <span className="text-[10px] text-gray-500 break-all px-4">{redirectUrl}</span>
           </div>
         );
       }
@@ -10491,7 +10545,7 @@
               </div>
               <div className="space-y-1">
                 <h3 className="font-title font-bold text-lg">Tu pedido está vacío</h3>
-                <p className="text-xs text-gray-400 max-w-[220px]">Elige un menú, combo o bebida y lo dejamos listo al toque.</p>
+                <p className="text-xs text-gray-500 max-w-[220px]">Elige un menú, combo o bebida y lo dejamos listo al toque.</p>
               </div>
               <button onClick={() => onNavigate('menu')} className="bg-dark text-white font-bold px-6 py-3 rounded-2xl text-xs flex items-center space-x-2 hover:bg-black transition active:scale-95">
                 <span>Explorar el menú</span>
@@ -10529,7 +10583,7 @@
                         ) : item.removedComponents?.length > 0 ? (
                           <p className="text-[10px] text-red-500">Sin: {item.removedComponents.join(', ')}</p>
                         ) : !item.description ? (
-                          <p className="text-[10px] text-gray-400">Completo</p>
+                          <p className="text-[10px] text-gray-500">Completo</p>
                         ) : null}
                         {item.description && <p className="mt-0.5 max-w-44 text-[10px] leading-snug text-gray-500">{item.description}</p>}
                         <span className="font-bold text-xs text-brand">
@@ -10542,11 +10596,11 @@
 
                     <div className="flex items-center space-x-2">
                       <div className="flex items-center space-x-1 bg-cream rounded-lg p-1">
-                        <button onClick={() => updateQuantity(item.cartId, -1)} className="w-5 h-5 bg-white rounded flex items-center justify-center font-bold text-xs">-</button>
+                        <button onClick={() => updateQuantity(item.cartId, -1)} className="w-11 h-11 bg-white rounded flex items-center justify-center font-bold text-xs">-</button>
                         <span className="text-xs font-bold px-1">{item.quantity}</span>
-                        <button onClick={() => updateQuantity(item.cartId, 1)} className="w-5 h-5 bg-white rounded flex items-center justify-center font-bold text-xs">+</button>
+                        <button onClick={() => updateQuantity(item.cartId, 1)} className="w-11 h-11 bg-white rounded flex items-center justify-center font-bold text-xs">+</button>
                       </div>
-                      <button onClick={() => removeFromCart(item.cartId)} aria-label="Eliminar producto" className="text-gray-400 hover:text-red-500 p-1">
+                      <button onClick={() => removeFromCart(item.cartId)} aria-label="Eliminar producto" className="text-gray-500 hover:text-red-500 p-1">
                         <i data-lucide="trash-2" className="w-4 h-4"></i>
                       </button>
                     </div>
@@ -10573,7 +10627,7 @@
                     <button
                       key={method.id}
                       onClick={() => setPaymentMethod(method.id)}
-                      className={`flex items-center justify-center space-x-2 p-2.5 rounded-2xl border transition ${
+                      className={`flex min-h-[44px] items-center justify-center space-x-2 p-2.5 rounded-2xl border transition ${
                         paymentMethod === method.id ? 'border-brand bg-brand/5 text-brand font-bold' : 'border-gray-200 bg-white text-gray-600'
                       }`}
                     >
@@ -11541,7 +11595,7 @@
                 <p className="text-[9px] font-bold uppercase tracking-wider text-[#a90000]">Cliente: {activeOrder.customer}</p>
                 <h2 className="mt-1 font-title text-sm font-bold">{activeOrder.item}</h2>
               </div>
-              <span className="font-title text-sm font-bold text-[#a90000]">S/{activeOrder.payout.toFixed(2)}<span className="block text-right text-[8px] text-gray-400">ganancia estimada</span></span>
+              <span className="font-title text-sm font-bold text-[#a90000]">S/{activeOrder.payout.toFixed(2)}<span className="block text-right text-[8px] text-gray-500">ganancia estimada</span></span>
             </div>
 
             <div className="space-y-2 rounded-xl bg-[#fffaf0] p-3">
@@ -11612,7 +11666,7 @@
               <i data-lucide={activeOrder.step === 0 ? 'package-check' : 'check-circle-2'} className="h-4 w-4"></i>
               {activeOrder.step === 0 ? 'Confirmar recojo' : 'Confirmar entrega'}
             </button>
-            <p className="text-center text-[9px] text-gray-400">Al confirmar cada etapa, el estado se actualiza en el servidor de Al Toque.</p>
+            <p className="text-center text-[9px] text-gray-500">Al confirmar cada etapa, el estado se actualiza en el servidor de Al Toque.</p>
           </div>
           <div className="rider-card p-3">
             <div className="flex items-center justify-between gap-2">
@@ -11630,10 +11684,10 @@
                 <p><span className="font-bold text-gray-700">Distrito:</span> {gps.district || 'Buscando…'}</p>
                 <p><span className="font-bold text-gray-700">Avenida/calle:</span> {gps.road || (gps.addressError ? 'No identificada en el mapa' : 'Buscando…')}</p>
                 <p><span className="font-bold text-gray-700">Distancia a UPCH Miraflores:</span> {gps.distanceKm === null ? 'Calculando…' : `${gps.distanceKm.toFixed(2)} km en línea recta`}</p>
-                <p className="text-[8px] text-gray-400">Precisión ±{Math.round(gps.accuracy)} m · {gps.latitude.toFixed(5)}, {gps.longitude.toFixed(5)}</p>
+                <p className="text-[8px] text-gray-500">Precisión ±{Math.round(gps.accuracy)} m · {gps.latitude.toFixed(5)}, {gps.longitude.toFixed(5)}</p>
                 {gps.addressError && <p className="text-red-600">{gps.addressError}</p>}
                 {gps.addressError && <button type="button" onClick={() => void lookupGpsAddress(gps.latitude, gps.longitude)} className="font-bold text-[#a90000]">Reintentar dirección</button>}
-                <p className="text-[8px] text-gray-400">Dirección aproximada al activar GPS · OpenStreetMap</p>
+                <p className="text-[8px] text-gray-500">Dirección aproximada al activar GPS · OpenStreetMap</p>
               </div>
             )}
             {gps.message && <p className="mt-2 text-[9px] text-red-600" role="alert">{gps.message}</p>}
@@ -11673,22 +11727,22 @@
             <p className="mt-1 text-[9px] text-white/55">Registro local de esta sesión del dispositivo</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="rider-card p-3"><p className="text-[9px] uppercase text-gray-400">Últimos 7 días</p><p className="mt-1 font-title text-lg font-bold text-[#a90000]">S/{weeklyEarnings.toFixed(2)}</p><p className="text-[9px] text-gray-500">Suma de entregas registradas aquí</p></div>
-            <div className="rider-card p-3"><p className="text-[9px] uppercase text-gray-400">Entregas · total local</p><p className="mt-1 font-title text-lg font-bold">{completedCount}</p><p className="text-[9px] text-gray-500">{weeklyCompletedCount} en los últimos 7 días</p></div>
+            <div className="rider-card p-3"><p className="text-[9px] uppercase text-gray-500">Últimos 7 días</p><p className="mt-1 font-title text-lg font-bold text-[#a90000]">S/{weeklyEarnings.toFixed(2)}</p><p className="text-[9px] text-gray-500">Suma de entregas registradas aquí</p></div>
+            <div className="rider-card p-3"><p className="text-[9px] uppercase text-gray-500">Entregas · total local</p><p className="mt-1 font-title text-lg font-bold">{completedCount}</p><p className="text-[9px] text-gray-500">{weeklyCompletedCount} en los últimos 7 días</p></div>
           </div>
           <div className="rider-card p-4">
-            <div className="flex items-center justify-between"><h2 className="font-title text-sm font-bold">Actividad de los últimos 7 días</h2><span className="text-[9px] text-gray-400">Ganancia local</span></div>
+            <div className="flex items-center justify-between"><h2 className="font-title text-sm font-bold">Actividad de los últimos 7 días</h2><span className="text-[9px] text-gray-500">Ganancia local</span></div>
             <div className="mt-3 flex h-28 items-end justify-around gap-2 border-b border-gray-100 px-1">
-              {weekDays.map((day, index) => <div key={`${day.label}-${index}`} title={`S/${day.amount.toFixed(2)}`} className="flex h-full flex-1 flex-col justify-end"><div className="min-h-1 rounded-t-md bg-[#a90000]/80" style={{ height: `${day.amount > 0 ? Math.max(8, day.amount / weeklyMax * 100) : 3}%` }}></div><span className="pt-1 text-center text-[8px] text-gray-400">{day.label}</span></div>)}
+              {weekDays.map((day, index) => <div key={`${day.label}-${index}`} title={`S/${day.amount.toFixed(2)}`} className="flex h-full flex-1 flex-col justify-end"><div className="min-h-1 rounded-t-md bg-[#a90000]/80" style={{ height: `${day.amount > 0 ? Math.max(8, day.amount / weeklyMax * 100) : 3}%` }}></div><span className="pt-1 text-center text-[8px] text-gray-500">{day.label}</span></div>)}
             </div>
           </div>
           <div>
-            <div className="mb-2 flex items-center justify-between"><h2 className="font-title text-sm font-bold">Actividad reciente</h2><span className="text-[9px] text-gray-400">Entregas reales de esta sesión</span></div>
+            <div className="mb-2 flex items-center justify-between"><h2 className="font-title text-sm font-bold">Actividad reciente</h2><span className="text-[9px] text-gray-500">Entregas reales de esta sesión</span></div>
             <div className="space-y-2">
               {completedOrders.slice(0, 4).map((order, index) => (
                 <div key={`${order.id}-${index}`} className="rider-card flex items-center justify-between p-3">
-                  <div className="flex items-center gap-2"><span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fff2df] text-[#a90000]"><i data-lucide="bike" className="h-4 w-4"></i></span><div><p className="text-[10px] font-bold">Pedido #{order.id}</p><p className="text-[9px] text-gray-400">{order.item} · {order.completedAt || 'Ayer'}</p></div></div>
-                  <div className="text-right"><p className="text-[10px] font-bold">S/{order.payout.toFixed(2)}</p><p className="text-[8px] uppercase text-gray-400">entrega</p></div>
+                  <div className="flex items-center gap-2"><span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fff2df] text-[#a90000]"><i data-lucide="bike" className="h-4 w-4"></i></span><div><p className="text-[10px] font-bold">Pedido #{order.id}</p><p className="text-[9px] text-gray-500">{order.item} · {order.completedAt || 'Ayer'}</p></div></div>
+                  <div className="text-right"><p className="text-[10px] font-bold">S/{order.payout.toFixed(2)}</p><p className="text-[8px] uppercase text-gray-500">entrega</p></div>
                 </div>
               ))}
               {completedOrders.length === 0 && <p className="rider-card p-4 text-center text-[10px] text-gray-500">Aquí aparecerán tus pedidos cuando completes una entrega real.</p>}
@@ -11740,7 +11794,7 @@
                       <span className="shrink-0 text-[10px] font-bold text-amber-500">{'★'.repeat(review.rating)}<span className="text-gray-200">{'★'.repeat(5 - review.rating)}</span></span>
                     </div>
                     <p className="mt-1 text-[10px] leading-relaxed text-gray-600">{review.comment}</p>
-                    <p className="mt-1 text-right text-[8px] text-gray-400">{new Date(review.createdAt).toLocaleDateString('es-PE')}</p>
+                    <p className="mt-1 text-right text-[8px] text-gray-500">{new Date(review.createdAt).toLocaleDateString('es-PE')}</p>
                   </article>
                 ))}
               </div>
@@ -11760,10 +11814,10 @@
                 <p><span className="font-bold text-gray-700">Distrito:</span> {gps.district || 'Buscando…'}</p>
                 <p><span className="font-bold text-gray-700">Avenida/calle:</span> {gps.road || (gps.addressError ? 'No identificada en el mapa' : 'Buscando…')}</p>
                 <p><span className="font-bold text-gray-700">Distancia a UPCH Miraflores:</span> {gps.distanceKm === null ? 'Calculando…' : `${gps.distanceKm.toFixed(2)} km en línea recta`}</p>
-                <p className="text-[8px] text-gray-400">Precisión ±{Math.round(gps.accuracy)} m · {gps.latitude.toFixed(5)}, {gps.longitude.toFixed(5)}</p>
+                <p className="text-[8px] text-gray-500">Precisión ±{Math.round(gps.accuracy)} m · {gps.latitude.toFixed(5)}, {gps.longitude.toFixed(5)}</p>
                 {gps.addressError && <p className="text-red-600">{gps.addressError}</p>}
                 {gps.addressError && <button type="button" onClick={() => void lookupGpsAddress(gps.latitude, gps.longitude)} className="font-bold text-[#a90000]">Reintentar dirección</button>}
-                <p className="text-[8px] text-gray-400">Dirección aproximada al activar GPS · OpenStreetMap</p>
+                <p className="text-[8px] text-gray-500">Dirección aproximada al activar GPS · OpenStreetMap</p>
               </div>
             )}
             {gps.message && <p className="text-[10px] text-red-600" role="alert">{gps.message}</p>}
@@ -11772,18 +11826,18 @@
           <div className="rider-card divide-y divide-gray-100">
             <button type="button" onClick={() => { setProfileFormError(''); setProfileModal('identity'); }} className="flex w-full items-center gap-3 p-3 text-left">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff2df] text-[#a90000]"><i data-lucide="file-check-2" className="h-4 w-4"></i></span>
-              <span className="flex-1"><span className="block text-[10px] font-bold">Idoneidad y documentos</span><span className="block text-[9px] text-gray-400">{riderDetails.dni ? 'Datos guardados en este dispositivo' : 'Agrega tus datos y fotos de identificación'}</span></span>
-              <i data-lucide="chevron-right" className="h-4 w-4 text-gray-400"></i>
+              <span className="flex-1"><span className="block text-[10px] font-bold">Idoneidad y documentos</span><span className="block text-[9px] text-gray-500">{riderDetails.dni ? 'Datos guardados en este dispositivo' : 'Agrega tus datos y fotos de identificación'}</span></span>
+              <i data-lucide="chevron-right" className="h-4 w-4 text-gray-500"></i>
             </button>
             <button type="button" onClick={() => setProfileModal('vehicle')} className="flex w-full items-center gap-3 p-3 text-left">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff2df] text-[#a90000]"><i data-lucide="bike" className="h-4 w-4"></i></span>
-              <span className="flex-1"><span className="block text-[10px] font-bold">Vehículo</span><span className="block text-[9px] text-gray-400">{riderDetails.vehicle || 'Elige moto, bicicleta o caminar'}</span></span>
-              <i data-lucide="chevron-right" className="h-4 w-4 text-gray-400"></i>
+              <span className="flex-1"><span className="block text-[10px] font-bold">Vehículo</span><span className="block text-[9px] text-gray-500">{riderDetails.vehicle || 'Elige moto, bicicleta o caminar'}</span></span>
+              <i data-lucide="chevron-right" className="h-4 w-4 text-gray-500"></i>
             </button>
             <button type="button" onClick={() => { setSupportQuery(''); setSupportAnswer(null); setSupportError(''); setProfileModal('support'); }} className="flex w-full items-center gap-3 p-3 text-left">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff2df] text-[#a90000]"><i data-lucide="life-buoy" className="h-4 w-4"></i></span>
-              <span className="flex-1"><span className="block text-[10px] font-bold">Ayuda y soporte</span><span className="block text-[9px] text-gray-400">Asistente y 12 respuestas frecuentes</span></span>
-              <i data-lucide="chevron-right" className="h-4 w-4 text-gray-400"></i>
+              <span className="flex-1"><span className="block text-[10px] font-bold">Ayuda y soporte</span><span className="block text-[9px] text-gray-500">Asistente y 12 respuestas frecuentes</span></span>
+              <i data-lucide="chevron-right" className="h-4 w-4 text-gray-500"></i>
             </button>
           </div>
           {profileModal && (
@@ -11895,7 +11949,7 @@
                       <p className="text-[10px] font-semibold text-gray-600">También puedes preguntar sobre:</p>
                       {RIDER_SUPPORT_FAQS.map((faq) => (
                         <button key={faq.question} type="button" onClick={() => { setSupportQuery(faq.question); answerSupportQuestion(faq.question); }} className="flex w-full items-center justify-between gap-2 rounded-xl border border-gray-100 bg-white p-3 text-left text-[10px] font-semibold text-gray-700 hover:border-[#a90000]/30">
-                          <span>{faq.question}</span><span className="shrink-0 text-lg text-gray-400" aria-hidden="true">›</span>
+                          <span>{faq.question}</span><span className="shrink-0 text-lg text-gray-500" aria-hidden="true">›</span>
                         </button>
                       ))}
                     </div>
@@ -12195,7 +12249,7 @@
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <h4 className="text-xs font-bold">Pedido #{order.id}</h4>
-                          <p className="mt-0.5 text-[10px] text-gray-400">
+                          <p className="mt-0.5 text-[10px] text-gray-500">
                             {new Intl.DateTimeFormat('es-PE', { dateStyle: 'medium', timeStyle: 'short' }).format(order.createdAt)}
                           </p>
                         </div>
@@ -12205,7 +12259,7 @@
                         {order.items.map((item, index) => (
                           <li key={`${item.name}-${index}`} className="text-[10px] leading-relaxed text-gray-600">
                             <span className="font-semibold">{item.name}</span> ×{item.quantity} · S/{(item.price * item.quantity).toFixed(2)}
-                            {item.description && <span className="mt-0.5 block text-gray-400">{item.description}</span>}
+                            {item.description && <span className="mt-0.5 block text-gray-500">{item.description}</span>}
                           </li>
                         ))}
                       </ul>
@@ -12225,7 +12279,7 @@
                       Borrar mi historial de pedidos
                     </button>
                   )}
-                  <p className="text-center text-[9px] leading-relaxed text-gray-400">El historial se guarda solo en este dispositivo. Los pedidos simulados no se registran.</p>
+                  <p className="text-center text-[9px] leading-relaxed text-gray-500">El historial se guarda solo en este dispositivo. Los pedidos simulados no se registran.</p>
                 </div>
               </section>
             </div>
@@ -12278,7 +12332,7 @@
                   required
                 />
                 {riderPinError && <p id="rider-access-error" className="text-[11px] text-red-600" role="alert">{riderPinError}</p>}
-                <p id="rider-access-note" className="text-[9px] leading-relaxed text-gray-400">Este acceso funciona en este dispositivo y no valida una cuenta real de repartidor.</p>
+                <p id="rider-access-note" className="text-[9px] leading-relaxed text-gray-500">Este acceso funciona en este dispositivo y no valida una cuenta real de repartidor.</p>
                 <button type="submit" disabled={riderPin.length !== 4 || isCheckingRiderPin} className="w-full rounded-xl bg-[#a90000] py-3 text-xs font-bold text-white disabled:opacity-45">
                   {isCheckingRiderPin ? 'Verificando…' : 'Entrar al panel'}
                 </button>
@@ -12328,7 +12382,7 @@
               <div>
                 <label htmlFor="profile-phone" className="block text-[10px] font-bold text-gray-500 mb-1">Celular de contacto (opcional)</label>
                 <input id="profile-phone" type="tel" inputMode="numeric" autoComplete="tel" maxLength={9} value={profile.phone || ''} onChange={(e) => updateProfile('phone', e.target.value.replace(/\D/g, '').slice(0, 9))} placeholder="9 dígitos" className="w-full rounded-xl border border-gray-200 px-3 py-2 text-xs focus:outline-none focus:border-brand" />
-                <p className="mt-1 text-[9px] text-gray-400">Opcional. Las llamadas con el motorizado se realizan dentro de la app.</p>
+                <p className="mt-1 text-[9px] text-gray-500">Opcional. Las llamadas con el motorizado se realizan dentro de la app.</p>
               </div>
               <label className="flex items-start gap-2 text-[10px] text-gray-500 leading-relaxed">
                 <input type="checkbox" checked={profile.privacyAccepted} onChange={(e) => updateProfile('privacyAccepted', e.target.checked)} className="mt-0.5 accent-brand" />
@@ -12339,7 +12393,7 @@
                 Quiero recibir recomendaciones y promociones de Al Toque.
               </label>
               <button type="button" onClick={affiliateProfile} disabled={!profile.privacyAccepted} className="w-full rounded-xl bg-brand text-white py-2.5 text-xs font-bold disabled:opacity-40">Afiliar mi perfil</button>
-              <p className="text-[9px] text-gray-400">Puedes cambiar o borrar estos datos desde tu perfil cuando quieras.</p>
+              <p className="text-[9px] text-gray-500">Puedes cambiar o borrar estos datos desde tu perfil cuando quieras.</p>
             </div>
           </div>}
 
@@ -12373,14 +12427,14 @@
                   </span>
                   <span>
                     <span className="block font-bold text-xs">Tema de inicio</span>
-                    <span className="block text-[10px] text-gray-400">
+                    <span className="block text-[10px] text-gray-500">
                       {profile.splashPreference === 'classic'
                         ? 'Clásico'
                         : SPLASH_THEME_OPTIONS.find((option) => option.id === (profile.splashPreference || 'random'))?.label || 'Predeterminada'}
                     </span>
                   </span>
                 </span>
-                <i data-lucide="chevron-right" className="w-4 h-4 text-gray-400"></i>
+                <i data-lucide="chevron-right" className="w-4 h-4 text-gray-500"></i>
               </button>
 
               <div className="border-t border-gray-100"></div>
@@ -12399,7 +12453,7 @@
                     </select>
                   </div>
                 </div>
-                <i data-lucide="chevron-right" className="w-4 h-4 text-gray-400"></i>
+                <i data-lucide="chevron-right" className="w-4 h-4 text-gray-500"></i>
               </div>
 
               <div className="border-t border-gray-100"></div>
@@ -12411,7 +12465,7 @@
                   </div>
                   <div>
                     <h5 className="font-bold text-xs">Avisos de pedido</h5>
-                    <p className="text-[10px] text-gray-400">{notifications ? 'Activados' : 'Desactivados'}</p>
+                    <p className="text-[10px] text-gray-500">{notifications ? 'Activados' : 'Desactivados'}</p>
                   </div>
                 </div>
 
@@ -12436,10 +12490,10 @@
                   </div>
                   <div>
                     <h5 className="font-bold text-xs">Ayuda</h5>
-                    <p className="text-[10px] text-gray-400">Estamos para ayudarte</p>
+                    <p className="text-[10px] text-gray-500">Estamos para ayudarte</p>
                   </div>
                 </div>
-                <i data-lucide="chevron-right" className="w-4 h-4 text-gray-400"></i>
+                <i data-lucide="chevron-right" className="w-4 h-4 text-gray-500"></i>
               </button>
             </div>
           </div>
@@ -12534,7 +12588,7 @@
                     setShowHelp(false);
                     onRestoreClassicHome();
                   }}
-                  className="mx-auto block rounded-full px-3 py-1 text-[9px] text-gray-400 transition hover:text-gray-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a90000]"
+                  className="mx-auto block rounded-full px-3 py-1 text-[9px] text-gray-500 transition hover:text-gray-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a90000]"
                   aria-label="Volver al inicio clásico de Al Toque"
                 >
                   ¿Recuerdas el inicio de antes?
@@ -12544,7 +12598,7 @@
           )}
 
           <div className="text-center pt-4">
-            <p className="text-[11px] text-gray-400 font-medium">Al Toque PE · Comida que sigue tu ritmo</p>
+            <p className="text-[11px] text-gray-500 font-medium">Al Toque PE · Comida que sigue tu ritmo</p>
           </div>
         </div>
       );
