@@ -76,6 +76,7 @@ const PUBLIC_ASSETS = new Set([
   HTML_FILE,
   AUDIOMACK_TERMS_FILE,
   COIN_FILE,
+  'pedido-instrucciones.mp4',
   'coin-front-red.png',
   'al-toque-pe-logo.png',
   'al-toque-pe-emblema.png',
@@ -1848,7 +1849,8 @@ async function handleRequest(request, response, orders, idempotencyKeys, callSes
         '.png': 'image/png',
         '.webp': 'image/webp',
         '.svg': 'image/svg+xml',
-        '.mp3': 'audio/mpeg'
+        '.mp3': 'audio/mpeg',
+        '.mp4': 'video/mp4'
       };
       return sendStaticContent(request, response, content, {
         'Content-Type': types[extname(assetName)] || 'application/octet-stream',
