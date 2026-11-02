@@ -184,6 +184,55 @@ test('accepts requests from localhost aliases when using the same local server p
   assert.equal(response.status, 201);
 });
 
+test('shares customer orders with riders when HTTPS terminates at the reverse proxy', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  const server = await createReelsTestServer(t, testDataDir);
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const origin = 'https://app.altoque.test';
+  const orderResponse = await fetch(`${baseUrl}/api/orders`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Host: 'app.altoque.test',
+      Origin: origin,
+      'X-Forwarded-Proto': 'https'
+    },
+    body: JSON.stringify({
+      idempotencyKey: 'proxy-order-123456',
+      customer: 'Cliente',
+      items: [{ name: 'Lomo saltado', quantity: 1, price: 12 }],
+      pickupPoint: 'Cafetería Central',
+      paymentMethod: 'yape'
+    })
+  });
+
+  assert.equal(orderResponse.status, 201);
+  const { order } = await orderResponse.json();
+  assert.equal(order.status, 'available');
+
+  const riderQueueResponse = await fetch(`${baseUrl}/api/orders`);
+  assert.equal(riderQueueResponse.status, 200);
+  assert.deepEqual((await riderQueueResponse.json()).orders.map(({ id }) => id), [order.id]);
+
+  const rejectedResponse = await fetch(`${baseUrl}/api/orders`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Host: 'app.altoque.test',
+      Origin: 'https://attacker.example',
+      'X-Forwarded-Proto': 'https'
+    },
+    body: JSON.stringify({
+      idempotencyKey: 'proxy-order-654321',
+      customer: 'Origen ajeno',
+      items: [{ name: 'Lomo saltado', quantity: 1, price: 12 }],
+      pickupPoint: 'Cafetería Central',
+      paymentMethod: 'yape'
+    })
+  });
+  assert.equal(rejectedResponse.status, 403);
+});
+
 test('loads the public feed for a valid first-time viewer before profile creation', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);
