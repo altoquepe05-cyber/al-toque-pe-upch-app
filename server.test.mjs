@@ -210,47 +210,49 @@ test('shares customer orders with riders when HTTPS terminates at the reverse pr
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);
   const baseUrl = `http://127.0.0.1:${server.address().port}`;
-  const origin = 'https://app.altoque.test';
-  const orderResponse = await fetch(`${baseUrl}/api/orders`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Host: 'app.altoque.test',
-      Origin: origin,
-      'X-Forwarded-Proto': 'https'
-    },
-    body: JSON.stringify({
-      idempotencyKey: 'proxy-order-123456',
-      customer: 'Cliente',
-      items: [{ name: 'Lomo saltado', quantity: 1, price: 12 }],
-      pickupPoint: 'Cafetería Central',
-      paymentMethod: 'yape'
-    })
+  const postThroughProxy = (origin, body) => new Promise((resolve, reject) => {
+    const request = http.request(`${baseUrl}/api/orders`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(JSON.stringify(body)),
+        Host: 'app.altoque.test',
+        Origin: origin,
+        'X-Forwarded-Proto': 'https'
+      }
+    }, (response) => {
+      const chunks = [];
+      response.on('data', (chunk) => chunks.push(chunk));
+      response.on('end', () => resolve({
+        status: response.statusCode,
+        body: JSON.parse(Buffer.concat(chunks).toString('utf8'))
+      }));
+    });
+    request.once('error', reject);
+    request.end(JSON.stringify(body));
+  });
+  const orderResponse = await postThroughProxy('https://app.altoque.test', {
+    idempotencyKey: 'proxy-order-123456',
+    customer: 'Cliente',
+    items: [{ name: 'Lomo saltado', quantity: 1, price: 12 }],
+    pickupPoint: 'Cafetería Central',
+    paymentMethod: 'yape'
   });
 
   assert.equal(orderResponse.status, 201);
-  const { order } = await orderResponse.json();
+  const { order } = orderResponse.body;
   assert.equal(order.status, 'available');
 
   const riderQueueResponse = await fetch(`${baseUrl}/api/orders`);
   assert.equal(riderQueueResponse.status, 200);
   assert.deepEqual((await riderQueueResponse.json()).orders.map(({ id }) => id), [order.id]);
 
-  const rejectedResponse = await fetch(`${baseUrl}/api/orders`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Host: 'app.altoque.test',
-      Origin: 'https://attacker.example',
-      'X-Forwarded-Proto': 'https'
-    },
-    body: JSON.stringify({
-      idempotencyKey: 'proxy-order-654321',
-      customer: 'Origen ajeno',
-      items: [{ name: 'Lomo saltado', quantity: 1, price: 12 }],
-      pickupPoint: 'Cafetería Central',
-      paymentMethod: 'yape'
-    })
+  const rejectedResponse = await postThroughProxy('https://attacker.example', {
+    idempotencyKey: 'proxy-order-654321',
+    customer: 'Origen ajeno',
+    items: [{ name: 'Lomo saltado', quantity: 1, price: 12 }],
+    pickupPoint: 'Cafetería Central',
+    paymentMethod: 'yape'
   });
   assert.equal(rejectedResponse.status, 403);
 });
@@ -549,7 +551,7 @@ test('rejects oversized Reels video requests before accepting their bodies', asy
   assert.equal(status, 413);
 });
 
-test('serves local music files with byte ranges for browser audio controls', async (t) => {
+test('serves the public Gorritos sticker and sticker pack', async (t) => {
   const testDataDir = await mkdtemp(join(tmpdir(), 'altoque-audio-test-'));
   const server = createAlToqueServer({ ordersFile: join(testDataDir, 'orders.json') });
   await new Promise((resolve, reject) => {
@@ -564,22 +566,6 @@ test('serves local music files with byte ranges for browser audio controls', asy
   });
 
   const baseUrl = `http://127.0.0.1:${server.address().port}`;
-  for (const trackPath of ['/music/bby-wow.mp3', '/music/dame-un-beso.mp3']) {
-    const response = await fetch(`${baseUrl}${trackPath}`, { headers: { Range: 'bytes=0-31' } });
-    assert.equal(response.status, 206);
-    assert.equal(response.headers.get('content-type'), 'audio/mpeg');
-    assert.equal(response.headers.get('accept-ranges'), 'bytes');
-    assert.match(response.headers.get('content-range'), /^bytes 0-31\/\d+$/);
-    assert.equal((await response.arrayBuffer()).byteLength, 32);
-  }
-
-  const coverResponse = await fetch(`${baseUrl}/music/dame-un-beso-cover.png`);
-  assert.equal(coverResponse.status, 200);
-  assert.equal(coverResponse.headers.get('content-type'), 'image/png');
-  assert.deepEqual(
-    Array.from(new Uint8Array(await coverResponse.arrayBuffer()).slice(0, 8)),
-    [137, 80, 78, 71, 13, 10, 26, 10]
-  );
 
   const gorritosWelcomeStickerResponse = await fetch(`${baseUrl}/gorritos-welcome-hat.png`);
   assert.equal(gorritosWelcomeStickerResponse.status, 200);
@@ -1091,7 +1077,7 @@ test('shares customer orders with the rider queue and enforces delivery transiti
   assert.equal(coinResponse.headers.get('x-frame-options'), 'SAMEORIGIN');
   const coinHtml = await coinResponse.text();
   assert.match(coinHtml, /coinEmbed/);
-  const embeddedCoinBuilder = coinHtml.match(/function buildEmbeddedCoin\(onReady\)\s*\{([\s\S]*?)\n  \}\s*\n\n  function resize\(\)/)?.[1];
+  const embeddedCoinBuilder = coinHtml.match(/function buildEmbeddedCoin\(onReady\)\s*\{([\s\S]*?)\r?\n  \}\r?\n\r?\n  function resize\(\)/)?.[1];
   assert.ok(embeddedCoinBuilder, 'embedded coin renderer should be defined');
   assert.match(embeddedCoinBuilder, /build\(\)/);
   assert.match(coinHtml, /var N = 2048/);

@@ -99,12 +99,12 @@ const PUBLIC_ASSETS = new Set([
 ]);
 
 const VENDOR_ASSETS = new Map([
-  ['/vendor/tailwind.js', ['tailwind.js', 'text/javascript; charset=utf-8']],
-  ['/vendor/react.development.js', ['react.development.js', 'text/javascript; charset=utf-8']],
-  ['/vendor/react-dom.development.js', ['react-dom.development.js', 'text/javascript; charset=utf-8']],
-  ['/vendor/babel.min.js', ['babel.min.js', 'text/javascript; charset=utf-8']],
-  ['/vendor/lucide.js', ['lucide.js', 'text/javascript; charset=utf-8']],
-  ['/vendor/fonts.css', ['fonts.css', 'text/css; charset=utf-8']],
+  ['/vendor/tailwind.js', ['vendor/tailwind.js', 'text/javascript; charset=utf-8']],
+  ['/vendor/react.development.js', ['vendor/react.development.js', 'text/javascript; charset=utf-8']],
+  ['/vendor/react-dom.development.js', ['vendor/react-dom.development.js', 'text/javascript; charset=utf-8']],
+  ['/vendor/babel.min.js', ['vendor/babel.min.js', 'text/javascript; charset=utf-8']],
+  ['/vendor/lucide.js', ['vendor/lucide.js', 'text/javascript; charset=utf-8']],
+  ['/vendor/fonts.css', ['vendor/fonts.css', 'text/css; charset=utf-8']],
   ...[
     'outfit-400.ttf',
     'outfit-500.ttf',
@@ -112,15 +112,7 @@ const VENDOR_ASSETS = new Map([
     'outfit-700.ttf',
     'space-grotesk-600.ttf',
     'space-grotesk-700.ttf'
-  ].map((font) => [`/vendor/fonts/${font}`, [`fonts/${font}`, 'font/ttf']])
-]);
-
-const MUSIC_ASSETS = new Map([
-  ['/music/bby-wow.mp3', 'KAROL G, Judeline, rusowsky - BbY WOW (Visualizer).mp3'],
-  ['/music/dame-un-beso.mp3', 'YURI - DAME UN BESO [REMASTERIZADO] VÍDEO OFICIAL 4K.mp3']
-]);
-const PLAYER_IMAGE_ASSETS = new Map([
-  ['/music/dame-un-beso-cover.png', 'yuri-dame-un-beso-cover.png']
+  ].map((font) => [`/vendor/fonts/${font}`, [font, 'font/ttf']])
 ]);
 
 const rateLimits = new Map();
@@ -1738,7 +1730,7 @@ async function handleRequest(request, response, orders, idempotencyKeys, callSes
     if (vendorAsset) {
       let content;
       try {
-        content = await readFile(join(APP_DIR, 'vendor', vendorAsset[0]));
+        content = await readFile(join(APP_DIR, vendorAsset[0]));
       } catch (error) {
         if (error.code === 'ENOENT') return json(response, 404, { error: 'No se encontró el recurso solicitado.' });
         throw error;
@@ -1748,79 +1740,6 @@ async function handleRequest(request, response, orders, idempotencyKeys, callSes
         'X-Content-Type-Options': 'nosniff',
         'Cache-Control': 'public, max-age=31536000, immutable'
       }, `vendor:${vendorAsset[0]}`);
-    }
-
-    const playerImageName = PLAYER_IMAGE_ASSETS.get(requestUrl.pathname);
-    if (playerImageName) {
-      const filePath = join(APP_DIR, 'AlToque-Bluetooth-Player', 'assets', playerImageName);
-      let content;
-      try {
-        content = await readFile(filePath);
-      } catch (error) {
-        if (error.code === 'ENOENT') return json(response, 404, { error: 'No se encontró el recurso solicitado.' });
-        throw error;
-      }
-      response.writeHead(200, {
-        'Content-Type': 'image/png',
-        'Content-Length': content.length,
-        'X-Content-Type-Options': 'nosniff',
-        'Cache-Control': 'public, max-age=3600'
-      });
-      return response.end(content);
-    }
-
-    const musicFileName = MUSIC_ASSETS.get(requestUrl.pathname);
-    if (musicFileName) {
-      const filePath = join(APP_DIR, 'AlToque-Bluetooth-Player', 'assets', musicFileName);
-      let fileInfo;
-      try {
-        fileInfo = await stat(filePath);
-      } catch (error) {
-        if (error.code === 'ENOENT') return json(response, 404, { error: 'No se encontró el recurso solicitado.' });
-        throw error;
-      }
-      if (!fileInfo.isFile()) return json(response, 404, { error: 'No se encontró el recurso solicitado.' });
-
-      const rangeHeader = request.headers.range;
-      let start = 0;
-      let end = fileInfo.size - 1;
-      let statusCode = 200;
-      if (rangeHeader) {
-        const rangeMatch = /^bytes=(\d*)-(\d*)$/.exec(rangeHeader);
-        if (!rangeMatch || (!rangeMatch[1] && !rangeMatch[2])) {
-          response.writeHead(416, { 'Content-Range': `bytes */${fileInfo.size}` });
-          return response.end();
-        }
-        if (rangeMatch[1]) {
-          start = Number(rangeMatch[1]);
-          end = rangeMatch[2] ? Number(rangeMatch[2]) : end;
-        } else {
-          const suffixLength = Number(rangeMatch[2]);
-          start = Math.max(0, fileInfo.size - suffixLength);
-        }
-        if (start > end || start >= fileInfo.size) {
-          response.writeHead(416, { 'Content-Range': `bytes */${fileInfo.size}` });
-          return response.end();
-        }
-        end = Math.min(end, fileInfo.size - 1);
-        statusCode = 206;
-      }
-
-      response.writeHead(statusCode, {
-        'Content-Type': 'audio/mpeg',
-        'Accept-Ranges': 'bytes',
-        'Content-Length': end - start + 1,
-        ...(statusCode === 206 ? { 'Content-Range': `bytes ${start}-${end}/${fileInfo.size}` } : {}),
-        'X-Content-Type-Options': 'nosniff',
-        'Cache-Control': 'public, max-age=3600'
-      });
-      const audioStream = createReadStream(filePath, { start, end });
-      audioStream.on('error', (error) => {
-        if (!response.headersSent) json(response, 500, { error: 'No se pudo transmitir el audio.' });
-        else response.destroy(error);
-      });
-      audioStream.pipe(response);
-      return;
     }
 
     let assetName;
