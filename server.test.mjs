@@ -1008,6 +1008,7 @@ test('shares customer orders with the rider queue and enforces delivery transiti
   const acceptedOrderResponse = await fetch(`${baseUrl}/api/orders/${order.id}`);
   assert.equal(acceptedOrderResponse.status, 200);
   assert.equal((await acceptedOrderResponse.json()).order.status, 'accepted');
+  assert.equal((await postAction('deliver')).status, 409);
 
   const chatUrl = `${baseUrl}/api/orders/${order.id}/chat`;
   const customerMessage = {
@@ -1052,8 +1053,13 @@ test('shares customer orders with the rider queue and enforces delivery transiti
   });
   assert.equal(sendAudioResponse.status, 201);
 
-  assert.equal((await postAction('picked-up')).status, 200);
-  assert.equal((await postAction('deliver')).status, 200);
+  const pickupResponse = await postAction('picked-up');
+  assert.equal(pickupResponse.status, 200);
+  assert.equal((await pickupResponse.json()).order.status, 'picked_up');
+  assert.equal((await reviewOrder(5, 'Muy amable')).status, 409);
+  const deliveryResponse = await postAction('deliver');
+  assert.equal(deliveryResponse.status, 200);
+  assert.equal((await deliveryResponse.json()).order.status, 'delivered');
   const reviewResponse = await reviewOrder(5, 'Muy amable y puntual');
   assert.equal(reviewResponse.status, 201);
   assert.equal((await reviewOrder(4, 'Otra opinión')).status, 409);

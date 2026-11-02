@@ -9834,27 +9834,23 @@
         try {
           const savedProgress = JSON.parse(localStorage.getItem(deliveryProgressKey) || 'null');
           if (!savedProgress || savedProgress.orderId !== liveOrderId) return null;
-          if (savedProgress.phase === 'arrived') {
-            return { phase: 'arrived', elapsed: deliveryDuration };
-          }
           if (savedProgress.phase !== 'tracking' || !Number.isFinite(savedProgress.startedAt)) return null;
           const elapsed = Math.max(0, Math.min(Date.now() - savedProgress.startedAt, deliveryDuration));
-          return { phase: elapsed >= deliveryDuration ? 'arrived' : 'tracking', elapsed };
+          return { phase: 'tracking', elapsed, startedAt: savedProgress.startedAt };
         } catch (error) {
           console.error('No se pudo recuperar el progreso del pedido:', error);
           return null;
         }
       };
-      const initialDeliveryProgress = readSavedDeliveryProgress();
       const [paymentMethod, setPaymentMethod] = useState('yape');
       const [isRedirecting, setIsRedirecting] = useState(false);
       const [redirectUrl, setRedirectUrl] = useState('');
       const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
       const [orderSubmitError, setOrderSubmitError] = useState('');
       const [orderSubmitNotice, setOrderSubmitNotice] = useState('');
-      const [deliveryPhase, setDeliveryPhase] = useState(initialDeliveryProgress?.phase || 'idle');
+      const [deliveryPhase, setDeliveryPhase] = useState('idle');
       const [motoPosition, setMotoPosition] = useState({ x: 165, y: 135, angle: 0 });
-      const [deliveryElapsed, setDeliveryElapsed] = useState(initialDeliveryProgress?.elapsed || 0);
+      const [deliveryElapsed, setDeliveryElapsed] = useState(0);
       const [rating, setRating] = useState(0);
       const [ratingComment, setRatingComment] = useState('');
       const [ratingSubmitted, setRatingSubmitted] = useState(false);
@@ -9862,6 +9858,7 @@
       const [isSubmittingRating, setIsSubmittingRating] = useState(false);
       const [assignedRider, setAssignedRider] = useState(null);
       const [orderStatus, setOrderStatus] = useState('available');
+      const deliveryStartedAtRef = useRef(0);
       const assignedRiderRefreshRef = useRef(null);
       const [isRiderChatOpen, setIsRiderChatOpen] = useState(false);
       const [hasNewRiderMessage, setHasNewRiderMessage] = useState(false);
@@ -9892,11 +9889,11 @@
         }
       };
       const deliveryStages = [
-        { label: 'Pedido', title: '¡Pedido confirmado!', description: 'La cocina ya recibió tu pedido.' },
-        { label: 'Preparando', title: 'Preparando tu pedido', description: 'Estamos preparando algo rico para ti.' },
-        { label: 'Empacando', title: 'Empacando con cuidado', description: 'Estamos dejando tu pedido listo para salir.' },
-        { label: 'En camino', title: 'El motorizado va en camino', description: 'Tu pedido salió rumbo a tu punto de entrega.' },
-        { label: 'Por llegar', title: '¡Tu pedido está por llegar!', description: 'El motorizado se acerca. Muy pronto podrás recogerlo.' }
+        { label: 'Recojo', title: '¡Pedido recogido!', description: 'El repartidor confirmó el recojo y va en camino.' },
+        { label: 'En camino', title: 'Tu pedido está en camino', description: 'El repartidor se dirige al punto de entrega.' },
+        { label: 'En ruta', title: 'Tu pedido sigue en ruta', description: 'El seguimiento continúa hasta que el repartidor confirme la entrega.' },
+        { label: 'Por llegar', title: '¡Tu pedido está por llegar!', description: 'El repartidor se acerca al punto de entrega.' },
+        { label: 'Entrega', title: 'Esperando confirmación de entrega', description: 'El pedido se marcará como recibido cuando el repartidor confirme la entrega.' }
       ];
       const currentDeliveryStage = Math.min(Math.floor(deliveryElapsed / 60000), deliveryStages.length - 1);
       const remainingMinutes = Math.ceil((deliveryDuration - deliveryElapsed) / 60000);
@@ -9923,15 +9920,34 @@
             const orderPayload = await orderResponse.json().catch(() => ({}));
             if (!orderResponse.ok) throw new Error(orderPayload.error || `Error ${orderResponse.status}`);
             const assignedOrder = orderPayload.order;
-            if (isMounted) setOrderStatus(assignedOrder?.status || 'available');
-            if (assignedOrder?.status === 'available') {
+            const status = assignedOrder?.status || 'available';
+            if (isMounted) setOrderStatus(status);
+            if (status === 'available' || status === 'accepted') {
+              deliveryStartedAtRef.current = 0;
               if (isMounted) {
-                setAssignedRider(null);
+                setAssignedRider(status === 'available' ? null : assignedRider);
                 setDeliveryPhase('idle');
                 setDeliveryElapsed(0);
               }
               clearDeliveryProgress();
-              return;
+              if (status === 'available') return;
+            } else if (status === 'picked_up') {
+              const savedProgress = readSavedDeliveryProgress();
+              const hadStartedTracking = Boolean(savedProgress?.startedAt || deliveryStartedAtRef.current);
+              const startedAt = savedProgress?.startedAt || deliveryStartedAtRef.current || Date.now();
+              deliveryStartedAtRef.current = startedAt;
+              if (!hadStartedTracking) saveDeliveryProgress('tracking', startedAt);
+              if (isMounted) {
+                setDeliveryPhase('tracking');
+                setDeliveryElapsed(Math.min(Date.now() - startedAt, deliveryDuration));
+              }
+            } else if (status === 'delivered') {
+              deliveryStartedAtRef.current = 0;
+              if (isMounted) {
+                setDeliveryPhase('arrived');
+                setDeliveryElapsed(deliveryDuration);
+              }
+              clearDeliveryProgress();
             }
             if (!assignedOrder?.driverId || !assignedOrder?.driverName) {
               if (isMounted) setAssignedRider(null);
@@ -10108,8 +10124,6 @@
 
           if (elapsed >= deliveryDuration) {
             clearInterval(timer);
-            saveDeliveryProgress('arrived', startTime);
-            setDeliveryPhase('arrived');
             return false;
           }
 
@@ -10373,7 +10387,7 @@
             <div className="delivery-badge">
               {isBembosDemoOrder
                 ? `Recorrido · ${remainingMinutes > 0 ? `${remainingMinutes} min` : 'fin'}`
-                : remainingMinutes > 0 ? `${remainingMinutes} min` : '¡Listo!'}
+                : remainingMinutes > 0 ? `${remainingMinutes} min` : 'En ruta'}
             </div>
           </div>
 
@@ -10551,12 +10565,12 @@
 
           <div className="space-y-2 z-10">
             <h2 className="font-title text-3xl font-bold text-dark">
-              {isBembosDemoOrder ? 'Recorrido finalizado' : '¡Felicidades!'}
+              {isBembosDemoOrder ? 'Recorrido finalizado' : '¡Pedido recibido!'}
             </h2>
-            {!isBembosDemoOrder && <p className="font-title text-xl font-bold text-brand">¡Tu pedido está listo!</p>}
+            {!isBembosDemoOrder && <p className="font-title text-xl font-bold text-brand">¡Gracias por tu pedido!</p>}
             {!isBembosDemoOrder && (
               <p className="text-xs text-gray-500 max-w-[250px]">
-                El motorizado ya llegó. Puedes recoger tu pedido en {pickupPoint}.
+                El repartidor confirmó la entrega. Puedes recoger tu pedido en {pickupPoint}.
               </p>
             )}
           </div>
@@ -10688,9 +10702,9 @@
                 <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-2">
                   <i data-lucide="check-circle" className="w-10 h-10"></i>
                 </div>
-                <h2 className="font-title text-2xl font-bold">¡Un repartidor aceptó tu pedido!</h2>
+                <h2 className="font-title text-2xl font-bold">¡Repartidor asignado!</h2>
                 <p className="text-xs text-gray-500 max-w-[250px]">
-                  {`${assignedRider?.name || 'El repartidor'} aceptó tu orden #${liveOrderId || 'UPCH-8492'}.`}
+                  {`${assignedRider?.name || 'El repartidor'} aceptó tu orden #${liveOrderId || 'UPCH-8492'}. El seguimiento comenzará cuando confirme el recojo.`}
                 </p>
 
                 <div className="bg-cream/50 border border-cream p-4 rounded-2xl w-full text-left space-y-2">
@@ -10710,39 +10724,10 @@
 
                 <div className="flex flex-col w-full space-y-3">
                   <button
-                    onClick={() => {
-                      clearCart();
-                      clearDeliveryProgress();
-                      setOrderConfirmed(false);
-                      onNavigate('home');
-                    }}
+                    onClick={() => onNavigate('home')}
                     className="bg-dark text-white font-bold px-6 py-3 rounded-2xl text-xs"
                   >
                     Volver al inicio
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      const startedAt = Date.now();
-                      saveDeliveryProgress('tracking', startedAt);
-                      setDeliveryElapsed(0);
-                      setDeliveryPhase('tracking');
-                    }}
-                    className="bg-orange-600 text-white font-bold px-6 py-3 rounded-2xl text-xs flex items-center justify-center gap-2"
-                  >
-                    <svg viewBox="0 0 64 64" className="w-4 h-4 flex-shrink-0" aria-hidden="true">
-                      <g fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M10 42h4l4-9h16l7 9h8a4 4 0 0 1 0 8H10a4 4 0 0 1 0-8z" fill="rgba(255,255,255,0.12)" stroke="currentColor"/>
-                        <path d="M26 24h10l4 9H22l4-9z" fill="rgba(255,255,255,0.12)" stroke="currentColor"/>
-                        <path d="M22 18h8l3 6h-11l-4-6 4 0z" fill="rgba(255,255,255,0.12)" stroke="currentColor"/>
-                        <circle cx="20" cy="43" r="7" fill="rgba(255,255,255,0.12)" stroke="currentColor"/>
-                        <circle cx="46" cy="43" r="7" fill="rgba(255,255,255,0.12)" stroke="currentColor"/>
-                        <path d="M16 50h10M42 50h8M35 18v-5"/>
-                        <path d="M35 18h8"/>
-                        <path d="M30 22V12h8v10"/>
-                      </g>
-                    </svg>
-                    <span>{isBembosDemoOrder ? 'Ver recorrido' : 'Recorrido del Motorizado'}</span>
                   </button>
                 </div>
               </>
