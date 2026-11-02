@@ -9684,15 +9684,34 @@
     }
 
     function CartScreen({ cart, updateQuantity, removeFromCart, onNavigate, orderConfirmed, setOrderConfirmed, liveOrderId, setLiveOrderId, clearCart, pickupPoint, profile, onOrderRegistered }) {
+      const deliveryDuration = 300000;
+      const deliveryProgressKey = liveOrderId ? `altoque_delivery_progress_${liveOrderId}` : '';
+      const readSavedDeliveryProgress = () => {
+        if (!orderConfirmed || !deliveryProgressKey) return null;
+        try {
+          const savedProgress = JSON.parse(localStorage.getItem(deliveryProgressKey) || 'null');
+          if (!savedProgress || savedProgress.orderId !== liveOrderId) return null;
+          if (savedProgress.phase === 'arrived') {
+            return { phase: 'arrived', elapsed: deliveryDuration };
+          }
+          if (savedProgress.phase !== 'tracking' || !Number.isFinite(savedProgress.startedAt)) return null;
+          const elapsed = Math.max(0, Math.min(Date.now() - savedProgress.startedAt, deliveryDuration));
+          return { phase: elapsed >= deliveryDuration ? 'arrived' : 'tracking', elapsed };
+        } catch (error) {
+          console.error('No se pudo recuperar el progreso del pedido:', error);
+          return null;
+        }
+      };
+      const initialDeliveryProgress = readSavedDeliveryProgress();
       const [paymentMethod, setPaymentMethod] = useState('yape');
       const [isRedirecting, setIsRedirecting] = useState(false);
       const [redirectUrl, setRedirectUrl] = useState('');
       const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
       const [orderSubmitError, setOrderSubmitError] = useState('');
       const [orderSubmitNotice, setOrderSubmitNotice] = useState('');
-      const [deliveryPhase, setDeliveryPhase] = useState('idle');
+      const [deliveryPhase, setDeliveryPhase] = useState(initialDeliveryProgress?.phase || 'idle');
       const [motoPosition, setMotoPosition] = useState({ x: 165, y: 135, angle: 0 });
-      const [deliveryElapsed, setDeliveryElapsed] = useState(0);
+      const [deliveryElapsed, setDeliveryElapsed] = useState(initialDeliveryProgress?.elapsed || 0);
       const [rating, setRating] = useState(0);
       const [ratingComment, setRatingComment] = useState('');
       const [ratingSubmitted, setRatingSubmitted] = useState(false);
@@ -9712,7 +9731,22 @@
       const isBembosDemoOnly = cart.length > 0 && cart.every((item) => item.isBembosDemo);
       const hasMixedProviders = hasBembosDemoItems && !isBembosDemoOnly;
       const isBembosDemoOrder = false;
-      const deliveryDuration = 300000;
+      const saveDeliveryProgress = (phase, startedAt) => {
+        if (!deliveryProgressKey) return;
+        try {
+          localStorage.setItem(deliveryProgressKey, JSON.stringify({ orderId: liveOrderId, phase, startedAt }));
+        } catch (error) {
+          console.error('No se pudo guardar el progreso del pedido:', error);
+        }
+      };
+      const clearDeliveryProgress = () => {
+        if (!deliveryProgressKey) return;
+        try {
+          localStorage.removeItem(deliveryProgressKey);
+        } catch (error) {
+          console.error('No se pudo borrar el progreso guardado del pedido:', error);
+        }
+      };
       const deliveryStages = [
         { label: 'Pedido', title: '¡Pedido confirmado!', description: 'La cocina ya recibió tu pedido.' },
         { label: 'Preparando', title: 'Preparando tu pedido', description: 'Estamos preparando algo rico para ti.' },
@@ -9920,6 +9954,7 @@
 
           if (elapsed >= deliveryDuration) {
             clearInterval(timer);
+            saveDeliveryProgress('arrived', startTime);
             setDeliveryPhase('arrived');
             return false;
           }
@@ -10430,6 +10465,7 @@
           <button
             onClick={() => {
               clearCart();
+              clearDeliveryProgress();
               setDeliveryPhase('idle');
               setOrderConfirmed(false);
               onNavigate('home');
@@ -10488,6 +10524,7 @@
                   <button
                     onClick={() => {
                       clearCart();
+                      clearDeliveryProgress();
                       setOrderConfirmed(false);
                       onNavigate('home');
                     }}
@@ -10498,6 +10535,8 @@
 
                   <button
                     onClick={() => {
+                      const startedAt = Date.now();
+                      saveDeliveryProgress('tracking', startedAt);
                       setDeliveryElapsed(0);
                       setDeliveryPhase('tracking');
                     }}
