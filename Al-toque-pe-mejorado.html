@@ -8146,12 +8146,12 @@
                 key={chip.id}
                 onClick={() => setFilter(chip.id)}
                 aria-label={`${chip.label}: ${chip.count} elementos`}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition ${
+                className={`inline-flex shrink-0 items-center justify-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition ${
                   filter === chip.id ? 'bg-dark text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
                 {chip.label}
-                <span className={`ml-1.5 text-[10px] font-medium ${filter === chip.id ? 'text-white/60' : 'text-gray-500'}`}>
+                <span className={`text-[10px] font-medium tabular-nums ${filter === chip.id ? 'text-white/60' : 'text-gray-500'}`}>
                   {chip.count}
                 </span>
               </button>
@@ -10730,7 +10730,7 @@
                 loop
                 muted
                 playsInline
-                preload="metadata"
+                preload="auto"
                 aria-label="Animación con indicaciones para realizar un pedido"
                 className="mx-auto block w-full max-w-[420px] max-h-[220px] object-contain"
                 style={{ mixBlendMode: 'multiply' }}

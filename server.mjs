@@ -1836,6 +1836,60 @@ async function handleRequest(request, response, orders, idempotencyKeys, callSes
       const filePath = join(APP_DIR, assetName);
       const fileInfo = await stat(filePath);
       if (!fileInfo.isFile()) return json(response, 404, { error: 'No se encontró el recurso solicitado.' });
+      if (extname(assetName) === '.mp4') {
+        let start = 0;
+        let end = fileInfo.size - 1;
+        let statusCode = 200;
+        const rangeHeader = request.headers.range;
+        if (rangeHeader) {
+          const rangeMatch = /^bytes=(\d*)-(\d*)$/.exec(rangeHeader);
+          if (!rangeMatch || (!rangeMatch[1] && !rangeMatch[2])) {
+            response.writeHead(416, {
+              'Content-Range': `bytes */${fileInfo.size}`,
+              'Accept-Ranges': 'bytes'
+            });
+            return response.end();
+          }
+          if (rangeMatch[1]) {
+            start = Number(rangeMatch[1]);
+            end = rangeMatch[2] ? Number(rangeMatch[2]) : end;
+          } else {
+            const suffixLength = Number(rangeMatch[2]);
+            if (suffixLength <= 0) {
+              response.writeHead(416, {
+                'Content-Range': `bytes */${fileInfo.size}`,
+                'Accept-Ranges': 'bytes'
+              });
+              return response.end();
+            }
+            start = Math.max(0, fileInfo.size - suffixLength);
+          }
+          if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || start > end || start >= fileInfo.size) {
+            response.writeHead(416, {
+              'Content-Range': `bytes */${fileInfo.size}`,
+              'Accept-Ranges': 'bytes'
+            });
+            return response.end();
+          }
+          end = Math.min(end, fileInfo.size - 1);
+          statusCode = 206;
+        }
+        response.writeHead(statusCode, {
+          'Content-Type': 'video/mp4',
+          'Accept-Ranges': 'bytes',
+          'Content-Length': end - start + 1,
+          ...(statusCode === 206 ? { 'Content-Range': `bytes ${start}-${end}/${fileInfo.size}` } : {}),
+          'X-Content-Type-Options': 'nosniff',
+          'Cache-Control': 'public, max-age=3600'
+        });
+        const videoStream = createReadStream(filePath, { start, end });
+        videoStream.on('error', (error) => {
+          if (!response.headersSent) json(response, 500, { error: 'No se pudo transmitir el video.' });
+          else response.destroy(error);
+        });
+        videoStream.pipe(response);
+        return;
+      }
       const content = await readFile(filePath);
       if (assetName === HTML_FILE || assetName === AUDIOMACK_TERMS_FILE || assetName === COIN_FILE) {
         return sendHtml(request, response, content, {
@@ -1849,8 +1903,7 @@ async function handleRequest(request, response, orders, idempotencyKeys, callSes
         '.png': 'image/png',
         '.webp': 'image/webp',
         '.svg': 'image/svg+xml',
-        '.mp3': 'audio/mpeg',
-        '.mp4': 'video/mp4'
+        '.mp3': 'audio/mpeg'
       };
       return sendStaticContent(request, response, content, {
         'Content-Type': types[extname(assetName)] || 'application/octet-stream',
