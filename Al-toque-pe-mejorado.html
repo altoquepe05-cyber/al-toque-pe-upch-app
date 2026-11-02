@@ -5559,23 +5559,8 @@
         const content = contentRef.current;
         if (!content) return;
  
-        const playerScrollMode = window.matchMedia('(hover: none) and (pointer: coarse)');
-        const restorePlayerForDesktop = () => {
-          if (playerScrollMode.matches) return;
-          setIsPlayerVisible(true);
-          setIsPlayerHiddenOnScroll(false);
-        };
-        restorePlayerForDesktop();
-        window.addEventListener('resize', restorePlayerForDesktop);
-        playerScrollMode.addEventListener('change', restorePlayerForDesktop);
-
         const handleContentScroll = () => {
           const currentScrollTop = content.scrollTop;
-          if (!playerScrollMode.matches) {
-            lastContentScrollTopRef.current = currentScrollTop;
-            return;
-          }
-
           const previousScrollTop = lastContentScrollTopRef.current;
           const scrollingDown = currentScrollTop > previousScrollTop + 2;
           const scrollingUp = currentScrollTop < previousScrollTop - 2;
@@ -5594,8 +5579,6 @@
         content.addEventListener('scroll', handleContentScroll, { passive: true });
         return () => {
           content.removeEventListener('scroll', handleContentScroll);
-          window.removeEventListener('resize', restorePlayerForDesktop);
-          playerScrollMode.removeEventListener('change', restorePlayerForDesktop);
         };
       }, [showSplash]);
 
