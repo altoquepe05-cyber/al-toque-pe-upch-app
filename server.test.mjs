@@ -981,6 +981,10 @@ test('shares customer orders with the rider queue and enforces delivery transiti
   assert.equal(queueResponse.status, 200);
   assert.deepEqual((await queueResponse.json()).orders.map((item) => item.id), [order.id]);
 
+  const pendingOrderResponse = await fetch(`${baseUrl}/api/orders/${order.id}`);
+  assert.equal(pendingOrderResponse.status, 200);
+  assert.equal((await pendingOrderResponse.json()).order.status, 'available');
+
   const postAction = (action, details = {}) => fetch(`${baseUrl}/api/orders/${order.id}/action`, {
     method: 'POST',
     headers: {
@@ -1001,6 +1005,9 @@ test('shares customer orders with the rider queue and enforces delivery transiti
   const acceptResponse = await postAction('accept', { driverId: 'rider-armando', driverName: 'Armando' });
   assert.equal(acceptResponse.status, 200);
   assert.equal((await acceptResponse.json()).order.driverName, 'Armando');
+  const acceptedOrderResponse = await fetch(`${baseUrl}/api/orders/${order.id}`);
+  assert.equal(acceptedOrderResponse.status, 200);
+  assert.equal((await acceptedOrderResponse.json()).order.status, 'accepted');
 
   const chatUrl = `${baseUrl}/api/orders/${order.id}/chat`;
   const customerMessage = {

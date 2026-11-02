@@ -9861,6 +9861,7 @@
       const [ratingError, setRatingError] = useState('');
       const [isSubmittingRating, setIsSubmittingRating] = useState(false);
       const [assignedRider, setAssignedRider] = useState(null);
+      const [orderStatus, setOrderStatus] = useState('available');
       const assignedRiderRefreshRef = useRef(null);
       const [isRiderChatOpen, setIsRiderChatOpen] = useState(false);
       const [hasNewRiderMessage, setHasNewRiderMessage] = useState(false);
@@ -9922,6 +9923,16 @@
             const orderPayload = await orderResponse.json().catch(() => ({}));
             if (!orderResponse.ok) throw new Error(orderPayload.error || `Error ${orderResponse.status}`);
             const assignedOrder = orderPayload.order;
+            if (isMounted) setOrderStatus(assignedOrder?.status || 'available');
+            if (assignedOrder?.status === 'available') {
+              if (isMounted) {
+                setAssignedRider(null);
+                setDeliveryPhase('idle');
+                setDeliveryElapsed(0);
+              }
+              clearDeliveryProgress();
+              return;
+            }
             if (!assignedOrder?.driverId || !assignedOrder?.driverName) {
               if (isMounted) setAssignedRider(null);
               return;
@@ -10174,6 +10185,7 @@
           throw new Error('El servidor no devolvió el identificador del pedido.');
         }
         setLiveOrderId(payload.order.id);
+        setOrderStatus(payload.order.status || 'available');
         return payload.order;
       };
 
@@ -10634,6 +10646,39 @@
       }
 
       if (orderConfirmed) {
+        if (orderStatus === 'available') {
+          return (
+            <div className="flex min-h-full flex-col items-center justify-center text-center space-y-4 py-10">
+              <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-[#fff3d1] text-[#a90000]" aria-hidden="true">
+                <i data-lucide="bike" className="h-9 w-9"></i>
+                <span className="absolute inset-0 rounded-full border-2 border-[#a90000]/25 animate-ping"></span>
+              </div>
+              <div className="space-y-2">
+                <h2 className="font-title text-2xl font-bold">Buscando repartidores</h2>
+                <p className="mx-auto max-w-[280px] text-xs text-gray-500" role="status" aria-live="polite">
+                  Tu pedido está en la lista de repartidores. Te avisaremos aquí cuando uno lo acepte.
+                </p>
+              </div>
+              <p className="text-[10px] font-semibold text-gray-500">{`Pedido #${liveOrderId}`}</p>
+              <div className="w-full rounded-2xl border border-[#f1dfb5] bg-[#fffaf0] p-4 text-left text-xs">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Punto de recojo</span>
+                  <span className="font-bold">{pickupPoint}</span>
+                </div>
+                <div className="mt-2 flex justify-between">
+                  <span className="text-gray-500">Estado</span>
+                  <span className="font-bold text-[#a90000]">Esperando aceptación</span>
+                </div>
+              </div>
+              <button
+                onClick={() => onNavigate('home')}
+                className="bg-dark text-white font-bold px-6 py-3 rounded-2xl text-xs"
+              >
+                Volver al inicio
+              </button>
+            </div>
+          );
+        }
         return (
           <div className="flex min-h-full flex-col items-center justify-center text-center space-y-4 py-8">
             {deliveryPhase === 'tracking' && <>{renderDeliveryTracking()}{renderRiderProfileCard()}</>}
@@ -10643,9 +10688,9 @@
                 <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-2">
                   <i data-lucide="check-circle" className="w-10 h-10"></i>
                 </div>
-                <h2 className="font-title text-2xl font-bold">¡Pedido en marcha!</h2>
+                <h2 className="font-title text-2xl font-bold">¡Un repartidor aceptó tu pedido!</h2>
                 <p className="text-xs text-gray-500 max-w-[250px]">
-                  {`Tu orden #${liveOrderId || 'UPCH-8492'} está siendo preparada. Estará lista en 5 minutos.`}
+                  {`${assignedRider?.name || 'El repartidor'} aceptó tu orden #${liveOrderId || 'UPCH-8492'}.`}
                 </p>
 
                 <div className="bg-cream/50 border border-cream p-4 rounded-2xl w-full text-left space-y-2">
@@ -10658,8 +10703,8 @@
                     <span className="font-bold">{pickupPoint}</span>
                   </div>
                   <div className="flex justify-between text-xs">
-                    <span className="text-gray-500">Tiempo estimado:</span>
-                    <span className="font-bold text-green-600">5 minutos</span>
+                    <span className="text-gray-500">Repartidor:</span>
+                    <span className="font-bold text-green-600">{assignedRider?.name || 'Asignado'}</span>
                   </div>
                 </div>
 
