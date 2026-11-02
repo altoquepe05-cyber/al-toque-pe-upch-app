@@ -9833,7 +9833,7 @@
         if (!orderConfirmed || !deliveryProgressKey) return null;
         try {
           const savedProgress = JSON.parse(localStorage.getItem(deliveryProgressKey) || 'null');
-          if (!savedProgress || savedProgress.orderId !== liveOrderId) return null;
+          if (!savedProgress || savedProgress.orderId !== liveOrderId || !Number.isFinite(savedProgress.startedAt)) return null;
           if (savedProgress.phase !== 'tracking' || !Number.isFinite(savedProgress.startedAt)) return null;
           const elapsed = Math.max(0, Math.min(Date.now() - savedProgress.startedAt, deliveryDuration));
           return { phase: 'tracking', elapsed, startedAt: savedProgress.startedAt };
@@ -9929,8 +9929,10 @@
                 setDeliveryPhase('idle');
                 setDeliveryElapsed(0);
               }
-              clearDeliveryProgress();
-              if (status === 'available') return;
+              if (status === 'available') {
+                clearDeliveryProgress();
+                return;
+              }
             } else if (status === 'picked_up') {
               const savedProgress = readSavedDeliveryProgress();
               const hadStartedTracking = Boolean(savedProgress?.startedAt || deliveryStartedAtRef.current);
