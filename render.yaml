@@ -21,7 +21,19 @@ services:
         sync: false
       - key: REELS_DELETE_PASSWORD
         sync: false
-      - key: RESEND_API_KEY
+      - key: GMAIL_CLIENT_ID
         sync: false
-      - key: EMAIL_FROM
+      - key: GMAIL_CLIENT_SECRET
+        sync: false
+      - key: GMAIL_REFRESH_TOKEN
+        sync: false
+      - key: GMAIL_USER
+        sync: false
+      - key: MARKETING_PROVIDER
+        value: hubspot
+      - key: HUBSPOT_ACCESS_TOKEN
+        sync: false
+      - key: HUBSPOT_LIST_ID
+        value: "9"
+      - key: HUBSPOT_SUBSCRIPTION_ID
         sync: false

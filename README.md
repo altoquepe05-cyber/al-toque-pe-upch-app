@@ -10,11 +10,37 @@ las rutas `/api`; no se puede alojar como una pagina estatica en GitHub Pages.
 - Copia `.env.example` a `.env` para configurar integraciones opcionales.
 - Define `REELS_DELETE_PASSWORD` con una clave privada para habilitar la
   eliminacion de Reels. Sin ella, esa operacion falla de forma cerrada.
-- Para enviar la confirmacion de suscripcion a recomendaciones, configura
-  `RESEND_API_KEY` y `EMAIL_FROM` con una clave de Resend y una direccion de
-  remitente cuyo dominio este verificado. La clave permanece solo en el
-  servidor. Sin ambas variables, el envio responde con un error visible y no
-  activa la casilla.
+- La casilla de recomendaciones registra el consentimiento en HubSpot y añade
+  el contacto a la lista configurada. Los secretos permanecen solo en el
+  servidor; si la integración falla, la casilla no se activa.
+
+### Suscripciones de marketing con HubSpot
+
+La página de HubSpot compartida es un correo normal ya enviado; los nuevos
+suscriptores no pueden añadirse retroactivamente a ese envío. Con la integración
+actual, la aplicación registra el contacto, su consentimiento y su pertenencia a
+la lista 9. No envía correos automáticamente.
+
+Configura en Render `MARKETING_PROVIDER=hubspot`, `HUBSPOT_ACCESS_TOKEN`,
+`HUBSPOT_LIST_ID=9` y `HUBSPOT_SUBSCRIPTION_ID`. El token requiere el alcance
+`communication_preferences.read_write` para las preferencias, además de los
+alcances CRM para contactos y listas. El ID de suscripción identifica el tipo
+de correo para el que el contacto otorgó consentimiento. Configura el token
+directamente en Render; no lo guardes en Git ni lo compartas por chat. La lista
+debe permitir agregar contactos mediante la API.
+
+Para obtener los IDs de los tipos de suscripción, consulta
+`GET https://api.hubapi.com/communication-preferences/v4/definitions` con
+`Authorization: Bearer <HUBSPOT_ACCESS_TOKEN>`. Sin autorización, HubSpot
+responde `401`. Selecciona el tipo de marketing correspondiente en la
+respuesta (`results[].id`) y asígnalo a `HUBSPOT_SUBSCRIPTION_ID`. La aplicación
+actualiza el estado usando `POST
+/communication-preferences/v4/statuses/{email}` con el canal `EMAIL` y la base
+legal de consentimiento explícito.
+
+Gmail OAuth sigue disponible como proveedor alternativo para la confirmación
+simple: configura `MARKETING_PROVIDER=gmail` y las credenciales descritas en
+`.env.example`. Esa opción no agrega contactos a HubSpot.
 
 ## Persistencia gratuita con Supabase
 
@@ -31,9 +57,13 @@ Configura estas variables en el servidor:
   ni en el navegador.
 - `REELS_DELETE_PASSWORD`: contraseña privada para habilitar la eliminación
   de Reels.
-- `RESEND_API_KEY`: clave privada de Resend para los correos de confirmacion.
-- `EMAIL_FROM`: remitente de Resend con dominio verificado, por ejemplo
-  `Al Toque Pe <hola@tudominio.pe>`.
+- `HUBSPOT_ACCESS_TOKEN`: token privado para la integración con HubSpot.
+- `HUBSPOT_LIST_ID`: ID de la lista de contactos del workflow.
+- `HUBSPOT_SUBSCRIPTION_ID`: ID del tipo de suscripción de correo.
+- `MARKETING_PROVIDER`: `hubspot` para gestionar altas en HubSpot o `gmail` para
+  enviar confirmaciones por Gmail OAuth.
+- `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN` y `GMAIL_USER`:
+  credenciales opcionales para el proveedor Gmail.
 
 El plan gratuito de Supabase tiene límites de base de datos y archivos; consulta
 https://supabase.com/pricing. Los videos se limitan a 50 MiB para ajustarse al
@@ -43,9 +73,9 @@ límite del bucket gratuito definido en `supabase/schema.sql`.
 
 `render.yaml` configura un servicio web Free sin disco persistente y usa
 Supabase para conservar pedidos y Reels. Al crear el Blueprint, Render pedirá
-`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` y `REELS_DELETE_PASSWORD`; ingresa
-los valores directamente en Render. No los compartas por chat ni los guardes en
-Git.
+`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `REELS_DELETE_PASSWORD`,
+`HUBSPOT_ACCESS_TOKEN` y `HUBSPOT_SUBSCRIPTION_ID`; ingresa los valores
+directamente en Render. No los compartas por chat ni los guardes en Git.
 
 Render Free puede dormir cuando no recibe tráfico y los proyectos gratuitos de
 Supabase pueden pausarse tras una semana sin actividad. Los historiales y

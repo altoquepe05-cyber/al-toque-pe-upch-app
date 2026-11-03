@@ -21,8 +21,14 @@ const TURN_URL = process.env.TURN_URL || '';
 const TURN_USER = process.env.TURN_USER || '';
 const TURN_PASS = process.env.TURN_PASS || '';
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || '';
-const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
-const EMAIL_FROM = process.env.EMAIL_FROM || '';
+const GMAIL_CLIENT_ID = process.env.GMAIL_CLIENT_ID || '';
+const GMAIL_CLIENT_SECRET = process.env.GMAIL_CLIENT_SECRET || '';
+const GMAIL_REFRESH_TOKEN = process.env.GMAIL_REFRESH_TOKEN || '';
+const GMAIL_USER = process.env.GMAIL_USER || '';
+const MARKETING_PROVIDER = process.env.MARKETING_PROVIDER || 'gmail';
+const HUBSPOT_ACCESS_TOKEN = process.env.HUBSPOT_ACCESS_TOKEN || '';
+const HUBSPOT_LIST_ID = process.env.HUBSPOT_LIST_ID || '';
+const HUBSPOT_SUBSCRIPTION_ID = process.env.HUBSPOT_SUBSCRIPTION_ID || '';
 const KERAS_API_URL = process.env.KERAS_API_URL || 'http://127.0.0.1:5000/preguntar';
 const DATA_DIR = resolve(APP_DIR, process.env.DATA_DIR || 'data');
 const ORDERS_FILE = join(DATA_DIR, 'orders.json');
@@ -1065,7 +1071,56 @@ async function handleReelsRequest(request, response, requestUrl, reels, persistR
   }
 }
 
-async function handleRequest(request, response, orders, idempotencyKeys, callSessions, orderChats, persistOrders, notifyOrderChange, youtubeApiKey, openAIApiKey, resendApiKey, emailFrom, fetchImpl, reels, persistReels, reelsVideosDir, reelsDeletePassword, videoStorage, maxVideoBytes) {
+async function addHubSpotMarketingSubscriber(email, accessToken, listId, subscriptionId, fetchImpl) {
+  const hubspotRequest = async (path, method, body) => {
+    let response;
+    try {
+      response = await fetchImpl(`https://api.hubapi.com${path}`, {
+        method,
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+        signal: AbortSignal.timeout(10_000)
+      });
+    } catch (error) {
+      const requestError = new Error('No se pudo conectar con HubSpot.');
+      requestError.cause = error;
+      throw requestError;
+    }
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const requestError = new Error(`HubSpot respondió con HTTP ${response.status}.`);
+      requestError.status = response.status;
+      throw requestError;
+    }
+    return payload;
+  };
+
+  let contact;
+  try {
+    contact = await hubspotRequest('/crm/v3/objects/contacts', 'POST', { properties: { email } });
+  } catch (error) {
+    if (error.status !== 409) throw error;
+    contact = await hubspotRequest(`/crm/v3/objects/contacts/${encodeURIComponent(email)}?idProperty=email`, 'GET');
+  }
+  if (typeof contact.id !== 'string' || !contact.id) {
+    throw new Error('HubSpot no devolvió el identificador del contacto.');
+  }
+
+  await hubspotRequest(`/communication-preferences/v4/statuses/${encodeURIComponent(email)}`, 'POST', {
+    subscriptionId: Number(subscriptionId),
+    statusState: 'SUBSCRIBED',
+    legalBasis: 'CONSENT_WITH_NOTICE',
+    legalBasisExplanation: 'The contact opted in through the Al Toque profile page.',
+    channel: 'EMAIL'
+  });
+  await hubspotRequest(`/crm/v3/lists/${encodeURIComponent(listId)}/memberships/add`, 'PUT', [contact.id]);
+}
+
+async function handleRequest(request, response, orders, idempotencyKeys, callSessions, orderChats, persistOrders, notifyOrderChange, youtubeApiKey, openAIApiKey, gmailClientId, gmailClientSecret, gmailRefreshToken, gmailUser, marketingProvider, hubspotAccessToken, hubspotListId, hubspotSubscriptionId, fetchImpl, reels, persistReels, reelsVideosDir, reelsDeletePassword, videoStorage, maxVideoBytes) {
   const requestUrl = new URL(request.url || '/', `http://${request.headers.host}`);
 
   if (requestUrl.pathname === '/api/reels' || requestUrl.pathname.startsWith('/api/reels/')) {
@@ -1075,11 +1130,20 @@ async function handleRequest(request, response, orders, idempotencyKeys, callSes
 
   if (request.method === 'POST' && requestUrl.pathname === '/api/marketing/subscribe') {
     if (!sameOrigin(request)) return json(response, 403, { error: 'Origen de solicitud no permitido.' });
-    if (!resendApiKey || !emailFrom) {
-      return json(response, 503, { error: 'El envío de correos aún no está configurado. Inténtalo más tarde.' });
-    }
-    if (!rateLimit(request, marketingEmailRateLimits, 3, 10 * 60_000)) {
-      return json(response, 429, { error: 'Se enviaron varias solicitudes de correo. Espera unos minutos e inténtalo de nuevo.' });
+    if (marketingProvider === 'hubspot') {
+      if (!hubspotAccessToken || !/^\d+$/.test(hubspotListId) || !/^\d+$/.test(hubspotSubscriptionId)
+        || !Number.isSafeInteger(Number(hubspotSubscriptionId)) || Number(hubspotSubscriptionId) < 1) {
+        return json(response, 503, { error: 'La integración de suscripciones con HubSpot no está configurada. Inténtalo más tarde.' });
+      }
+    } else if (marketingProvider === 'gmail') {
+      if (!gmailClientId || !gmailClientSecret || !gmailRefreshToken || !gmailUser) {
+        return json(response, 503, { error: 'El envío de correos aún no está configurado. Inténtalo más tarde.' });
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(gmailUser)) {
+        return json(response, 503, { error: 'La cuenta de Gmail remitente no está configurada correctamente.' });
+      }
+    } else {
+      return json(response, 503, { error: 'El proveedor de suscripciones no está configurado correctamente.' });
     }
     let body;
     try {
@@ -1089,34 +1153,91 @@ async function handleRequest(request, response, orders, idempotencyKeys, callSes
     }
     const email = typeof body?.email === 'string' ? body.email.trim() : '';
     if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return json(response, 400, { error: 'Ingresa un correo electrónico válido para recibir la confirmación.' });
+      return json(response, 400, { error: 'Ingresa un correo electrónico válido.' });
+    }
+    if (!rateLimit(request, marketingEmailRateLimits, 3, 10 * 60_000)) {
+      return json(response, 429, { error: 'Se enviaron varias solicitudes de suscripción. Espera unos minutos e inténtalo de nuevo.' });
     }
 
-    let resendResponse;
+    if (marketingProvider === 'hubspot') {
+      try {
+        await addHubSpotMarketingSubscriber(email, hubspotAccessToken, hubspotListId, hubspotSubscriptionId, fetchImpl);
+      } catch (error) {
+        console.error('No se pudo registrar la suscripción de marketing en HubSpot:', error.status || error.message);
+        return json(response, 502, { error: 'No se pudo registrar tu suscripción en HubSpot. Inténtalo de nuevo más tarde.' });
+      }
+      return json(response, 200, { registered: true, provider: 'hubspot' });
+    }
+
+    let accessToken;
     try {
-      resendResponse = await fetchImpl('https://api.resend.com/emails', {
+      const tokenResponse = await fetchImpl('https://oauth2.googleapis.com/token', {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${resendApiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          from: emailFrom,
-          to: [email],
-          subject: 'Te inscribiste a Al Toque Pe',
-          text: '¡Estás inscrito a Al Toque Pe! Confirmamos que activaste la opción para recibir recomendaciones y promociones. Este correo confirma tu selección.',
-          html: '<h1>¡Estás inscrito a Al Toque Pe!</h1><p>Confirmamos que activaste la opción para recibir recomendaciones y promociones.</p><p>Este correo confirma tu selección.</p>'
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          client_id: gmailClientId,
+          client_secret: gmailClientSecret,
+          refresh_token: gmailRefreshToken,
+          grant_type: 'refresh_token'
         }),
         signal: AbortSignal.timeout(10_000)
       });
+      const tokenResult = await tokenResponse.json().catch(() => ({}));
+      if (!tokenResponse.ok || typeof tokenResult.access_token !== 'string') {
+        console.error('Google OAuth rechazó la autorización para enviar correo:', tokenResponse.status, tokenResult.error_description || tokenResult.error || 'sin detalles');
+        return json(response, 502, { error: 'No se pudo autorizar el envío del correo. Revisa la configuración de Gmail e inténtalo más tarde.' });
+      }
+      accessToken = tokenResult.access_token;
     } catch (error) {
-      console.error('No se pudo conectar con Resend para enviar la confirmación de suscripción:', error.message);
+      console.error('No se pudo conectar con Google OAuth para enviar la confirmación de suscripción:', error.message);
       return json(response, 502, { error: 'No se pudo enviar el correo de confirmación. Inténtalo de nuevo más tarde.' });
     }
 
-    if (!resendResponse.ok) {
-      const errorDetails = await resendResponse.json().catch(() => ({}));
-      console.error('Resend rechazó el correo de confirmación:', resendResponse.status, errorDetails.message || errorDetails.name || 'sin detalles');
+    const subject = 'Te inscribiste a Al Toque Pe';
+    const text = '¡Estás inscrito a Al Toque Pe! Confirmamos que activaste la opción para recibir recomendaciones y promociones. Este correo confirma tu selección.';
+    const html = '<h1>¡Estás inscrito a Al Toque Pe!</h1><p>Confirmamos que activaste la opción para recibir recomendaciones y promociones.</p><p>Este correo confirma tu selección.</p>';
+    const boundary = `al-toque-${randomUUID()}`;
+    const encodeMimeBody = (value) => Buffer.from(value).toString('base64').match(/.{1,76}/g).join('\r\n');
+    const mimeMessage = [
+      `From: Al Toque Pe <${gmailUser}>`,
+      `To: ${email}`,
+      `Subject: =?UTF-8?B?${Buffer.from(subject).toString('base64')}?=`,
+      'MIME-Version: 1.0',
+      `Content-Type: multipart/alternative; boundary="${boundary}"`,
+      '',
+      `--${boundary}`,
+      'Content-Type: text/plain; charset=UTF-8',
+      'Content-Transfer-Encoding: base64',
+      '',
+      encodeMimeBody(text),
+      `--${boundary}`,
+      'Content-Type: text/html; charset=UTF-8',
+      'Content-Transfer-Encoding: base64',
+      '',
+      encodeMimeBody(html),
+      `--${boundary}--`
+    ].join('\r\n');
+    const raw = Buffer.from(mimeMessage).toString('base64url');
+
+    let gmailResponse;
+    try {
+      gmailResponse = await fetchImpl('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ raw }),
+        signal: AbortSignal.timeout(10_000)
+      });
+    } catch (error) {
+      console.error('No se pudo conectar con Gmail para enviar la confirmación de suscripción:', error.message);
+      return json(response, 502, { error: 'No se pudo enviar el correo de confirmación. Inténtalo de nuevo más tarde.' });
+    }
+
+    if (!gmailResponse.ok) {
+      const errorDetails = await gmailResponse.json().catch(() => ({}));
+      console.error('Gmail rechazó el correo de confirmación:', gmailResponse.status, errorDetails.error?.message || 'sin detalles');
       return json(response, 502, { error: 'No se pudo enviar el correo de confirmación. Revisa tu dirección e inténtalo más tarde.' });
     }
     return json(response, 200, { sent: true });
@@ -1912,8 +2033,14 @@ export function createAlToqueServer({
   reelsDeletePassword = REELS_DELETE_PASSWORD,
   youtubeApiKey = YOUTUBE_API_KEY,
   openAIApiKey = process.env.OPENAI_API_KEY,
-  resendApiKey = RESEND_API_KEY,
-  emailFrom = EMAIL_FROM,
+  gmailClientId = GMAIL_CLIENT_ID,
+  gmailClientSecret = GMAIL_CLIENT_SECRET,
+  gmailRefreshToken = GMAIL_REFRESH_TOKEN,
+  gmailUser = GMAIL_USER,
+  marketingProvider = MARKETING_PROVIDER,
+  hubspotAccessToken = HUBSPOT_ACCESS_TOKEN,
+  hubspotListId = HUBSPOT_LIST_ID,
+  hubspotSubscriptionId = HUBSPOT_SUBSCRIPTION_ID,
   fetchImpl = fetch,
   persistenceStore
 } = {}) {
@@ -2056,8 +2183,14 @@ export function createAlToqueServer({
       notifyOrderChange,
       youtubeApiKey,
       openAIApiKey,
-      resendApiKey,
-      emailFrom,
+      gmailClientId,
+      gmailClientSecret,
+      gmailRefreshToken,
+      gmailUser,
+      marketingProvider,
+      hubspotAccessToken,
+      hubspotListId,
+      hubspotSubscriptionId,
       fetchImpl,
       reels,
       persistReels,

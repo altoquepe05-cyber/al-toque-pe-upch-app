@@ -12373,7 +12373,9 @@
             salesUpdates: true,
             salesUpdatesConsentAt: Date.now()
           }));
-          setMarketingEmailStatus('¡Listo! Te enviamos un correo para confirmar tu inscripción a Al Toque Pe.');
+          setMarketingEmailStatus(payload.provider === 'hubspot'
+            ? '¡Listo! Registramos tu suscripción a recomendaciones y promociones.'
+            : '¡Listo! Te enviamos un correo para confirmar tu inscripción a Al Toque Pe.');
         } catch (error) {
           setMarketingEmailError(error.message || 'No se pudo enviar el correo de confirmación.');
         } finally {
@@ -12751,7 +12753,7 @@
                 Quiero recibir recomendaciones y promociones de Al Toque.
               </label>
               <p id="sales-updates-feedback" className="text-[9px] leading-relaxed text-gray-500" aria-live="polite">
-                {isSendingMarketingConfirmation ? 'Enviando el correo de confirmación…' : marketingEmailError || marketingEmailStatus || 'Ingresa tu correo para recibir la confirmación.'}
+                {isSendingMarketingConfirmation ? 'Registrando tu suscripción…' : marketingEmailError || marketingEmailStatus || 'Ingresa tu correo para recibir recomendaciones y promociones.'}
               </p>
               <button type="button" onClick={affiliateProfile} disabled={!profile.privacyAccepted} className="w-full rounded-xl bg-brand text-white py-2.5 text-xs font-bold disabled:opacity-40">Afiliar mi perfil</button>
               <p className="text-[9px] text-gray-500">Puedes cambiar o borrar estos datos desde tu perfil cuando quieras.</p>

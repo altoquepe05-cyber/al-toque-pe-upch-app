@@ -45,20 +45,33 @@ test('serves the Reel watermark image as a public PNG asset', async (t) => {
   assert.equal(image.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
 });
 
-test('sends an opt-in confirmation through Resend without exposing provider credentials', async (t) => {
+test('sends an opt-in confirmation through Gmail OAuth without exposing provider credentials', async (t) => {
   const testDataDir = await createReelsTestDirectory();
-  const requestedEmails = [];
-  let resendStatus = 200;
+  const requestedCalls = [];
+  let gmailStatus = 200;
   const server = createAlToqueServer({
     ordersFile: join(testDataDir, 'orders.json'),
     reelsFile: join(testDataDir, 'reels.json'),
     reelsVideosDir: join(testDataDir, 'reels-videos'),
-    resendApiKey: 'test-resend-api-key',
-    emailFrom: 'Al Toque Pe <hola@example.com>',
+    gmailClientId: 'test-client-id',
+    gmailClientSecret: 'test-client-secret',
+    gmailRefreshToken: 'test-refresh-token',
+    gmailUser: 'sender@gmail.com',
     fetchImpl: async (url, options) => {
-      requestedEmails.push({ url: new URL(url), options, body: JSON.parse(options.body) });
-      return new Response(JSON.stringify(resendStatus === 200 ? { id: 'email-test-id' } : { message: 'Provider error details' }), {
-        status: resendStatus,
+      const requestUrl = new URL(url);
+      requestedCalls.push({ url: requestUrl, options });
+      if (requestUrl.hostname === 'oauth2.googleapis.com') {
+        return new Response(JSON.stringify({ access_token: 'test-access-token' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      const body = JSON.parse(options.body);
+      const mimeMessage = Buffer.from(body.raw, 'base64url').toString('utf8');
+      requestedCalls[requestedCalls.length - 1].body = body;
+      requestedCalls[requestedCalls.length - 1].mimeMessage = mimeMessage;
+      return new Response(JSON.stringify(gmailStatus === 200 ? { id: 'email-test-id' } : { error: { message: 'Provider error details' } }), {
+        status: gmailStatus,
         headers: { 'Content-Type': 'application/json' }
       });
     }
@@ -83,24 +96,89 @@ test('sends an opt-in confirmation through Resend without exposing provider cred
   const sentResponse = await subscribe(baseUrl, 'student@example.com');
   assert.equal(sentResponse.status, 200);
   assert.deepEqual(await sentResponse.json(), { sent: true });
-  assert.equal(requestedEmails[0].url.href, 'https://api.resend.com/emails');
-  assert.equal(requestedEmails[0].options.headers.Authorization, 'Bearer test-resend-api-key');
-  assert.deepEqual(requestedEmails[0].body.to, ['student@example.com']);
-  assert.equal(requestedEmails[0].body.from, 'Al Toque Pe <hola@example.com>');
-  assert.match(requestedEmails[0].body.subject, /Al Toque Pe/);
-  assert.match(requestedEmails[0].body.text, /Estás inscrito a Al Toque Pe/);
+  assert.equal(requestedCalls[0].url.href, 'https://oauth2.googleapis.com/token');
+  assert.equal(requestedCalls[0].options.headers['Content-Type'], 'application/x-www-form-urlencoded');
+  assert.equal(new URLSearchParams(requestedCalls[0].options.body).get('refresh_token'), 'test-refresh-token');
+  assert.equal(requestedCalls[1].url.href, 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send');
+  assert.equal(requestedCalls[1].options.headers.Authorization, 'Bearer test-access-token');
+  assert.match(requestedCalls[1].mimeMessage, /From: Al Toque Pe <sender@gmail\.com>/);
+  assert.match(requestedCalls[1].mimeMessage, /To: student@example\.com/);
+  assert.match(requestedCalls[1].mimeMessage, /Subject: =\?UTF-8\?B\?/);
+  const textPart = requestedCalls[1].mimeMessage.match(/Content-Type: text\/plain; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n([\s\S]*?)\r\n--/);
+  assert.ok(textPart);
+  assert.match(Buffer.from(textPart[1].replace(/\r\n/g, ''), 'base64').toString('utf8'), /Estás inscrito a Al Toque Pe/);
+  assert.match(requestedCalls[1].mimeMessage, /Content-Type: text\/html; charset=UTF-8/);
 
   const invalidEmailResponse = await subscribe(baseUrl, 'not-an-email');
   assert.equal(invalidEmailResponse.status, 400);
-  assert.equal(requestedEmails.length, 1);
+  assert.equal(requestedCalls.length, 2);
   const crossOriginResponse = await subscribe('https://malicious.example', 'student@example.com');
   assert.equal(crossOriginResponse.status, 403);
-  assert.equal(requestedEmails.length, 1);
+  assert.equal(requestedCalls.length, 2);
 
-  resendStatus = 422;
+  gmailStatus = 403;
   const providerFailureResponse = await subscribe(baseUrl, 'another-student@example.com');
   assert.equal(providerFailureResponse.status, 502);
   assert.match((await providerFailureResponse.json()).error, /No se pudo enviar el correo/);
+});
+
+test('registers marketing consent in HubSpot and adds the contact to the workflow list', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  const requestedCalls = [];
+  const server = createAlToqueServer({
+    ordersFile: join(testDataDir, 'orders.json'),
+    reelsFile: join(testDataDir, 'reels.json'),
+    reelsVideosDir: join(testDataDir, 'reels-videos'),
+    marketingProvider: 'hubspot',
+    hubspotAccessToken: 'test-hubspot-token',
+    hubspotListId: '9',
+    hubspotSubscriptionId: '123',
+    fetchImpl: async (url, options) => {
+      const requestUrl = new URL(url);
+      requestedCalls.push({ url: requestUrl, options });
+      const responseBody = requestUrl.pathname === '/crm/v3/objects/contacts'
+        ? { id: 'contact-123' }
+        : {};
+      return new Response(JSON.stringify(responseBody), {
+        status: requestUrl.pathname === '/crm/v3/objects/contacts' ? 201 : 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+  });
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  t.after(async () => {
+    await new Promise((resolve, reject) => {
+      server.close((error) => error ? reject(error) : resolve());
+    });
+    await rm(testDataDir, { recursive: true, force: true });
+  });
+
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const response = await fetch(`${baseUrl}/api/marketing/subscribe`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: baseUrl },
+    body: JSON.stringify({ email: 'student@example.com' })
+  });
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { registered: true, provider: 'hubspot' });
+  assert.equal(requestedCalls.length, 3);
+  assert.equal(requestedCalls[0].url.href, 'https://api.hubapi.com/crm/v3/objects/contacts');
+  assert.equal(requestedCalls[0].options.headers.Authorization, 'Bearer test-hubspot-token');
+  assert.deepEqual(JSON.parse(requestedCalls[0].options.body), { properties: { email: 'student@example.com' } });
+  assert.equal(requestedCalls[1].url.href, 'https://api.hubapi.com/communication-preferences/v4/statuses/student%40example.com');
+  assert.equal(requestedCalls[1].options.method, 'POST');
+  assert.deepEqual(JSON.parse(requestedCalls[1].options.body), {
+    subscriptionId: 123,
+    statusState: 'SUBSCRIBED',
+    legalBasis: 'CONSENT_WITH_NOTICE',
+    legalBasisExplanation: 'The contact opted in through the Al Toque profile page.',
+    channel: 'EMAIL'
+  });
+  assert.equal(requestedCalls[2].url.href, 'https://api.hubapi.com/crm/v3/lists/9/memberships/add');
+  assert.deepEqual(JSON.parse(requestedCalls[2].options.body), ['contact-123']);
 });
 
 test('does not activate marketing opt-in when email delivery is not configured', async (t) => {
@@ -109,8 +187,10 @@ test('does not activate marketing opt-in when email delivery is not configured',
     ordersFile: join(testDataDir, 'orders.json'),
     reelsFile: join(testDataDir, 'reels.json'),
     reelsVideosDir: join(testDataDir, 'reels-videos'),
-    resendApiKey: '',
-    emailFrom: ''
+    gmailClientId: '',
+    gmailClientSecret: '',
+    gmailRefreshToken: '',
+    gmailUser: ''
   });
   await new Promise((resolve, reject) => {
     server.once('error', reject);
