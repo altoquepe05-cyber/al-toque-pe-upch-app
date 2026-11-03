@@ -1775,11 +1775,17 @@
       height: 100%;
       z-index: 0;
     }
+    .live-route-map .leaflet-control-attribution {
+      max-width: calc(100% - 8px);
+      padding: 2px 4px;
+      font-size: 7px;
+      line-height: 1.2;
+    }
     .live-route-map-status {
       position: absolute;
       z-index: 500;
       left: 8px;
-      bottom: 8px;
+      top: 8px;
       max-width: calc(100% - 16px);
       border-radius: 999px;
       background: rgba(255,255,255,.94);
@@ -9867,17 +9873,17 @@
         destination.bindTooltip('UPCH · Entrega');
 
         const route = leaflet.polyline([start, end], {
-          color: '#ffffff',
-          weight: 12,
-          opacity: 0.95,
-          dashArray: '1 9',
+          color: '#24164b',
+          weight: 15,
+          opacity: 1,
+          dashArray: '1 15',
           lineCap: 'round'
         }).addTo(map);
         const routeLine = leaflet.polyline([start, end], {
-          color: '#1a73e8',
-          weight: 7,
+          color: '#5b20e8',
+          weight: 10,
           opacity: 1,
-          dashArray: '1 9',
+          dashArray: '1 15',
           lineCap: 'round'
         }).addTo(map);
         routeBoundsRef.current = leaflet.latLngBounds([start, end]);
@@ -9922,8 +9928,8 @@
             riderMarkerRef.current = leaflet.circleMarker(position, {
               radius: 9,
               color: '#ffffff',
-              weight: 3,
-              fillColor: '#201515',
+              weight: 2,
+              fillColor: '#5b20e8',
               fillOpacity: 1
             }).addTo(map);
           } else {
