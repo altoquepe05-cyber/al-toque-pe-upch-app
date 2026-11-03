@@ -13,8 +13,8 @@ las rutas `/api`; no se puede alojar como una pagina estatica en GitHub Pages.
 - La casilla de recomendaciones registra el consentimiento en HubSpot y añade
   el contacto a la lista configurada. Los secretos permanecen solo en el
   servidor; si la integración falla, la casilla no se activa.
-- Los mapas de recojo y entrega muestran cartografía de CARTO basada en
-  OpenStreetMap y la ubicación GPS del repartidor al confirmar el recojo. La
+- Los mapas de recojo y entrega muestran cartografía de calles de Esri y la
+  ubicación GPS del repartidor al confirmar el recojo. La
   ubicación se comparte en memoria con el cliente durante el pedido y se elimina
   al confirmar la entrega. El botón de navegación abre la ruta de Google Maps
   configurada en la interfaz.
