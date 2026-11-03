@@ -9721,6 +9721,28 @@
 
     const DELIVERY_ROUTE_START = [-12.1348222, -77.0260012];
     const DELIVERY_ROUTE_END = [-12.1341675, -77.0260721];
+    let deliveryRouteRequest = null;
+
+    function loadDeliveryRoute() {
+      if (!deliveryRouteRequest) {
+        const coordinates = `${DELIVERY_ROUTE_START[1]},${DELIVERY_ROUTE_START[0]};${DELIVERY_ROUTE_END[1]},${DELIVERY_ROUTE_END[0]}`;
+        deliveryRouteRequest = fetch(`https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=full&geometries=geojson&steps=false`)
+          .then(async (response) => {
+            if (!response.ok) throw new Error(`El servicio de rutas respondió ${response.status}.`);
+            const payload = await response.json();
+            const routeCoordinates = payload.routes?.[0]?.geometry?.coordinates;
+            if (payload.code !== 'Ok' || !Array.isArray(routeCoordinates) || routeCoordinates.length < 2) {
+              throw new Error('No se encontró una ruta vial entre el recojo y la entrega.');
+            }
+            return routeCoordinates.map(([longitude, latitude]) => [latitude, longitude]);
+          })
+          .catch((error) => {
+            deliveryRouteRequest = null;
+            throw error;
+          });
+      }
+      return deliveryRouteRequest;
+    }
 
     function LiveRouteMap({ location, className, label }) {
       const mapContainerRef = useRef(null);
@@ -9773,29 +9795,20 @@
         map.fitBounds(routeBoundsRef.current, { padding: [24, 24] });
         window.requestAnimationFrame(() => map.invalidateSize());
 
-        const controller = new AbortController();
-        const coordinates = `${start[1]},${start[0]};${end[1]},${end[0]}`;
-        fetch(`https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=full&geometries=geojson&steps=false`, {
-          signal: controller.signal
-        }).then(async (response) => {
-          if (!response.ok) throw new Error(`El servicio de rutas respondió ${response.status}.`);
-          const payload = await response.json();
-          const routeCoordinates = payload.routes?.[0]?.geometry?.coordinates;
-          if (payload.code !== 'Ok' || !Array.isArray(routeCoordinates) || routeCoordinates.length < 2) {
-            throw new Error('No se encontró una ruta vial entre el recojo y la entrega.');
-          }
-          const latLngs = routeCoordinates.map(([longitude, latitude]) => [latitude, longitude]);
+        let isMounted = true;
+        loadDeliveryRoute().then((latLngs) => {
+          if (!isMounted) return;
           route.setLatLngs(latLngs);
           routeBoundsRef.current = leaflet.latLngBounds(latLngs);
           map.fitBounds(routeBoundsRef.current, { padding: [24, 24] });
         }).catch((error) => {
-          if (error.name === 'AbortError') return;
+          if (!isMounted) return;
           console.error('No se pudo cargar el trazado vial de OpenStreetMap:', error);
           setMapError('No se pudo cargar el trazado vial; se muestra la ruta directa.');
         });
 
         return () => {
-          controller.abort();
+          isMounted = false;
           map.remove();
           mapRef.current = null;
           routeBoundsRef.current = null;
@@ -13012,7 +13025,25 @@
     }
 
     const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<App />);
+    root.render(
+      <>
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'fixed',
+            left: '-10000px',
+            top: 0,
+            width: '390px',
+            height: '300px',
+            opacity: 0,
+            pointerEvents: 'none'
+          }}
+        >
+          <LiveRouteMap location={null} className="delivery-map" label="Precarga del mapa de entregas" />
+        </div>
+        <App />
+      </>
+    );
   </script>
 </body>
 </html>
