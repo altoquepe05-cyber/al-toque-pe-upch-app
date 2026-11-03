@@ -1120,7 +1120,7 @@ async function addHubSpotMarketingSubscriber(email, accessToken, listId, subscri
   await hubspotRequest(`/crm/v3/lists/${encodeURIComponent(listId)}/memberships/add`, 'PUT', [contact.id]);
 }
 
-async function handleRequest(request, response, orders, idempotencyKeys, callSessions, orderChats, persistOrders, notifyOrderChange, youtubeApiKey, openAIApiKey, gmailClientId, gmailClientSecret, gmailRefreshToken, gmailUser, marketingProvider, hubspotAccessToken, hubspotListId, hubspotSubscriptionId, fetchImpl, reels, persistReels, reelsVideosDir, reelsDeletePassword, videoStorage, maxVideoBytes) {
+async function handleRequest(request, response, orders, riderLocations, idempotencyKeys, callSessions, orderChats, persistOrders, notifyOrderChange, youtubeApiKey, openAIApiKey, gmailClientId, gmailClientSecret, gmailRefreshToken, gmailUser, marketingProvider, hubspotAccessToken, hubspotListId, hubspotSubscriptionId, fetchImpl, reels, persistReels, reelsVideosDir, reelsDeletePassword, videoStorage, maxVideoBytes) {
   const requestUrl = new URL(request.url || '/', `http://${request.headers.host}`);
 
   if (requestUrl.pathname === '/api/reels' || requestUrl.pathname.startsWith('/api/reels/')) {
@@ -1525,7 +1525,7 @@ async function handleRequest(request, response, orders, idempotencyKeys, callSes
       paymentMethod: body.paymentMethod,
       subtotal: Number(subtotal.toFixed(2)),
       total: Number((subtotal + (isDemo || isGorritosOrder ? 0 : 1)).toFixed(2)),
-      payout: isDemo ? 0 : Number((Math.max(4.5, 4 + subtotal * 0.05)).toFixed(2)),
+      payout: isDemo ? 0 : items.reduce((sum, item) => sum + item.quantity, 0),
       status: 'available',
       createdAt: Date.now(),
       ...(isGorritosOrder ? { gorritosSpent } : {}),
@@ -1577,7 +1577,49 @@ async function handleRequest(request, response, orders, idempotencyKeys, callSes
   if (request.method === 'GET' && orderDetailsMatch) {
     const order = orders.get(orderDetailsMatch[1]);
     if (!order) return json(response, 404, { error: 'No se encontró el pedido.' });
-    return json(response, 200, { order });
+    const location = order.status === 'picked_up' ? riderLocations.get(order.id) : null;
+    return json(response, 200, {
+      order,
+      location: location && Date.now() - location.updatedAt <= 30_000 ? location : null
+    });
+  }
+
+  const orderLocationMatch = requestUrl.pathname.match(/^\/api\/orders\/([A-Z0-9-]+)\/location$/);
+  if (request.method === 'POST' && orderLocationMatch) {
+    if (!sameOrigin(request)) return json(response, 403, { error: 'Origen de solicitud no permitido.' });
+    let body;
+    try {
+      body = await readJson(request, 2_000);
+    } catch (error) {
+      return json(response, error.status || 400, { error: error.message });
+    }
+
+    const order = orders.get(orderLocationMatch[1]);
+    if (!order) return json(response, 404, { error: 'No se encontró el pedido.' });
+    if (!order.driverId || body.driverId !== order.driverId) {
+      return json(response, 403, { error: 'Solo el repartidor asignado puede compartir su ubicación.' });
+    }
+    if (order.status !== 'picked_up') {
+      return json(response, 409, { error: 'La ubicación se comparte únicamente después de confirmar el recojo.' });
+    }
+    if (!Number.isFinite(body.latitude) || body.latitude < -90 || body.latitude > 90
+      || !Number.isFinite(body.longitude) || body.longitude < -180 || body.longitude > 180
+      || !Number.isFinite(body.accuracy) || body.accuracy < 0 || body.accuracy > 10_000) {
+      return json(response, 400, { error: 'Las coordenadas o precisión GPS no son válidas.' });
+    }
+    const now = Date.now();
+    const previousLocation = riderLocations.get(order.id);
+    if (previousLocation && now - previousLocation.updatedAt < 1_000) {
+      return json(response, 429, { error: 'Espera un momento antes de enviar otra ubicación.' });
+    }
+    const location = {
+      latitude: body.latitude,
+      longitude: body.longitude,
+      accuracy: body.accuracy,
+      updatedAt: now
+    };
+    riderLocations.set(order.id, location);
+    return json(response, 200, { location });
   }
 
   const orderActionMatch = requestUrl.pathname.match(/^\/api\/orders\/([A-Z0-9-]+)\/action$/);
@@ -1628,6 +1670,7 @@ async function handleRequest(request, response, orders, idempotencyKeys, callSes
       updatedAt: transitionedAt
     };
     orders.set(order.id, updatedOrder);
+    if (body.action === 'deliver') riderLocations.delete(order.id);
     await persistOrders();
     notifyOrderChange('order.updated', updatedOrder);
     return json(response, 200, { order: updatedOrder });
@@ -2055,6 +2098,7 @@ export function createAlToqueServer({
     })
     : null);
   const orders = new Map();
+  const riderLocations = new Map();
   const idempotencyKeys = new Map();
   const callSessions = new Map();
   const orderChats = new Map();
@@ -2176,6 +2220,7 @@ export function createAlToqueServer({
       request,
       response,
       orders,
+      riderLocations,
       idempotencyKeys,
       callSessions,
       orderChats,

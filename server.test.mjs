@@ -1213,7 +1213,7 @@ test('shares customer orders with the rider queue and enforces delivery transiti
       customer: 'Armando',
       items: [{
         name: 'Iced Protein Matcha',
-        quantity: 1,
+        quantity: 2,
         price: 22,
         description: 'Bebida de matcha con proteína.',
         image: 'data:image/svg+xml;charset=UTF-8,%3Csvg%3E%3C%2Fsvg%3E'
@@ -1225,7 +1225,8 @@ test('shares customer orders with the rider queue and enforces delivery transiti
   assert.equal(orderResponse.status, 201);
   const { order } = await orderResponse.json();
   assert.equal(order.customer, 'Armando');
-  assert.equal(order.total, 23);
+  assert.equal(order.total, 45);
+  assert.equal(order.payout, 2);
   assert.equal(order.status, 'available');
   assert.equal(order.items[0].description, 'Bebida de matcha con proteína.');
   assert.equal(order.items[0].image, 'data:image/svg+xml;charset=UTF-8,%3Csvg%3E%3C%2Fsvg%3E');
@@ -1241,7 +1242,7 @@ test('shares customer orders with the rider queue and enforces delivery transiti
       customer: 'Armando',
       items: [{
         name: 'Iced Protein Matcha',
-        quantity: 1,
+        quantity: 2,
         price: 22,
         description: 'Bebida de matcha con proteína.',
         image: 'data:image/svg+xml;charset=UTF-8,%3Csvg%3E%3C%2Fsvg%3E'
@@ -1269,6 +1270,14 @@ test('shares customer orders with the rider queue and enforces delivery transiti
     },
     body: JSON.stringify({ action, ...details })
   });
+  const postRiderLocation = (details) => fetch(`${baseUrl}/api/orders/${order.id}/location`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Origin: baseUrl
+    },
+    body: JSON.stringify(details)
+  });
   const reviewOrder = (rating, comment) => fetch(`${baseUrl}/api/orders/${order.id}/review`, {
     method: 'POST',
     headers: {
@@ -1285,6 +1294,12 @@ test('shares customer orders with the rider queue and enforces delivery transiti
   assert.equal(acceptedOrderResponse.status, 200);
   assert.equal((await acceptedOrderResponse.json()).order.status, 'accepted');
   assert.equal((await postAction('deliver')).status, 409);
+  assert.equal((await postRiderLocation({
+    driverId: 'rider-armando',
+    latitude: -12.1345,
+    longitude: -77.026,
+    accuracy: 10
+  })).status, 409);
 
   const chatUrl = `${baseUrl}/api/orders/${order.id}/chat`;
   const customerMessage = {
@@ -1334,6 +1349,31 @@ test('shares customer orders with the rider queue and enforces delivery transiti
   const pickedUpOrder = (await pickupResponse.json()).order;
   assert.equal(pickedUpOrder.status, 'picked_up');
   assert.ok(Number.isFinite(pickedUpOrder.pickedUpAt));
+  assert.equal((await postRiderLocation({
+    driverId: 'another-rider',
+    latitude: -12.1345,
+    longitude: -77.026,
+    accuracy: 10
+  })).status, 403);
+  assert.equal((await postRiderLocation({
+    driverId: 'rider-armando',
+    latitude: 91,
+    longitude: -77.026,
+    accuracy: 10
+  })).status, 400);
+  const locationResponse = await postRiderLocation({
+    driverId: 'rider-armando',
+    latitude: -12.1345,
+    longitude: -77.026,
+    accuracy: 10
+  });
+  assert.equal(locationResponse.status, 200);
+  const { location } = await locationResponse.json();
+  assert.equal(location.latitude, -12.1345);
+  assert.equal(location.longitude, -77.026);
+  assert.ok(Number.isFinite(location.updatedAt));
+  const orderWithLocationResponse = await fetch(`${baseUrl}/api/orders/${order.id}`);
+  assert.deepEqual((await orderWithLocationResponse.json()).location, location);
   assert.equal((await reviewOrder(5, 'Muy amable')).status, 409);
   const deliveryResponse = await postAction('deliver');
   assert.equal(deliveryResponse.status, 200);
@@ -1342,6 +1382,8 @@ test('shares customer orders with the rider queue and enforces delivery transiti
   assert.ok(Number.isFinite(deliveredOrder.deliveredAt));
   assert.ok(deliveredOrder.deliveredAt >= pickedUpOrder.pickedUpAt);
   assert.equal((await postAction('deliver')).status, 409);
+  const deliveredOrderResponse = await fetch(`${baseUrl}/api/orders/${order.id}`);
+  assert.equal((await deliveredOrderResponse.json()).location, null);
   const reviewResponse = await reviewOrder(5, 'Muy amable y puntual');
   assert.equal(reviewResponse.status, 201);
   assert.equal((await reviewOrder(4, 'Otra opinión')).status, 409);
