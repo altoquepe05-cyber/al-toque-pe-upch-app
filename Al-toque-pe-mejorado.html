@@ -9723,18 +9723,64 @@
     const DELIVERY_ROUTE_END = [-12.1341675, -77.0260721];
     let deliveryRouteRequest = null;
 
+    function decodeValhallaPolyline(encodedShape) {
+      if (typeof encodedShape !== 'string' || !encodedShape) {
+        throw new Error('El servicio de rutas no devolvió la geometría del recorrido.');
+      }
+
+      let index = 0;
+      let latitude = 0;
+      let longitude = 0;
+      const coordinates = [];
+      const readDelta = () => {
+        let result = 0;
+        let shift = 0;
+        let byte;
+        do {
+          if (index >= encodedShape.length || shift > 30) {
+            throw new Error('La geometría de la ruta peatonal está incompleta.');
+          }
+          byte = encodedShape.charCodeAt(index++) - 63;
+          if (byte < 0 || byte > 63) throw new Error('La geometría de la ruta peatonal no es válida.');
+          result |= (byte & 0x1f) << shift;
+          shift += 5;
+        } while (byte >= 0x20);
+        return result & 1 ? ~(result >> 1) : result >> 1;
+      };
+
+      while (index < encodedShape.length) {
+        latitude += readDelta();
+        longitude += readDelta();
+        coordinates.push([latitude / 1e6, longitude / 1e6]);
+      }
+      if (coordinates.length < 2) throw new Error('La ruta peatonal no tiene suficientes puntos.');
+      return coordinates;
+    }
+
     function loadDeliveryRoute() {
       if (!deliveryRouteRequest) {
-        const coordinates = `${DELIVERY_ROUTE_START[1]},${DELIVERY_ROUTE_START[0]};${DELIVERY_ROUTE_END[1]},${DELIVERY_ROUTE_END[0]}`;
-        deliveryRouteRequest = fetch(`https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=full&geometries=geojson&steps=false`)
+        const request = {
+          locations: [
+            { lat: DELIVERY_ROUTE_START[0], lon: DELIVERY_ROUTE_START[1] },
+            { lat: DELIVERY_ROUTE_END[0], lon: DELIVERY_ROUTE_END[1] }
+          ],
+          costing: 'pedestrian',
+          units: 'kilometers',
+          shape_format: 'polyline6'
+        };
+        deliveryRouteRequest = fetch(`https://valhalla1.openstreetmap.de/route?json=${encodeURIComponent(JSON.stringify(request))}`)
           .then(async (response) => {
             if (!response.ok) throw new Error(`El servicio de rutas respondió ${response.status}.`);
             const payload = await response.json();
-            const routeCoordinates = payload.routes?.[0]?.geometry?.coordinates;
-            if (payload.code !== 'Ok' || !Array.isArray(routeCoordinates) || routeCoordinates.length < 2) {
-              throw new Error('No se encontró una ruta vial entre el recojo y la entrega.');
+            const routeShape = payload.trip?.legs?.[0]?.shape;
+            if (payload.trip?.status !== 0 || typeof routeShape !== 'string') {
+              throw new Error(payload.trip?.status_message || 'No se encontró una ruta peatonal entre el recojo y la entrega.');
             }
-            return routeCoordinates.map(([longitude, latitude]) => [latitude, longitude]);
+            return [
+              DELIVERY_ROUTE_START,
+              ...decodeValhallaPolyline(routeShape),
+              DELIVERY_ROUTE_END
+            ];
           })
           .catch((error) => {
             deliveryRouteRequest = null;
@@ -9787,9 +9833,18 @@
         destination.bindTooltip('UPCH · Entrega');
 
         const route = leaflet.polyline([start, end], {
-          color: '#a90000',
-          weight: 5,
-          opacity: 0.8
+          color: '#ffffff',
+          weight: 12,
+          opacity: 0.95,
+          dashArray: '1 9',
+          lineCap: 'round'
+        }).addTo(map);
+        const routeLine = leaflet.polyline([start, end], {
+          color: '#1a73e8',
+          weight: 7,
+          opacity: 1,
+          dashArray: '1 9',
+          lineCap: 'round'
         }).addTo(map);
         routeBoundsRef.current = leaflet.latLngBounds([start, end]);
         map.fitBounds(routeBoundsRef.current, { padding: [24, 24] });
@@ -9799,12 +9854,13 @@
         loadDeliveryRoute().then((latLngs) => {
           if (!isMounted) return;
           route.setLatLngs(latLngs);
+          routeLine.setLatLngs(latLngs);
           routeBoundsRef.current = leaflet.latLngBounds(latLngs);
           map.fitBounds(routeBoundsRef.current, { padding: [24, 24] });
         }).catch((error) => {
           if (!isMounted) return;
-          console.error('No se pudo cargar el trazado vial de OpenStreetMap:', error);
-          setMapError('No se pudo cargar el trazado vial; se muestra la ruta directa.');
+          console.error('No se pudo cargar el trazado peatonal:', error);
+          setMapError('No se pudo cargar el trazado peatonal; se muestra la ruta directa.');
         });
 
         return () => {
