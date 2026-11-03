@@ -387,8 +387,6 @@
       }
     };
   </script>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
   <script src="/vendor/react.development.js" defer></script>
   <script src="/vendor/react-dom.development.js" defer></script>
   <script src="/vendor/babel.min.js" defer></script>
@@ -1768,23 +1766,18 @@
       overflow: hidden;
       background: #e8e4db;
     }
-    .live-route-map-canvas {
+    .live-route-map-frame {
       position: absolute;
       inset: 0;
+      display: block;
       width: 100%;
       height: 100%;
-      z-index: 0;
-    }
-    .live-route-map .leaflet-control-attribution {
-      max-width: calc(100% - 8px);
-      padding: 2px 4px;
-      font-size: 7px;
-      line-height: 1.2;
+      border: 0;
     }
     .live-route-map-status {
       position: absolute;
-      z-index: 500;
-      left: 8px;
+      z-index: 2;
+      right: 8px;
       top: 8px;
       max-width: calc(100% - 16px);
       border-radius: 999px;
@@ -1797,7 +1790,7 @@
     }
     .live-route-map-error {
       position: absolute;
-      z-index: 500;
+      z-index: 2;
       top: 8px;
       left: 8px;
       max-width: calc(100% - 16px);
@@ -3109,7 +3102,7 @@
       border-radius: 20px;
       background: #e9e5dd;
     }
-    .rider-map .live-route-map-canvas { height: 100%; }
+    .rider-map .live-route-map-frame { height: 100%; }
     .rider-order-enter { animation: riderOrderIn .35s ease-out both; }
     @keyframes riderOrderIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
     .chat-message-meta {
@@ -9727,74 +9720,6 @@
 
     const DELIVERY_ROUTE_START = [-12.1348222, -77.0260012];
     const DELIVERY_ROUTE_END = [-12.1341675, -77.0260721];
-    let deliveryRouteRequest = null;
-
-    function decodeValhallaPolyline(encodedShape) {
-      if (typeof encodedShape !== 'string' || !encodedShape) {
-        throw new Error('El servicio de rutas no devolvió la geometría del recorrido.');
-      }
-
-      let index = 0;
-      let latitude = 0;
-      let longitude = 0;
-      const coordinates = [];
-      const readDelta = () => {
-        let result = 0;
-        let shift = 0;
-        let byte;
-        do {
-          if (index >= encodedShape.length || shift > 30) {
-            throw new Error('La geometría de la ruta peatonal está incompleta.');
-          }
-          byte = encodedShape.charCodeAt(index++) - 63;
-          if (byte < 0 || byte > 63) throw new Error('La geometría de la ruta peatonal no es válida.');
-          result |= (byte & 0x1f) << shift;
-          shift += 5;
-        } while (byte >= 0x20);
-        return result & 1 ? ~(result >> 1) : result >> 1;
-      };
-
-      while (index < encodedShape.length) {
-        latitude += readDelta();
-        longitude += readDelta();
-        coordinates.push([latitude / 1e6, longitude / 1e6]);
-      }
-      if (coordinates.length < 2) throw new Error('La ruta peatonal no tiene suficientes puntos.');
-      return coordinates;
-    }
-
-    function loadDeliveryRoute() {
-      if (!deliveryRouteRequest) {
-        const request = {
-          locations: [
-            { lat: DELIVERY_ROUTE_START[0], lon: DELIVERY_ROUTE_START[1] },
-            { lat: DELIVERY_ROUTE_END[0], lon: DELIVERY_ROUTE_END[1] }
-          ],
-          costing: 'pedestrian',
-          units: 'kilometers',
-          shape_format: 'polyline6'
-        };
-        deliveryRouteRequest = fetch(`https://valhalla1.openstreetmap.de/route?json=${encodeURIComponent(JSON.stringify(request))}`)
-          .then(async (response) => {
-            if (!response.ok) throw new Error(`El servicio de rutas respondió ${response.status}.`);
-            const payload = await response.json();
-            const routeShape = payload.trip?.legs?.[0]?.shape;
-            if (payload.trip?.status !== 0 || typeof routeShape !== 'string') {
-              throw new Error(payload.trip?.status_message || 'No se encontró una ruta peatonal entre el recojo y la entrega.');
-            }
-            return [
-              DELIVERY_ROUTE_START,
-              ...decodeValhallaPolyline(routeShape),
-              DELIVERY_ROUTE_END
-            ];
-          })
-          .catch((error) => {
-            deliveryRouteRequest = null;
-            throw error;
-          });
-      }
-      return deliveryRouteRequest;
-    }
 
     class LiveRouteMapErrorBoundary extends React.Component {
       state = { hasError: false };
@@ -9822,151 +9747,65 @@
     }
 
     function LiveRouteMap({ location, className, label }) {
-      const mapContainerRef = useRef(null);
-      const mapRef = useRef(null);
-      const routeBoundsRef = useRef(null);
-      const riderMarkerRef = useRef(null);
-      const traveledPathRef = useRef(null);
-      const traveledPointsRef = useRef([]);
-      const [mapError, setMapError] = useState('');
+      const lastMapOriginRef = useRef(null);
+      const [mapOrigin, setMapOrigin] = useState(DELIVERY_ROUTE_START);
+      const [mapError, setMapError] = useState(false);
 
       useEffect(() => {
-        const leaflet = window.L;
-        if (!leaflet || !mapContainerRef.current) {
-          setMapError('No se pudo cargar el mapa. Revisa tu conexión.');
-          return undefined;
-        }
+        if (!location || !Number.isFinite(location.latitude) || !Number.isFinite(location.longitude)) return;
 
-        let map;
-        try {
-          map = leaflet.map(mapContainerRef.current, { zoomControl: false, scrollWheelZoom: false });
-          mapRef.current = map;
-          leaflet.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
-            maxZoom: 19,
-            attribution: 'Tiles &copy; Esri, HERE, Garmin, &copy; OpenStreetMap contributors, and the GIS user community'
-          }).addTo(map);
-        } catch (error) {
-          console.error('No se pudo iniciar el mapa de seguimiento:', error);
-          map?.remove();
-          mapRef.current = null;
-          setMapError('El mapa no está disponible. El seguimiento del pedido continúa.');
-          return undefined;
-        }
+        const nextOrigin = { latitude: location.latitude, longitude: location.longitude, updatedAt: location.updatedAt || Date.now() };
+        const previousOrigin = lastMapOriginRef.current;
+        const distanceMeters = previousOrigin
+          ? 6371000 * 2 * Math.asin(Math.sqrt(
+            Math.sin(((nextOrigin.latitude - previousOrigin.latitude) * Math.PI) / 360) ** 2
+            + Math.cos((previousOrigin.latitude * Math.PI) / 180)
+              * Math.cos((nextOrigin.latitude * Math.PI) / 180)
+              * Math.sin(((nextOrigin.longitude - previousOrigin.longitude) * Math.PI) / 360) ** 2
+          ))
+          : Infinity;
 
-        const start = DELIVERY_ROUTE_START;
-        const end = DELIVERY_ROUTE_END;
-        const pickup = leaflet.circleMarker(start, {
-          radius: 8,
-          color: '#ffffff',
-          weight: 3,
-          fillColor: '#ed711b',
-          fillOpacity: 1
-        }).addTo(map);
-        pickup.bindTooltip('KOU-X · Recojo');
-        const destination = leaflet.circleMarker(end, {
-          radius: 8,
-          color: '#ffffff',
-          weight: 3,
-          fillColor: '#a90000',
-          fillOpacity: 1
-        }).addTo(map);
-        destination.bindTooltip('UPCH · Entrega');
-
-        const route = leaflet.polyline([start, end], {
-          color: '#24164b',
-          weight: 15,
-          opacity: 1,
-          dashArray: '1 15',
-          lineCap: 'round'
-        }).addTo(map);
-        const routeLine = leaflet.polyline([start, end], {
-          color: '#5b20e8',
-          weight: 10,
-          opacity: 1,
-          dashArray: '1 15',
-          lineCap: 'round'
-        }).addTo(map);
-        routeBoundsRef.current = leaflet.latLngBounds([start, end]);
-        map.fitBounds(routeBoundsRef.current, { padding: [24, 24] });
-        window.requestAnimationFrame(() => map.invalidateSize());
-
-        let isMounted = true;
-        loadDeliveryRoute().then((latLngs) => {
-          if (!isMounted) return;
-          route.setLatLngs(latLngs);
-          routeLine.setLatLngs(latLngs);
-          routeBoundsRef.current = leaflet.latLngBounds(latLngs);
-          map.fitBounds(routeBoundsRef.current, { padding: [24, 24] });
-        }).catch((error) => {
-          if (!isMounted) return;
-          console.error('No se pudo cargar el trazado peatonal:', error);
-          setMapError('No se pudo cargar el trazado peatonal; se muestra la ruta directa.');
-        });
-
-        return () => {
-          isMounted = false;
-          map.remove();
-          mapRef.current = null;
-          routeBoundsRef.current = null;
-          riderMarkerRef.current = null;
-          traveledPathRef.current = null;
-          traveledPointsRef.current = [];
-        };
-      }, []);
-
-      useEffect(() => {
-        const map = mapRef.current;
-        const leaflet = window.L;
-        if (!map || !leaflet || !location
-          || !Number.isFinite(location.latitude) || !Number.isFinite(location.longitude)) {
-          return;
-        }
-
-        try {
-          const position = [location.latitude, location.longitude];
-          if (!riderMarkerRef.current) {
-            riderMarkerRef.current = leaflet.circleMarker(position, {
-              radius: 9,
-              color: '#ffffff',
-              weight: 2,
-              fillColor: '#5b20e8',
-              fillOpacity: 1
-            }).addTo(map);
-          } else {
-            riderMarkerRef.current.setLatLng(position);
-          }
-          riderMarkerRef.current.bindTooltip(`Repartidor · precisión ±${Math.round(location.accuracy || 0)} m`);
-
-          const lastPosition = traveledPointsRef.current.at(-1);
-          if (!lastPosition || Math.abs(lastPosition[0] - position[0]) > 0.00001 || Math.abs(lastPosition[1] - position[1]) > 0.00001) {
-            traveledPointsRef.current = [...traveledPointsRef.current, position].slice(-300);
-            if (!traveledPathRef.current) {
-              traveledPathRef.current = leaflet.polyline(traveledPointsRef.current, {
-                color: '#ed711b',
-                weight: 4,
-                opacity: 0.9
-              }).addTo(map);
-            } else {
-              traveledPathRef.current.setLatLngs(traveledPointsRef.current);
-            }
-          }
-
-          const bounds = routeBoundsRef.current;
-          if (bounds && !bounds.pad(0.15).contains(position)) {
-            map.fitBounds(leaflet.latLngBounds([DELIVERY_ROUTE_START, DELIVERY_ROUTE_END, position]), { padding: [24, 24] });
-          }
-        } catch (error) {
-          console.error('No se pudo actualizar la ubicación en el mapa de seguimiento:', error);
-          setMapError('No se pudo actualizar el mapa. El seguimiento del pedido continúa.');
+        if (!previousOrigin || (distanceMeters >= 15 && nextOrigin.updatedAt - previousOrigin.updatedAt >= 10_000)) {
+          lastMapOriginRef.current = nextOrigin;
+          setMapOrigin([nextOrigin.latitude, nextOrigin.longitude]);
         }
       }, [location]);
 
+      const mapUrl = new URL('https://www.google.com/maps');
+      mapUrl.searchParams.set('output', 'embed');
+      mapUrl.searchParams.set('saddr', `${mapOrigin[0]},${mapOrigin[1]}`);
+      mapUrl.searchParams.set('daddr', `${DELIVERY_ROUTE_END[0]},${DELIVERY_ROUTE_END[1]}`);
+      mapUrl.searchParams.set('dirflg', 'w');
+      mapUrl.searchParams.set('hl', 'es');
+
+      const directionsUrl = new URL('https://www.google.com/maps/dir/');
+      directionsUrl.searchParams.set('api', '1');
+      directionsUrl.searchParams.set('origin', `${mapOrigin[0]},${mapOrigin[1]}`);
+      directionsUrl.searchParams.set('destination', `${DELIVERY_ROUTE_END[0]},${DELIVERY_ROUTE_END[1]}`);
+      directionsUrl.searchParams.set('travelmode', 'walking');
+
       return (
-        <div className={`live-route-map ${className}`} role="img" aria-label={label}>
-          <div ref={mapContainerRef} className="live-route-map-canvas" />
-          {!location && <span className="live-route-map-status">Esperando señal GPS del repartidor</span>}
-          {location && <span className="live-route-map-status">GPS en vivo · ±{Math.round(location.accuracy || 0)} m</span>}
-          {mapError && <span className="live-route-map-error" role="status">{mapError}</span>}
+        <div className={`live-route-map ${className}`}>
+          <iframe
+            className="live-route-map-frame"
+            src={mapUrl.toString()}
+            title={label}
+            loading="eager"
+            referrerPolicy="strict-origin-when-cross-origin"
+            allowFullScreen
+            onError={() => {
+              console.error('Google Maps no pudo cargar el mapa de seguimiento.');
+              setMapError(true);
+            }}
+          />
+          <span className="live-route-map-status" role="status">
+            {location ? `GPS en vivo · ±${Math.round(location.accuracy || 0)} m` : 'Ruta de Google Maps · Esperando GPS'}
+          </span>
+          {mapError && (
+            <a className="live-route-map-error" href={directionsUrl.toString()} target="_blank" rel="noopener noreferrer">
+              No se pudo cargar el mapa · Abrir ruta en Google Maps
+            </a>
+          )}
         </div>
       );
     }
