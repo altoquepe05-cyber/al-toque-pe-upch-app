@@ -1428,34 +1428,26 @@
     .campus-service-highlight {
       position: relative;
       display: inline-block;
+      isolation: isolate;
+      padding: 0 0.1em;
+      color: #54162b;
+      text-shadow: 0 1px rgba(255, 255, 255, 0.35);
       text-transform: uppercase;
       animation: campusServiceWordPulse 1.8s ease-in-out infinite;
     }
 
-    .campus-service-highlight::before,
-    .campus-service-highlight::after {
-      position: absolute;
-      top: -0.18em;
-      color: #ffe28a;
-      font-family: 'Coiny', 'Outfit', sans-serif;
-      font-size: 0.72em;
-      line-height: 1;
-      opacity: 0;
-      pointer-events: none;
-      animation: campusServiceQuotePop 1.8s ease-out infinite;
-    }
-
     .campus-service-highlight::before {
-      left: -0.58em;
-      content: "“";
-      transform-origin: bottom right;
-    }
-
-    .campus-service-highlight::after {
-      right: -0.58em;
-      content: "”";
-      animation-delay: 180ms;
-      transform-origin: bottom left;
+      position: absolute;
+      z-index: -1;
+      inset: 12% -0.06em;
+      border-radius: 0.18em;
+      background: linear-gradient(110deg, #f5bd3f, #ffe28a 48%, #f5bd3f);
+      box-shadow: 0 2px 8px rgba(56, 23, 18, 0.2);
+      pointer-events: none;
+      content: "";
+      transform: scaleX(0.18) rotate(-1deg);
+      transform-origin: left center;
+      animation: campusServiceGoldHighlight 1.8s ease-in-out infinite;
     }
 
     @keyframes campusServiceWordPulse {
@@ -1463,14 +1455,10 @@
       45% { transform: scale(1.09); }
     }
 
-    @keyframes campusServiceQuotePop {
-      0%, 100% { opacity: 0; transform: translateX(0) scale(0.65); }
-      24%, 58% { opacity: 1; }
-      76% { opacity: 0; transform: translateX(var(--quote-outward, 0)) scale(1.12); }
+    @keyframes campusServiceGoldHighlight {
+      0%, 100% { opacity: 0.72; transform: scaleX(0.18) rotate(-1deg); }
+      45% { opacity: 1; transform: scaleX(1) rotate(0); }
     }
-
-    .campus-service-highlight::before { --quote-outward: -5px; }
-    .campus-service-highlight::after { --quote-outward: 5px; }
 
     .campus-service-card::before {
       position: absolute;
