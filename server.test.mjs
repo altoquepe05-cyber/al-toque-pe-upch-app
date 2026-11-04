@@ -392,6 +392,7 @@ test('animates the walking rider from the first blue point through the route to 
   assert.match(html, /walkingStartedAt=\{step === 1 && riderDetails\.vehicle === 'Caminando'\s*\?\s*activeOrder\?\.routeStartedAt \|\| activeOrder\?\.pickedUpAt\s*:\s*null\}/);
   assert.match(html, /label=\{`Ruta en vivo del pedido \$\{activeOrder\?\.id \|\| ''\}`\}\s*walkingStartedAt=\{step === 1 && riderDetails\.vehicle === 'Caminando'/);
   assert.match(html, /\.delivery-map \.walking-route-character\s*\{\s*width:\s*clamp\(56px, 16%, 70px\)/);
+  assert.match(html, /\.rider-map \.walking-route-character\s*\{\s*width:\s*clamp\(56px, 16%, 70px\)/);
   assert.match(html, /\.walking-route-character\s*\{[\s\S]*?width:\s*clamp\(34px, 12%, 48px\)/);
   assert.match(html, /walkingStartedAt=\{step === 1 && riderDetails\.vehicle === 'Caminando'[\s\S]{0,240}?allowMapInteraction\s*walkingRoutePoints=\{RIDER_WALKING_ROUTE_POINTS\}/);
   assert.match(html, /function getWalkingRoutePosition\(progress, routePoints = WALKING_ROUTE_POINTS\)/);
