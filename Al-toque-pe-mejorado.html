@@ -865,6 +865,37 @@
       transition: transform 360ms ease, filter 360ms ease;
     }
 
+    .menu-popular-badge {
+      isolation: isolate;
+      overflow: hidden;
+      border: 1px solid rgba(197, 164, 92, 0.42);
+      box-shadow: 0 2px 8px rgba(43, 23, 24, 0.12);
+      animation: popularBadgeGlow 6.8s ease-in-out infinite;
+    }
+
+    .menu-popular-badge::after {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      inset: -50% auto -50% -75%;
+      width: 48%;
+      background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.88), rgba(255, 232, 175, 0.55), transparent);
+      transform: translateX(0) rotate(16deg);
+      animation: popularBadgeSheen 6.8s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes popularBadgeGlow {
+      0%, 72%, 100% { border-color: rgba(197, 164, 92, 0.34); box-shadow: 0 2px 7px rgba(43, 23, 24, 0.1); }
+      82% { border-color: rgba(197, 164, 92, 0.78); box-shadow: 0 3px 11px rgba(197, 164, 92, 0.24); }
+    }
+
+    @keyframes popularBadgeSheen {
+      0%, 70% { opacity: 0; transform: translateX(0) rotate(16deg); }
+      76% { opacity: 0.8; }
+      92%, 100% { opacity: 0; transform: translateX(390%) rotate(16deg); }
+    }
+
     .home-menu-card:nth-child(2) { animation-delay: 650ms; }
     .home-menu-card:nth-child(3) { animation-delay: 1300ms; }
     .home-menu-card:nth-child(4) { animation-delay: 1950ms; }
@@ -1034,6 +1065,11 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
+      .menu-popular-badge,
+      .menu-popular-badge::after {
+        animation: none !important;
+      }
+
       .home-menu-card,
       .home-menu-card::after,
       .home-menu-card-media,
@@ -8261,7 +8297,7 @@
                 <div key={dish.id} className="home-menu-card min-w-[220px] bg-white border border-gray-100 rounded-3xl p-2.5 shadow-sm flex flex-col justify-between">
                   <div className="home-menu-card-media relative h-28 rounded-2xl">
                     <img src={dish.image} alt={dish.name} className="home-menu-card-image w-full h-full object-cover" />
-                    <span className="absolute top-2 left-2 bg-white/90 backdrop-blur-md text-[10px] font-bold px-2 py-0.5 rounded-full text-dark">{dish.badge}</span>
+                    <span className={`absolute top-2 left-2 bg-white/90 backdrop-blur-md text-[10px] font-bold px-2 py-0.5 rounded-full text-dark ${dish.isPopular ? 'menu-popular-badge' : ''}`}>{dish.badge}</span>
                   </div>
                   <div>
                     <div className="flex justify-between items-start">
@@ -8294,7 +8330,7 @@
                 <div key={dish.id} className="home-menu-card combo-card min-w-[220px] bg-white border border-gray-100 rounded-3xl p-2.5 shadow-sm flex flex-col justify-between">
                   <div className="home-menu-card-media relative h-36 rounded-2xl">
                       <img src={dish.image} alt={dish.name} className="home-menu-card-image combo-card-image w-full h-full object-cover" />
-                    <span className="absolute top-2 left-2 bg-white/90 backdrop-blur-md text-[10px] font-bold px-2 py-0.5 rounded-full text-dark">{dish.badge}</span>
+                    <span className={`absolute top-2 left-2 bg-white/90 backdrop-blur-md text-[10px] font-bold px-2 py-0.5 rounded-full text-dark ${dish.isPopular ? 'menu-popular-badge' : ''}`}>{dish.badge}</span>
                   </div>
                   <div>
                     <div className="flex justify-between items-start">
@@ -8557,7 +8593,7 @@
                 <div key={dish.id} className="menu-pop-card bg-white border border-gray-100 rounded-3xl p-3 shadow-sm space-y-2">
                   <div className="menu-pop-media relative h-36 rounded-2xl">
                     <img src={dish.image} alt={dish.name} className="menu-pop-image w-full h-full rounded-2xl object-cover" />
-                    <span className="absolute top-2 left-2 bg-white/90 backdrop-blur-md text-[10px] font-bold px-2.5 py-0.5 rounded-full text-dark">{dish.badge}</span>
+                    <span className={`absolute top-2 left-2 bg-white/90 backdrop-blur-md text-[10px] font-bold px-2.5 py-0.5 rounded-full text-dark ${dish.isPopular ? 'menu-popular-badge' : ''}`}>{dish.badge}</span>
                   </div>
                   <div>
                     <div className="flex justify-between items-center gap-2">
