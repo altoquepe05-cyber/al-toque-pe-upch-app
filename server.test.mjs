@@ -382,11 +382,17 @@ test('animates the walking rider from the first blue point through the route to 
   assert.match(html, /window\.cancelAnimationFrame\(animationFrame\)/);
   assert.doesNotMatch(html, /setInterval\(updateProgress,\s*1000\)/);
   assert.match(html, /\.walking-route-locked\s+\.live-route-map-frame\s*\{\s*pointer-events:\s*none;/);
-  assert.match(html, /isWalkingAnimationActive\s*\?\s*' walking-route-locked'/);
-  assert.match(html, /tabIndex=\{isWalkingAnimationActive \? -1 : undefined\}/);
+  assert.match(html, /isMapInteractionLocked\s*\?\s*' walking-route-locked'/);
+  assert.match(html, /tabIndex=\{isMapInteractionLocked \? -1 : undefined\}/);
   assert.match(html, /Ruta fija a pie · 5 min/);
+  assert.match(html, /allowMapInteraction \? 'Ruta a pie · 5 min' : 'Ruta fija a pie · 5 min'/);
+  assert.match(html, /function LiveRouteMap\(\{ location, className, label, walkingStartedAt = null, allowMapInteraction = false \}\)/);
+  assert.match(html, /walkingStartedAt=\{step === 1 && riderDetails\.vehicle === 'Caminando'\s*\?\s*activeOrder\?\.routeStartedAt \|\| activeOrder\?\.pickedUpAt\s*:\s*null\}/);
+  assert.match(html, /label=\{`Ruta en vivo del pedido \$\{activeOrder\?\.id \|\| ''\}`\}\s*walkingStartedAt=\{step === 1 && riderDetails\.vehicle === 'Caminando'/);
+  assert.match(html, /allowMapInteraction\s*\/>/);
+  assert.match(html, /const isMapInteractionLocked = isWalkingAnimationActive && !allowMapInteraction/);
   assert.match(html, /Date\.now\(\) - walkingStartedAt\) \/ DELIVERY_DURATION_MS/);
-  assert.match(html, /isWalkingAnimationActive\s*\?\s*'Ruta fija a pie · 5 min'/);
+  assert.match(html, /isWalkingAnimationActive\s*\?\s*allowMapInteraction \? 'Ruta a pie · 5 min' : 'Ruta fija a pie · 5 min'/);
 });
 
 test('shows the matching order received animation for each assigned rider transport', async (t) => {

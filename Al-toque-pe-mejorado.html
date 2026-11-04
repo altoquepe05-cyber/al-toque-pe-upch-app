@@ -9917,12 +9917,13 @@
       }
     }
 
-    function LiveRouteMap({ location, className, label, walkingStartedAt = null }) {
+    function LiveRouteMap({ location, className, label, walkingStartedAt = null, allowMapInteraction = false }) {
       const lastMapOriginRef = useRef(null);
       const walkingCharacterRef = useRef(null);
       const [mapOrigin, setMapOrigin] = useState(DELIVERY_ROUTE_START);
       const [mapError, setMapError] = useState(false);
       const isWalkingAnimationActive = Number.isFinite(walkingStartedAt) && walkingStartedAt > 0;
+      const isMapInteractionLocked = isWalkingAnimationActive && !allowMapInteraction;
 
       useEffect(() => {
         if (isWalkingAnimationActive) {
@@ -9981,14 +9982,14 @@
       directionsUrl.searchParams.set('destination', `${DELIVERY_ROUTE_END[0]},${DELIVERY_ROUTE_END[1]}`);
       directionsUrl.searchParams.set('travelmode', 'walking');
       return (
-        <div className={`live-route-map ${className}${isWalkingAnimationActive ? ' walking-route-locked' : ''}`}>
+        <div className={`live-route-map ${className}${isMapInteractionLocked ? ' walking-route-locked' : ''}`}>
           <iframe
             className="live-route-map-frame"
             src={mapUrl.toString()}
             title={label}
             loading="eager"
             referrerPolicy="strict-origin-when-cross-origin"
-            tabIndex={isWalkingAnimationActive ? -1 : undefined}
+            tabIndex={isMapInteractionLocked ? -1 : undefined}
             allowFullScreen
             onError={() => {
               console.error('Google Maps no pudo cargar el mapa de seguimiento.');
@@ -10006,7 +10007,7 @@
           )}
           <span className="live-route-map-status" role="status">
             {isWalkingAnimationActive
-              ? 'Ruta fija a pie · 5 min'
+              ? allowMapInteraction ? 'Ruta a pie · 5 min' : 'Ruta fija a pie · 5 min'
               : location ? `GPS en vivo · ±${Math.round(location.accuracy || 0)} m` : 'Ruta de Google Maps · Esperando GPS'}
           </span>
           {mapError && (
@@ -12344,6 +12345,10 @@
             location={step > 0 ? riderLiveLocation || activeOrder?.riderLocation : null}
             className="rider-map"
             label={`Ruta en vivo del pedido ${activeOrder?.id || ''}`}
+            walkingStartedAt={step === 1 && riderDetails.vehicle === 'Caminando'
+              ? activeOrder?.routeStartedAt || activeOrder?.pickedUpAt
+              : null}
+            allowMapInteraction
           />
         </LiveRouteMapErrorBoundary>
       );
