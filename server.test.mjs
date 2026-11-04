@@ -372,7 +372,7 @@ test('animates the home menu cards with a glowing outline and honors reduced mot
   assert.match(html, /\.home-menu-card\s*\{[^}]*animation:\s*homeMenuCardGlow 5\.8s ease-in-out infinite;/);
   assert.match(html, /\.home-menu-card::after\s*\{[^}]*z-index:\s*0;[^}]*border:\s*1px solid rgba\(197, 164, 92, 0\.32\)/);
   assert.match(html, /\.home-menu-card > \* \{\s*position: relative;\s*z-index: 1;\s*\}/);
-  assert.match(html, /\.home-menu-card-media\s*\{[^}]*margin:\s*0 0 8px;[^}]*overflow:\s*visible;/);
+  assert.match(html, /\.home-menu-card-media\s*\{[^}]*margin:\s*0 12px 8px;[^}]*overflow:\s*visible;/);
   assert.match(html, /\.home-menu-card \.combo-card-image\s*\{[^}]*animation:\s*homeMenuImageEnter 520ms ease-out both;/);
   assert.match(html, /@keyframes homeMenuImageEnter\s*\{\s*from \{ opacity: 0\.7; \}\s*to \{ opacity: 1; \}\s*\}/);
   assert.equal((html.match(/overflow-x-auto no-scrollbar py-6 -mx-4 px-6/g) || []).length, 2);
