@@ -96,7 +96,7 @@ test('shows the Miraflores delivery schedule and updates its status using Lima t
   assert.match(html, /@keyframes campusLocationLogoFloat[\s\S]*?50% \{ transform: translateY\(-2px\) rotate\(1deg\); \}/);
   assert.match(html, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.campus-service-location-logo \{ animation: none; \}\s*\}/);
   assert.match(html, /\.campus-service-highlight\s*\{[^}]*animation: campusServiceWordPulse 1\.8s ease-in-out infinite;/);
-  assert.match(html, /\.campus-service-highlight\s*\{[^}]*color: #54162b;[^}]*text-shadow:/);
+  assert.match(html, /\.campus-service-highlight\s*\{[^}]*color: #fff;[^}]*text-shadow:/);
   assert.match(html, /\.campus-service-highlight::before\s*\{[^}]*background: linear-gradient\(110deg, #f5bd3f, #ffe28a 48%, #f5bd3f\);[^}]*animation: campusServiceGoldHighlight 1\.8s ease-in-out infinite;/);
   assert.match(html, /@keyframes campusServiceGoldHighlight[\s\S]*?45% \{ opacity: 1; transform: scaleX\(1\) rotate\(0\); \}/);
   assert.doesNotMatch(html, /campusServiceQuotePop|content: "“"|content: "”"/);
