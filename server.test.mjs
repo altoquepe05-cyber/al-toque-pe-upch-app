@@ -90,6 +90,16 @@ test('shows the Miraflores delivery schedule and updates its status using Lima t
   }
 
   assert.match(html, /className=\{`campus-service-card \$\{serviceStatus\.state === 'online' \? 'campus-service-card--online' : 'campus-service-card--offline'\} \$\{isServiceCardExpanded \? 'campus-service-card--expanded' : ''\}`\}/);
+  assert.match(html, /className="home-feature-carousel" aria-label="Información del campus" aria-roledescription="carrusel"/);
+  assert.match(html, /setHomeCarousel\(\(carousel\) => \(\{[\s\S]*?active: \(carousel\.active \+ 1\) % 3,[\s\S]*?exiting: carousel\.active[\s\S]*?\}, 30000\);/);
+  assert.match(html, /setHomeCarousel\(\(carousel\) => \(\{ \.\.\.carousel, exiting: null \}\)\)[\s\S]*?\}, 700\);/);
+  assert.match(html, /\.home-feature-slide\s*\{[^}]*transform: translateX\(100%\);[^}]*visibility: hidden;/);
+  assert.match(html, /\.home-feature-slide--exit-left\s*\{[^}]*transform: translateX\(-100%\);/);
+  assert.match(html, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.home-feature-slide--active,[\s\S]*?\.home-feature-slide--exit-left\s*\{\s*transition: none;/);
+  assert.match(html, /homeCarousel\.active === 2[\s\S]*?aria-hidden=\{homeCarousel\.active !== 2\}[\s\S]*?className="home-luxury-card"[\s\S]*?aria-label="Tarjeta motivadora de Al Toque IA"/);
+  assert.match(html, /homeCarousel\.exiting === 2 \? 'home-feature-slide--exit-left'/);
+  assert.equal((html.match(/className=\{`home-feature-slide /g) || []).length, 3,
+    'the carousel should contain the delivery, mood, and Al Toque AI slides');
   assert.match(html, /Delivery de <span className="campus-service-highlight">COMIDA<\/span> para estudiantes del campus de\{' '\}\s*<img\s+src="\/miraflores-logo-transparent\.png\?v=3"\s+alt="Miraflores"\s+className="campus-service-location-logo"/);
   assert.match(html, /\.campus-service-location-logo\s*\{[^}]*height: 2\.5em;[^}]*max-width: 42vw;/);
   assert.match(html, /\.campus-service-location-logo\s*\{[^}]*filter: drop-shadow\(0 1px 0 #fff\)[^}]*animation: campusLocationLogoFloat/);
@@ -113,13 +123,13 @@ test('shows the Miraflores delivery schedule and updates its status using Lima t
   assert.ok(html.indexOf("timeString || 'LUNES, 12:38 P. M.'") < html.indexOf('aria-label={`Servicio de delivery: ${serviceStatus.label}`}'),
     'the date and time should appear above the campus service card');
   assert.ok(html.indexOf('aria-label={`Servicio de delivery: ${serviceStatus.label}`}') < html.indexOf('>Lo más pedido</h3>'),
-    'the popular dishes section should appear directly after the campus service card');
-  assert.ok(html.indexOf('>Lo más pedido</h3>') < html.indexOf('className="home-headline-message'),
-    'the popular dishes section should appear before the home headline');
+    'the carousel should appear above the popular dishes section');
+  assert.ok(html.indexOf('className="home-headline-message') < html.indexOf('aria-label="Tarjeta motivadora de Al Toque IA"'),
+    'the mood message should appear before the Al Toque AI slide');
+  assert.ok(html.indexOf('aria-label="Tarjeta motivadora de Al Toque IA"') < html.indexOf('>Lo más pedido</h3>'),
+    'the Al Toque AI card should be the third carousel slide above the popular dishes');
   assert.ok(html.indexOf('>Lo más pedido</h3>') < html.indexOf('>Combos que rinden</h3>'),
     'the combos section should appear after popular dishes');
-  assert.ok(html.indexOf('>Combos que rinden</h3>') < html.indexOf('className="home-headline-message'),
-    'the combos section should appear before the home headline');
   assert.match(html, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.campus-service-highlight::before,[\s\S]*?\.campus-service-highlight::after\s*\{\s*animation: none !important;\s*transition: none !important;/);
 });
 
