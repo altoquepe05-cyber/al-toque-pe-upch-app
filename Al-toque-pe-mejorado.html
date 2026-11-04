@@ -4861,6 +4861,23 @@
       'Bebidas Frías',
       'Shaken Espresso'
     ];
+    const STARBUCKS_CAMPAIGN_END_TIME = 1793854740000;
+    const STARBUCKS_CAMPAIGN_BANNER = 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/genericfiles/bebidas%20holidayst-1120x400%20%282%29.png';
+    const STARBUCKS_UPCOMING_PROMOTIONS = [
+      { name: 'Panettone Latte', imagePosition: 58 },
+      { name: 'Panettone de Chocolate Frappuccino', description: 'Bebida mezclada', imagePosition: 68 },
+      { name: 'Panettone Latte Frío', imagePosition: 83 },
+      { name: 'Matcha Latte Frío con Cold Foam de Panettone', imagePosition: 98 }
+    ];
+
+    function formatStarbucksCountdown(remainingMs) {
+      const totalSeconds = Math.ceil(Math.max(0, remainingMs) / 1000);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      return `${String(hours).padStart(2, '0')} h : ${String(minutes).padStart(2, '0')} min : ${String(seconds).padStart(2, '0')} s`;
+    }
+
     const STARBUCKS_PRODUCT_SOURCE = [
       ['Bebidas Proteicas', 'Iced Protein Matcha', 22],
       ['Bebidas Proteicas', 'Protein Matcha', 22],
@@ -8463,6 +8480,23 @@
       const [filter, setFilter] = useState('todos');
       const [searchQuery, setSearchQuery] = useState('');
       const [showSearch, setShowSearch] = useState(false);
+      const [showStarbucksCampaign, setShowStarbucksCampaign] = useState(false);
+      const [campaignClock, setCampaignClock] = useState(() => Date.now());
+
+      useEffect(() => {
+        if (!showStarbucksCampaign) return undefined;
+        const countdownInterval = window.setInterval(() => setCampaignClock(Date.now()), 1000);
+        return () => window.clearInterval(countdownInterval);
+      }, [showStarbucksCampaign]);
+
+      useEffect(() => {
+        if (!showStarbucksCampaign) return undefined;
+        const handleEscape = (event) => {
+          if (event.key === 'Escape') setShowStarbucksCampaign(false);
+        };
+        window.addEventListener('keydown', handleEscape);
+        return () => window.removeEventListener('keydown', handleEscape);
+      }, [showStarbucksCampaign]);
 
       const filteredItems = INITIAL_MENU.filter((item) => {
         const matchesCategory = filter === 'todos' || item.category === filter;
@@ -8477,6 +8511,12 @@
         { id: 'combos', label: 'Combos', count: INITIAL_MENU.filter((item) => item.category === 'combos').length },
         { id: 'bebidas', label: 'Bebidas', count: INITIAL_MENU.filter((item) => item.category === 'bebidas').length }
       ];
+      const matchingUpcomingPromotions = STARBUCKS_UPCOMING_PROMOTIONS.filter((product) => {
+        const query = searchQuery.trim().toLocaleLowerCase('es');
+        return !query || `${product.name} ${product.description || ''}`.toLocaleLowerCase('es').includes(query);
+      });
+      const campaignRemainingMs = Math.max(0, STARBUCKS_CAMPAIGN_END_TIME - campaignClock);
+      const campaignHasStarted = campaignRemainingMs === 0;
 
       return (
         <div className="space-y-4">
@@ -8517,8 +8557,12 @@
             </button>
             <button
               type="button"
-              onClick={() => setFilter('starbucks')}
-              aria-label={`Promos Starbucks: ${STARBUCKS_PRODUCTS.length} elementos`}
+              onClick={() => {
+                setFilter('starbucks');
+                setCampaignClock(Date.now());
+                setShowStarbucksCampaign(true);
+              }}
+              aria-label={`Promos Starbucks: ${STARBUCKS_PRODUCTS.length + STARBUCKS_UPCOMING_PROMOTIONS.length} elementos`}
               aria-pressed={filter === 'starbucks'}
               className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition ${
                 filter === 'starbucks' ? 'bg-[#006241] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -8526,7 +8570,7 @@
             >
               Promos Starbucks
               <span className={`ml-1.5 text-[10px] font-medium ${filter === 'starbucks' ? 'text-white/70' : 'text-gray-500'}`}>
-                {STARBUCKS_PRODUCTS.length}
+                {STARBUCKS_PRODUCTS.length + STARBUCKS_UPCOMING_PROMOTIONS.length}
               </span>
             </button>
           </div>
@@ -8626,6 +8670,38 @@
           ) : filter === 'starbucks' ? (
             <section className="space-y-5" aria-labelledby="starbucks-menu-title">
               <h3 id="starbucks-menu-title" className="sr-only">Bebidas Starbucks</h3>
+              {matchingUpcomingPromotions.length > 0 && (
+                <section className="space-y-3" aria-labelledby="starbucks-upcoming-title">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <h3 id="starbucks-upcoming-title" className="font-title text-lg font-bold">Fiestas de Panettone</h3>
+                      <p className="text-[11px] text-gray-500">Nuevas bebidas de temporada</p>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-[#dcefe8] px-2.5 py-1 text-[10px] font-bold text-[#1e3932]">Próximamente</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    {matchingUpcomingPromotions.map((product) => (
+                      <article key={product.name} className="menu-pop-card menu-pop-card--compact flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[#ead4d9] bg-white shadow-sm">
+                        <div
+                          className="aspect-[4/3] w-full bg-[#a80f3d] bg-no-repeat"
+                          style={{
+                            backgroundImage: `url("${STARBUCKS_CAMPAIGN_BANNER}")`,
+                            backgroundPosition: `${product.imagePosition}% center`,
+                            backgroundSize: '500% auto'
+                          }}
+                          role="img"
+                          aria-label={`Bebida de temporada: ${product.name}`}
+                        />
+                        <div className="flex flex-1 flex-col gap-2 p-2.5">
+                          <h4 className="text-xs font-bold leading-snug text-dark">{product.name}</h4>
+                          {product.description && <p className="text-[10px] text-gray-500">{product.description}</p>}
+                          <span className="mt-auto inline-flex w-fit rounded-full bg-[#f7e9ed] px-2 py-1 text-[9px] font-extrabold uppercase tracking-wide text-[#9b1238]">Próximamente</span>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              )}
               {STARBUCKS_MENU_CATEGORIES.map((category) => {
                 const query = searchQuery.trim().toLocaleLowerCase('es');
                 const products = STARBUCKS_PRODUCTS.filter((product) =>
@@ -8683,7 +8759,7 @@
               {STARBUCKS_PRODUCTS.filter((product) => {
                 const query = searchQuery.trim().toLocaleLowerCase('es');
                 return !query || `${product.name} ${product.description}`.toLocaleLowerCase('es').includes(query);
-              }).length === 0 && (
+              }).length === 0 && matchingUpcomingPromotions.length === 0 && (
                 <p className="rounded-2xl bg-gray-50 p-4 text-center text-xs text-gray-500">No encontramos bebidas Starbucks que coincidan con la búsqueda.</p>
               )}
             </section>
@@ -8734,6 +8810,68 @@
               );
             })}
           </div>
+          )}
+          {showStarbucksCampaign && (
+            <div
+              className="fixed inset-0 z-[120] flex items-center justify-center bg-[#162b25]/70 p-3 backdrop-blur-sm"
+              onMouseDown={(event) => {
+                if (event.target === event.currentTarget) setShowStarbucksCampaign(false);
+              }}
+            >
+              <section
+                className="w-full max-w-[850px] max-h-[calc(100vh-24px)] space-y-3 overflow-y-auto rounded-[24px] bg-white p-4 shadow-2xl sm:p-5"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="starbucks-campaign-title"
+              >
+                <header className="flex items-center justify-between gap-2 border-b border-gray-100 pb-2">
+                  <h2 id="starbucks-campaign-title" className="flex-1 text-center text-sm font-bold text-[#343434]">
+                    {campaignHasStarted ? '¡Ya llegó la temporada de Panettone!' : '¡Algo nuevo está por llegar a Starbucks!'}
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => setShowStarbucksCampaign(false)}
+                    aria-label="Cerrar anuncio de Starbucks"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-700 transition hover:bg-gray-100"
+                  >
+                    <i data-lucide="x" className="h-5 w-5"></i>
+                  </button>
+                </header>
+                <div className="relative overflow-hidden rounded-2xl bg-[#a80f3d]">
+                  <img
+                    src={STARBUCKS_CAMPAIGN_BANNER}
+                    alt="Fiestas de Panettone: cuatro nuevas bebidas Starbucks"
+                    className="aspect-[2.8/1] w-full object-cover"
+                  />
+                  <span className="absolute left-3 top-3 rounded-full bg-[#dcefe8] px-3 py-1 text-[10px] font-bold text-[#1e3932]">
+                    {campaignHasStarted ? '¡Ya llegó!' : 'Próximamente'}
+                  </span>
+                </div>
+                <div className="flex justify-center">
+                  <span
+                    className="rounded-full bg-[#ffc400] px-4 py-2 text-sm font-extrabold tabular-nums text-[#1e3932]"
+                    aria-label={campaignHasStarted ? 'El lanzamiento ya comenzó' : `Tiempo para el lanzamiento: ${formatStarbucksCountdown(campaignRemainingMs)}`}
+                  >
+                    {formatStarbucksCountdown(campaignRemainingMs)}
+                  </span>
+                </div>
+                <h3 className="text-center font-title text-lg font-extrabold text-[#252525]">
+                  {campaignHasStarted ? '¡Nuevas bebidas de temporada!' : '¡Algo nuevo está por llegar a Starbucks!'}
+                </h3>
+                <p className="rounded-xl bg-gray-100 px-4 py-3 text-center text-xs leading-relaxed text-gray-600">
+                  {campaignHasStarted
+                    ? 'El lanzamiento ya comenzó. Pronto actualizaremos los precios de estas bebidas.'
+                    : 'La magia de esta temporada llegó en forma de nuevas bebidas. ¡Encuentra tu próximo favorito!'}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowStarbucksCampaign(false)}
+                  className="w-full rounded-full bg-[#1e3932] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#142b25]"
+                >
+                  Entendido
+                </button>
+              </section>
+            </div>
           )}
         </div>
       );

@@ -427,6 +427,41 @@ test('animates the home menu cards with a glowing outline and honors reduced mot
   assert.match(html, /\.home-menu-card,\s*\.home-menu-card::after,\s*\.home-menu-card-media,\s*\.home-menu-card-image\s*\{\s*animation: none !important;\s*transition: none !important;/);
 });
 
+test('shows the Starbucks Panettone launch modal and upcoming items without prices', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  const server = await createReelsTestServer(t, testDataDir);
+  const response = await fetch(`http://127.0.0.1:${server.address().port}/`);
+  const html = await response.text();
+  const promotionsStart = html.indexOf('const STARBUCKS_UPCOMING_PROMOTIONS = [');
+  const promotionsEnd = html.indexOf('\n    ];', promotionsStart);
+  const upcomingPromotions = html.slice(promotionsStart, promotionsEnd);
+  const productCardsStart = html.indexOf('aria-labelledby="starbucks-upcoming-title"');
+  const productCardsEnd = html.indexOf('{STARBUCKS_MENU_CATEGORIES.map', productCardsStart);
+  const productCards = html.slice(productCardsStart, productCardsEnd);
+
+  assert.equal(response.status, 200);
+  assert.match(html, /const STARBUCKS_CAMPAIGN_END_TIME = 1793854740000;/);
+  assert.match(html, /function formatStarbucksCountdown\(remainingMs\)/);
+  assert.match(html, /if \(!showStarbucksCampaign\) return undefined;\s*const countdownInterval = window\.setInterval\(\(\) => setCampaignClock\(Date\.now\(\)\), 1000\)/);
+  assert.match(html, /setFilter\('starbucks'\);\s*setCampaignClock\(Date\.now\(\)\);\s*setShowStarbucksCampaign\(true\);/);
+  assert.match(html, /role="dialog"\s*aria-modal="true"\s*aria-labelledby="starbucks-campaign-title"/);
+  assert.match(html, /bebidas%20holidayst-1120x400%20%282%29\.png/);
+  assert.ok(promotionsStart >= 0 && promotionsEnd > promotionsStart, 'upcoming Starbucks promotions should be defined');
+  for (const product of [
+    'Panettone Latte',
+    'Panettone de Chocolate Frappuccino',
+    'Panettone Latte Frío',
+    'Matcha Latte Frío con Cold Foam de Panettone'
+  ]) {
+    assert.ok(upcomingPromotions.includes(product), `missing upcoming promotion: ${product}`);
+  }
+  assert.match(productCards, /\{matchingUpcomingPromotions\.map\(\(product\) =>/);
+  assert.match(productCards, /<h4 className="text-xs font-bold leading-snug text-dark">\{product\.name\}<\/h4>/);
+  assert.doesNotMatch(upcomingPromotions, /\bprice\s*:/, 'upcoming Starbucks products should not have prices');
+  assert.match(productCards, /Próximamente/);
+  assert.doesNotMatch(productCards, /onAddStarbucks|toFixed\(/, 'upcoming products should not be purchasable or display prices');
+});
+
 test('animates the walking rider from the first blue point through the route to the destination', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);
