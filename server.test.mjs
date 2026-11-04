@@ -304,6 +304,18 @@ test('preloads the order received animation when serving the application page', 
   assert.match(html, /<link rel="preload" href="\/pedido-recibido\.mp4" as="video" type="video\/mp4"\s*\/?>/);
 });
 
+test('shows the order received animation only when the assigned rider uses a motorcycle', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  const server = await createReelsTestServer(t, testDataDir);
+  const response = await fetch(`http://127.0.0.1:${server.address().port}/`);
+  const html = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(html, /const shouldShowArrivalVideo = isArrivalVisible && assignedRider\?\.vehicle === 'Moto';/);
+  assert.match(html, /\{shouldShowArrivalVideo && \(\s*<video\s+ref=\{arrivalVideoRef\}\s+src="\/pedido-recibido\.mp4"/);
+  assert.match(html, /if \(!shouldShowArrivalVideo \|\| !video\) return undefined;/);
+});
+
 test('shares only public rider profile fields with customers and persists updates', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);

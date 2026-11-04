@@ -10272,9 +10272,10 @@
       }, [deliveryPhase]);
 
       const isArrivalVisible = orderStatus === 'delivered' || deliveryPhase === 'arrived';
+      const shouldShowArrivalVideo = isArrivalVisible && assignedRider?.vehicle === 'Moto';
       useEffect(() => {
         const video = arrivalVideoRef.current;
-        if (!isArrivalVisible || !video) return undefined;
+        if (!shouldShowArrivalVideo || !video) return undefined;
         let lastPlayAttemptAt = 0;
         const ensurePlayback = () => {
           if (document.hidden || !video.isConnected || (!video.paused && !video.ended)) return;
@@ -10295,7 +10296,7 @@
           window.clearInterval(playbackTimer);
           document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-      }, [isArrivalVisible]);
+      }, [shouldShowArrivalVideo]);
 
       useEffect(() => {
         if (
@@ -10764,23 +10765,25 @@
             <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
           </div>
 
-          <video
-            ref={arrivalVideoRef}
-            src="/pedido-recibido.mp4"
-            autoPlay
-            muted
-            playsInline
-            preload="auto"
-            aria-label="Animación de la mascota celebrando la entrega"
-            className="arrival-mascot z-10"
-            onEnded={(event) => {
-              const video = event.currentTarget;
-              video.currentTime = 0;
-              video.play().catch((error) => {
-                console.error('No se pudo reiniciar la animación de entrega:', error);
-              });
-            }}
-          />
+          {shouldShowArrivalVideo && (
+            <video
+              ref={arrivalVideoRef}
+              src="/pedido-recibido.mp4"
+              autoPlay
+              muted
+              playsInline
+              preload="auto"
+              aria-label="Animación de la mascota celebrando la entrega"
+              className="arrival-mascot z-10"
+              onEnded={(event) => {
+                const video = event.currentTarget;
+                video.currentTime = 0;
+                video.play().catch((error) => {
+                  console.error('No se pudo reiniciar la animación de entrega:', error);
+                });
+              }}
+            />
+          )}
 
           <div className="space-y-2 z-10">
             <h2 className="font-title text-3xl font-bold text-dark">
