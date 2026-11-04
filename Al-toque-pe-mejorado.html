@@ -9916,9 +9916,9 @@
 
     function LiveRouteMap({ location, className, label, walkingStartedAt = null }) {
       const lastMapOriginRef = useRef(null);
+      const walkingCharacterRef = useRef(null);
       const [mapOrigin, setMapOrigin] = useState(DELIVERY_ROUTE_START);
       const [mapError, setMapError] = useState(false);
-      const [walkingProgress, setWalkingProgress] = useState(0);
       const isWalkingAnimationActive = Number.isFinite(walkingStartedAt) && walkingStartedAt > 0;
 
       useEffect(() => {
@@ -9947,17 +9947,21 @@
       }, [isWalkingAnimationActive, location]);
 
       useEffect(() => {
-        if (!isWalkingAnimationActive) {
-          setWalkingProgress(0);
-          return undefined;
-        }
+        if (!isWalkingAnimationActive) return undefined;
 
-        const updateProgress = () => setWalkingProgress(
-          Math.max(0, Math.min(1, (Date.now() - walkingStartedAt) / DELIVERY_DURATION_MS))
-        );
-        updateProgress();
-        const timer = window.setInterval(updateProgress, 1000);
-        return () => window.clearInterval(timer);
+        let animationFrame = 0;
+        const updatePosition = () => {
+          const progress = Math.max(0, Math.min(1, (Date.now() - walkingStartedAt) / DELIVERY_DURATION_MS));
+          const position = getWalkingRoutePosition(progress);
+          const character = walkingCharacterRef.current;
+          if (character) {
+            character.style.left = `${position.x}%`;
+            character.style.top = `${position.y}%`;
+          }
+          if (progress < 1) animationFrame = window.requestAnimationFrame(updatePosition);
+        };
+        updatePosition();
+        return () => window.cancelAnimationFrame(animationFrame);
       }, [isWalkingAnimationActive, walkingStartedAt]);
 
       const mapUrl = new URL('https://www.google.com/maps');
@@ -9973,10 +9977,6 @@
       directionsUrl.searchParams.set('origin', `${mapOrigin[0]},${mapOrigin[1]}`);
       directionsUrl.searchParams.set('destination', `${DELIVERY_ROUTE_END[0]},${DELIVERY_ROUTE_END[1]}`);
       directionsUrl.searchParams.set('travelmode', 'walking');
-      const walkingPosition = isWalkingAnimationActive
-        ? getWalkingRoutePosition(walkingProgress)
-        : null;
-
       return (
         <div className={`live-route-map ${className}`}>
           <iframe
@@ -9991,12 +9991,13 @@
               setMapError(true);
             }}
           />
-          {walkingPosition && (
+          {isWalkingAnimationActive && (
             <img
+              ref={walkingCharacterRef}
               className="walking-route-character"
               src="/caminante-ruta.png"
               alt="Repartidor caminando por la ruta hacia la entrega"
-              style={{ left: `${walkingPosition.x}%`, top: `${walkingPosition.y}%` }}
+              style={{ left: `${WALKING_ROUTE_POINTS[0].x}%`, top: `${WALKING_ROUTE_POINTS[0].y}%` }}
             />
           )}
           <span className="live-route-map-status" role="status">

@@ -378,6 +378,9 @@ test('animates the walking rider from the first blue point through the route to 
   assert.match(html, /function getWalkingRoutePosition\(progress\)/);
   assert.match(html, /walkingStartedAt=\{deliveryPhase === 'tracking' && assignedRider\?\.vehicle === 'Caminando'\s*\? deliveryStartedAtRef\.current\s*: null\}/);
   assert.match(html, /walking-route-character/);
+  assert.match(html, /window\.requestAnimationFrame\(updatePosition\)/);
+  assert.match(html, /window\.cancelAnimationFrame\(animationFrame\)/);
+  assert.doesNotMatch(html, /setInterval\(updateProgress,\s*1000\)/);
   assert.match(html, /Date\.now\(\) - walkingStartedAt\) \/ DELIVERY_DURATION_MS/);
   assert.match(html, /isWalkingAnimationActive\s*\?\s*'Ruta a pie · 5 min'/);
 });
