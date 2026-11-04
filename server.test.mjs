@@ -355,7 +355,7 @@ test('preloads the order received animation when serving the application page', 
   assert.match(html, /<link rel="preload" href="\/caminante-ruta\.png" as="image" type="image\/png"\s*\/?>/);
 });
 
-test('animates the walking rider along the fixed five-minute customer route after pickup', async (t) => {
+test('animates the walking rider from the first blue point through the route to the destination', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);
   const response = await fetch(`http://127.0.0.1:${server.address().port}/`);
@@ -363,7 +363,18 @@ test('animates the walking rider along the fixed five-minute customer route afte
 
   assert.equal(response.status, 200);
   assert.match(html, /const DELIVERY_DURATION_MS = 300000;/);
-  assert.match(html, /const WALKING_ROUTE_POINTS = \[/);
+  const routeMatch = html.match(/const WALKING_ROUTE_POINTS = \[([\s\S]*?)\];/);
+  assert.ok(routeMatch, 'walking route waypoints should be defined');
+  const routePoints = Array.from(routeMatch[1].matchAll(/\{ x: (\d+), y: (\d+) \}/g), (match) => ({
+    x: Number(match[1]),
+    y: Number(match[2])
+  }));
+  assert.deepEqual(routePoints[0], { x: 59, y: 77 }, 'the character should start at the first blue point near KOU-XIN');
+  assert.deepEqual(routePoints.at(-1), { x: 10, y: 20 }, 'the character should finish at the destination marker');
+  assert.ok(routePoints.length >= 15, 'the character should follow all visible route waypoints');
+  assert.ok(routePoints.slice(1).every((point, index) => (
+    point.x <= routePoints[index].x && point.y <= routePoints[index].y
+  )), 'the character should follow the route from the lower-right start to the upper-left destination');
   assert.match(html, /function getWalkingRoutePosition\(progress\)/);
   assert.match(html, /walkingStartedAt=\{deliveryPhase === 'tracking' && assignedRider\?\.vehicle === 'Caminando'\s*\? deliveryStartedAtRef\.current\s*: null\}/);
   assert.match(html, /walking-route-character/);
