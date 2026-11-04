@@ -396,6 +396,11 @@ test('animates the home menu cards with a glowing outline and honors reduced mot
   assert.match(html, /className="home-menu-card combo-card min-w-\[220px\] bg-white/);
   assert.match(html, /\.menu-pop-card:not\(\.bembos-promo-card\):has\(> \.menu-pop-media:hover\)\s*\{[^}]*transform: translateY\(-3px\) scale\(1\.05\);/);
   assert.match(html, /\.menu-pop-card:not\(\.bembos-promo-card\):has\(> \.menu-pop-media:hover\) \.menu-pop-image\s*\{[^}]*transform: scale\(1\.1\);/);
+  assert.match(html, /\.menu-pop-card:not\(\.bembos-promo-card\):has\(> \.menu-pop-media:hover\) \.menu-pop-promo-logo\s*\{\s*transform: scale\(1\.1\);\s*\}/);
+  assert.match(html, /\.bembos-promo-card:has\(> \.menu-pop-media:hover\) \.menu-pop-promo-logo\s*\{\s*transform: scale\(1\.08\);\s*\}/);
+  assert.match(html, /\.bembos-promo-card:has\(> \.menu-pop-media:active\) \.menu-pop-promo-logo\s*\{\s*transform: scale\(1\.035\);\s*\}/);
+  assert.match(html, /\.menu-pop-card:not\(\.bembos-promo-card\):has\(> \.menu-pop-media:active\) \.menu-pop-promo-logo\s*\{\s*transform: scale\(1\.03\);\s*\}/);
+  assert.match(html, /\.menu-pop-promo-logo\s*\{\s*z-index: 4;\s*transform-origin: center;\s*transition: transform 360ms ease;\s*\}/);
   assert.match(html, /\.bembos-promo-media\s*\{[^}]*overflow:\s*visible;/);
   assert.match(html, /\.bembos-promo-card:has\(> \.menu-pop-media:hover\)\s*\{\s*z-index:\s*4;/);
   assert.match(html, /\.bembos-promo-card:has\(> \.menu-pop-media:hover\) \.bembos-promo-image\s*\{[^}]*transform: translateY\(-5px\) scale\(1\.08\);/);
@@ -414,6 +419,10 @@ test('animates the home menu cards with a glowing outline and honors reduced mot
   assert.match(html, /className="menu-pop-image bembos-promo-image h-full w-full rounded-2xl"/);
   assert.match(html, /className="menu-pop-card bembos-promo-card rounded-3xl border border-gray-100 bg-white p-3 shadow-sm"/);
   assert.match(html, /className="menu-pop-card menu-pop-card--compact flex min-w-0 flex-col rounded-2xl border border-gray-200 bg-white p-2\.5 shadow-sm"/);
+  assert.match(html, /<div className="grid grid-cols-2 gap-6">/);
+  assert.match(html, /<div className="space-y-7">\s*\{promotions\.map/);
+  assert.match(html, /<div className="space-y-6">/);
+  assert.match(html, /className="menu-pop-promo-logo absolute bottom-1\.5 right-1\.5 rounded-full bg-white\/95 p-1 shadow-md"/);
   assert.match(html, /className="menu-pop-card bg-white border border-gray-100 rounded-3xl p-3 shadow-sm space-y-2"/);
   assert.match(html, /\.home-menu-card,\s*\.home-menu-card::after,\s*\.home-menu-card-media,\s*\.home-menu-card-image\s*\{\s*animation: none !important;\s*transition: none !important;/);
 });

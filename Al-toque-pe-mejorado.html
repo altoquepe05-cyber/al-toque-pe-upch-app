@@ -879,6 +879,12 @@
       transition: transform 360ms ease, filter 360ms ease;
     }
 
+    .menu-pop-promo-logo {
+      z-index: 4;
+      transform-origin: center;
+      transition: transform 360ms ease;
+    }
+
     .bembos-promo-media {
       height: auto;
       aspect-ratio: 1.15 / 1;
@@ -1005,6 +1011,10 @@
         filter: drop-shadow(0 10px 12px rgba(43, 23, 24, 0.24));
       }
 
+      .bembos-promo-card:has(> .menu-pop-media:hover) .menu-pop-promo-logo {
+        transform: scale(1.08);
+      }
+
       .bembos-promo-card:has(> .menu-pop-media:hover) .bembos-promo-hover-label {
         opacity: 1;
         transform: translateY(0);
@@ -1026,6 +1036,10 @@
         transform: scale(1.1);
         filter: drop-shadow(0 8px 8px rgba(43, 23, 24, 0.2));
       }
+
+      .menu-pop-card:not(.bembos-promo-card):has(> .menu-pop-media:hover) .menu-pop-promo-logo {
+        transform: scale(1.1);
+      }
     }
 
     @media (hover: none) and (pointer: coarse) {
@@ -1040,6 +1054,10 @@
         z-index: 3;
         transform: translateY(-3px) scale(1.035);
         filter: drop-shadow(0 8px 10px rgba(43, 23, 24, 0.2));
+      }
+
+      .bembos-promo-card:has(> .menu-pop-media:active) .menu-pop-promo-logo {
+        transform: scale(1.035);
       }
 
       .bembos-promo-card:has(> .menu-pop-media:active) .bembos-promo-hover-label {
@@ -1062,6 +1080,10 @@
         z-index: 3;
         transform: scale(1.03);
         filter: drop-shadow(0 8px 8px rgba(43, 23, 24, 0.2));
+      }
+
+      .menu-pop-card:not(.bembos-promo-card):has(> .menu-pop-media:active) .menu-pop-promo-logo {
+        transform: scale(1.03);
       }
     }
 
@@ -1160,7 +1182,8 @@
 
       .menu-pop-card,
       .menu-pop-media,
-      .menu-pop-image {
+      .menu-pop-image,
+      .menu-pop-promo-logo {
         transition: none !important;
       }
 
@@ -8527,7 +8550,7 @@
           </div>
 
           {filter === 'bembos' ? (
-            <section className="space-y-3" aria-labelledby="bembos-promotions-title">
+            <section className="space-y-5" aria-labelledby="bembos-promotions-title">
               {[
                 { id: 'pareja', title: 'Promociones para 2' },
                 { id: 'personales', title: 'Promociones Personales' },
@@ -8542,52 +8565,54 @@
                 if (promotions.length === 0) return null;
 
                 return (
-                  <div key={group.id} className="space-y-3">
+                  <div key={group.id} className="space-y-5">
                     <h3 id={group.id === 'pareja' ? 'bembos-promotions-title' : undefined} className="font-title text-lg font-bold">{group.title}</h3>
-                    {promotions.map((promo) => (
-                      <article key={promo.id} className="menu-pop-card bembos-promo-card rounded-3xl border border-gray-100 bg-white p-3 shadow-sm">
-                        <div className="menu-pop-media bembos-promo-media relative rounded-2xl bg-white">
-                          <img
-                            src={promo.image}
-                            alt={promo.name}
-                            loading="lazy"
-                            referrerPolicy="no-referrer"
-                            className="menu-pop-image bembos-promo-image h-full w-full rounded-2xl"
-                          />
-                          {group.id === 'cupones' ? (
+                    <div className="space-y-7">
+                      {promotions.map((promo) => (
+                        <article key={promo.id} className="menu-pop-card bembos-promo-card rounded-3xl border border-gray-100 bg-white p-3 shadow-sm">
+                          <div className="menu-pop-media bembos-promo-media relative rounded-2xl bg-white">
                             <img
-                              src="./al-toque-pe-emblema.png"
-                              alt="Emblema del cupón Al Toque"
-                              title="Cupón Al Toque"
-                              className="absolute right-2 top-2 h-9 w-9 rounded-full object-cover shadow-sm"
+                              src={promo.image}
+                              alt={promo.name}
+                              loading="lazy"
+                              referrerPolicy="no-referrer"
+                              className="menu-pop-image bembos-promo-image h-full w-full rounded-2xl"
                             />
-                          ) : (
-                          <span className="bembos-promo-hover-label">Bembos · promoción</span>
-                          )}
-                        </div>
-                        <div className="pt-2">
-                          <div className="flex items-start justify-between gap-2">
-                            <h4 className="font-title text-base font-bold">{promo.name}</h4>
-                            <span className="shrink-0 text-sm font-extrabold">S/{promo.price.toFixed(2)}</span>
+                            {group.id === 'cupones' ? (
+                              <img
+                                src="./al-toque-pe-emblema.png"
+                                alt="Emblema del cupón Al Toque"
+                                title="Cupón Al Toque"
+                                className="menu-pop-promo-logo absolute right-2 top-2 h-9 w-9 rounded-full object-cover shadow-sm"
+                              />
+                            ) : (
+                              <span className="bembos-promo-hover-label">Bembos · promoción</span>
+                            )}
                           </div>
-                          <p className="mt-1 text-xs text-gray-500">{promo.description}</p>
-                          <div className="mt-3 flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-xs font-semibold text-gray-500 line-through">S/{promo.originalPrice.toFixed(2)}</span>
-                              <span className="rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-extrabold text-white">-{promo.discount}%</span>
+                          <div className="pt-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <h4 className="font-title text-base font-bold">{promo.name}</h4>
+                              <span className="shrink-0 text-sm font-extrabold">S/{promo.price.toFixed(2)}</span>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => onAddBembos(promo)}
-                              aria-label={`Añadir ${promo.name} al pedido simulado`}
-                              className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-700 text-xl font-bold text-white transition hover:bg-indigo-800 active:scale-95"
-                            >
-                              +
-                            </button>
+                            <p className="mt-1 text-xs text-gray-500">{promo.description}</p>
+                            <div className="mt-3 flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-semibold text-gray-500 line-through">S/{promo.originalPrice.toFixed(2)}</span>
+                                <span className="rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-extrabold text-white">-{promo.discount}%</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => onAddBembos(promo)}
+                                aria-label={`Añadir ${promo.name} al pedido simulado`}
+                                className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-700 text-xl font-bold text-white transition hover:bg-indigo-800 active:scale-95"
+                              >
+                                +
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      </article>
-                    ))}
+                        </article>
+                      ))}
+                    </div>
                   </div>
                 );
               })}
@@ -8615,7 +8640,7 @@
                       <h3 className="font-title text-lg font-bold">{category}</h3>
                       <span className="text-[10px] font-semibold text-gray-500">{products.length}</span>
                     </div>
-                    <div className="grid grid-cols-2 gap-2.5">
+                    <div className="grid grid-cols-2 gap-6">
                       {products.map((product) => (
                         <article key={product.id} className="menu-pop-card menu-pop-card--compact flex min-w-0 flex-col rounded-2xl border border-gray-200 bg-white p-2.5 shadow-sm">
                           <div className="menu-pop-media relative mb-2 aspect-square rounded-xl bg-[#eff4f1]">
@@ -8626,7 +8651,7 @@
                               className="menu-pop-image h-full w-full rounded-xl object-cover"
                             />
                             {product.hasDiscount && (
-                              <div className="absolute right-1.5 top-1.5 rounded-full bg-white/95 p-1 shadow-md" aria-label="Producto con descuento Al Toque">
+                              <div className="menu-pop-promo-logo absolute bottom-1.5 right-1.5 rounded-full bg-white/95 p-1 shadow-md" aria-label="Producto con descuento Al Toque">
                                 <img
                                   src="./al-toque-pe-emblema.png"
                                   alt="Al Toque"
@@ -8663,7 +8688,7 @@
               )}
             </section>
           ) : (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {filteredItems.map((dish) => {
               const discountedPrice = getOctoberPromotionPrice(dish, isPromoDay);
               const hasDiscount = discountedPrice < dish.price;
