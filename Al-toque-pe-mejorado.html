@@ -851,21 +851,24 @@
 
     .starbucks-campaign-overlay {
       box-sizing: border-box;
-      height: 100vh;
-      height: 100dvh;
-      min-height: 0;
       overflow-y: auto;
-      padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+      padding:
+        calc(env(safe-area-inset-top, 0px) + 16px)
+        calc(env(safe-area-inset-right, 0px) + 16px)
+        calc(env(safe-area-inset-bottom, 0px) + 16px)
+        calc(env(safe-area-inset-left, 0px) + 16px);
     }
 
     .starbucks-campaign-dialog {
+      box-sizing: border-box;
       width: min(100%, 850px);
-      max-height: calc(100vh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-      max-height: calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+      max-height: calc(100vh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+      max-height: calc(100dvh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
       min-height: 0;
       overflow-y: auto;
       overscroll-behavior: contain;
       -webkit-overflow-scrolling: touch;
+      margin: auto;
     }
 
     @media (max-width: 480px) {
