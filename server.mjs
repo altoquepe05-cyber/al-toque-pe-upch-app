@@ -1675,11 +1675,12 @@ async function handleRequest(request, response, orders, riderLocations, idempote
     const order = orders.get(orderActionMatch[1]);
     if (!order) return json(response, 404, { error: 'No se encontró el pedido.' });
     if (body.action === 'cancel') {
-      if (order.status !== 'available') {
-        return json(response, 409, { error: 'El pedido ya no se puede cancelar porque un repartidor lo aceptó.' });
-      }
-      if (!Number.isFinite(order.createdAt) || Date.now() - order.createdAt >= 60_000) {
-        return json(response, 409, { error: 'El pedido ya no se puede cancelar. Tú pedido ya está listo, no puedes cancelarlo.' });
+      const isAvailableWithinCancellationWindow = order.status === 'available'
+        && Number.isFinite(order.createdAt)
+        && Date.now() - order.createdAt < 60_000;
+      const isAcceptedBeforePickup = order.status === 'accepted';
+      if (!isAvailableWithinCancellationWindow && !isAcceptedBeforePickup) {
+        return json(response, 409, { error: 'El pedido solo se puede cancelar antes de que el repartidor confirme el recojo.' });
       }
       const cancelledAt = Date.now();
       const cancelledOrder = { ...order, status: 'cancelled', cancelledAt, updatedAt: cancelledAt };

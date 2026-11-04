@@ -1679,7 +1679,7 @@ test('shares customer orders with the rider queue and enforces delivery transiti
   }
 });
 
-test('rejects rider-declined orders and cancels available orders only within one minute', async (t) => {
+test('rejects rider-declined orders and allows cancellation until pickup', async (t) => {
   const testDataDir = await mkdtemp(join(tmpdir(), 'altoque-cancel-test-'));
   const expiredOrder = {
     id: 'UPCH-EXPIRED-ORDER',
@@ -1693,7 +1693,21 @@ test('rejects rider-declined orders and cancels available orders only within one
     status: 'available',
     createdAt: Date.now() - 60_001
   };
-  await writeFile(join(testDataDir, 'orders.json'), JSON.stringify({ orders: [expiredOrder] }));
+  const acceptedOrder = {
+    ...expiredOrder,
+    id: 'UPCH-ACCEPTED-ORDER',
+    status: 'accepted',
+    createdAt: Date.now() - 3_600_000,
+    driverId: 'rider-1',
+    driverName: 'Repartidor'
+  };
+  const pickedUpOrder = {
+    ...acceptedOrder,
+    id: 'UPCH-PICKED-UP-ORDER',
+    status: 'picked_up',
+    pickedUpAt: Date.now()
+  };
+  await writeFile(join(testDataDir, 'orders.json'), JSON.stringify({ orders: [expiredOrder, acceptedOrder, pickedUpOrder] }));
   const server = createAlToqueServer({ ordersFile: join(testDataDir, 'orders.json') });
   await new Promise((resolve, reject) => {
     server.once('error', reject);
@@ -1749,9 +1763,24 @@ test('rejects rider-declined orders and cancels available orders only within one
 
   const expiredCancellationResponse = await postAction(expiredOrder.id, 'cancel');
   assert.equal(expiredCancellationResponse.status, 409);
-  assert.match((await expiredCancellationResponse.json()).error, /no puedes cancelarlo/i);
+  assert.match((await expiredCancellationResponse.json()).error, /antes de que el repartidor confirme el recojo/i);
+
+  const acceptedCancellationResponse = await postAction(acceptedOrder.id, 'cancel');
+  assert.equal(acceptedCancellationResponse.status, 200);
+  assert.equal((await acceptedCancellationResponse.json()).order.status, 'cancelled');
+  assert.equal((await postAction(acceptedOrder.id, 'picked-up')).status, 409);
+
+  const pickedUpCancellationResponse = await postAction(pickedUpOrder.id, 'cancel');
+  assert.equal(pickedUpCancellationResponse.status, 409);
+  assert.match((await pickedUpCancellationResponse.json()).error, /antes de que el repartidor confirme el recojo/i);
   const queueResponse = await fetch(`${baseUrl}/api/orders`);
   assert.deepEqual((await queueResponse.json()).orders.map(({ id }) => id), [expiredOrder.id]);
+
+  const pageResponse = await fetch(`${baseUrl}/`);
+  const html = await pageResponse.text();
+  assert.match(html, /const canCancelOrder = orderStatus === 'accepted'/);
+  assert.match(html, /Puedes cancelar si aún no se confirmó el recojo/);
+  assert.match(html, /El pedido \$\{activeOrder\.id\} fue cancelado y se quitó de tu ruta/);
 });
 
 test('accepts Gorritos redemptions without a cash total or service fee', async (t) => {

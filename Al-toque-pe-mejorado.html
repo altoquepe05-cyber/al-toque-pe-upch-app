@@ -10099,9 +10099,10 @@
       const currentDeliveryStage = Math.min(Math.floor(deliveryElapsed / 60000), deliveryStages.length - 1);
       const remainingMinutes = Math.ceil((deliveryDuration - deliveryElapsed) / 60000);
       const stageProgress = ((deliveryElapsed % 60000) / 60000) * 100;
-      const canCancelOrder = orderStatus === 'available'
-        && Number.isFinite(orderCreatedAt)
-        && cancellationClock - orderCreatedAt < 60_000;
+      const canCancelOrder = orderStatus === 'accepted'
+        || (orderStatus === 'available'
+          && Number.isFinite(orderCreatedAt)
+          && cancellationClock - orderCreatedAt < 60_000);
 
       useEffect(() => {
         if (!isRiderChatOpen) return undefined;
@@ -11194,6 +11195,20 @@
                   >
                     Volver al inicio
                   </button>
+                  {canCancelOrder && (
+                    <div className="space-y-2">
+                      <p className="text-[10px] text-gray-500">Puedes cancelar si aún no se confirmó el recojo.</p>
+                      <button
+                        type="button"
+                        onClick={cancelOrder}
+                        disabled={isCancellingOrder}
+                        className="w-full rounded-2xl border border-red-200 px-6 py-3 text-xs font-bold text-[#a90000] disabled:cursor-wait disabled:opacity-70"
+                      >
+                        {isCancellingOrder ? 'Cancelando pedido…' : 'Cancelar pedido'}
+                      </button>
+                      {cancelOrderError && <p className="text-[10px] text-red-600" role="alert">{cancelOrderError}</p>}
+                    </div>
+                  )}
                 </div>
               </>
                   )}
@@ -11525,6 +11540,15 @@
               const error = new Error(payload.error || `Error ${response.status}`);
               error.status = response.status;
               throw error;
+            }
+            if (['cancelled', 'rejected'].includes(payload.order?.status)) {
+              if (isMounted) {
+                setActiveOrder((current) => current?.id === activeOrder.id ? null : current);
+                setActiveTab('orders');
+                setOrderSyncError('');
+                showNotice(`El pedido ${activeOrder.id} fue cancelado y se quitó de tu ruta.`);
+              }
+              return;
             }
             if (isMounted) {
               setActiveOrder((current) => current?.id === activeOrder.id
