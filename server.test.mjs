@@ -470,8 +470,21 @@ test('shows official Starbucks prices and starting-price labels', async (t) => {
   const sourceStart = html.indexOf('const STARBUCKS_PRODUCT_SOURCE = [');
   const sourceEnd = html.indexOf('\n    ];', sourceStart);
   const productSource = html.slice(sourceStart, sourceEnd);
+  const imageMapStart = html.indexOf('const STARBUCKS_PRODUCT_IMAGE_URLS = {');
+  const imageMapEnd = html.indexOf('\n    };', imageMapStart);
+  const imageMap = html.slice(imageMapStart, imageMapEnd);
+  const imageEntries = Array.from(imageMap.matchAll(/^\s+'([^']+)': '(https:\/\/[^']+\.png)'[,]?$/gm));
+  const productNames = Array.from(productSource.matchAll(/\['[^']+', '([^']+)', [0-9.]+\]/g), (match) => match[1]);
 
   assert.equal(response.status, 200);
+  assert.ok(imageMapStart >= 0 && imageMapEnd > imageMapStart, 'official Starbucks product image URLs should be defined');
+  assert.equal(imageEntries.length, productNames.length, 'every Starbucks catalog product should have an image URL');
+  assert.deepEqual(imageEntries.map((entry) => entry[1]).sort(), [...productNames].sort());
+  assert.match(html, /image: STARBUCKS_PRODUCT_IMAGE_URLS\[name\]/);
+  assert.match(html, /className="menu-pop-media starbucks-product-media relative mx-auto mb-2 aspect-square w-\[88%\] rounded-full border-2 border-\[#d6bb79\] bg-\[#075344\] p-2\.5 shadow-md"/);
+  assert.match(html, /\.starbucks-product-image\s*\{\s*border-radius:\s*50%;\s*object-fit:\s*contain;/);
+  assert.match(html, /alt=\{`Bebida de Starbucks: \$\{product\.name\}`\}/);
+  assert.doesNotMatch(html, /function createStarbucksProductImage/);
   assert.match(productSource, /\['Bebidas Proteicas', 'Iced Protein Matcha', 22\]/);
   assert.match(productSource, /\['Frappuccinos', 'Pumpkin Spice Frappuccino', 18\]/);
   assert.match(productSource, /\['Refreshers', 'Strawberry Acaí Refresher', 14\.5\]/);

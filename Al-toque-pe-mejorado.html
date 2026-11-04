@@ -879,6 +879,11 @@
       transition: transform 360ms ease, filter 360ms ease;
     }
 
+    .starbucks-product-image {
+      border-radius: 50%;
+      object-fit: contain;
+    }
+
     .menu-pop-promo-logo {
       z-index: 4;
       transform-origin: center;
@@ -4951,6 +4956,80 @@
       ['Shaken Espresso', 'Mocha Blanco Shaken Espresso Frío con Bebida de Avena', 17.5],
       ['Shaken Espresso', 'Brown Sugar Shaken Espresso con Bebida de Avena', 17.5]
     ];
+    const STARBUCKS_PRODUCT_IMAGE_URLS = {
+      'Iced Protein Matcha': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/iced-protein-matcha-1793337027065.png',
+      'Protein Matcha': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/protein-matcha-1793337027031.png',
+      'Iced Sugar Free Vanilla Protein Latte': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/iced-sugar-free-vanilla-protein-latte-1793337027048.png',
+      'Sugar Free Vanilla Protein Latte': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/sugar-free-vanilla-protein-latte-1793337027044.png',
+      'Black & White Mocha Frappuccino': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/black-white-mocha-frappuccino-1793337026262.png',
+      'Cookies & Cream Creme Frappuccino': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/cookies-cream-creme-frappuccino-1793337026374.png',
+      'Ultimate Caramel Frappuccino': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/ultimate-caramel-frappuccino-1793337026639.png',
+      'Mocha Frappuccino': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/mocha-frappuccino-1793337026211.png',
+      'Chocolúcuma Frappuccino': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/chocolucuma-frappuccino-1793337026705.png',
+      'Caramel Frappuccino': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/caramel-frappuccino-1793337026215.png',
+      'Triple Mocha Frappuccino': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/triple-mocha-frappuccino-1793337026656.png',
+      'Algarrobina Frappuccino': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/algarrobina-frappuccino-1793337026181.png',
+      'Chocolate Creme Frappuccino': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/chocolate-creme-frappuccino-1793337026328.png',
+      'Lúcuma Creme Frappuccino': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/lucuma-creme-frappuccino-1793337026607.png',
+      'Vainilla Creme Frappuccino': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/vainilla-creme-frappuccino-1793337026643.png',
+      'Café Frappuccino': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/cafe-frappuccino-1793337026516.png',
+      'Algarrobina Creme Frappuccino': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/algarrobina-creme-frappuccino-1793337026746.png',
+      'Mocha Blanco Frappuccino': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/mocha-blanco-frappuccino-1793337026638.png',
+      'Ultra Fresa Creme Frappuccino': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/ultra-fresa-creme-frappuccino-1793337026495.png',
+      'Fresa Creme Frappuccino': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/fresa-creme-frappuccino-1793337026360.png',
+      'Chocolate Cookies & Cream Frappuccino': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/chocolate-cookies-cream-frappuccino-1793337026370.png',
+      'Pumpkin Spice Frappuccino': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/pumpkin-spice-frappuccino-1793337026553.png',
+      'Black & White Mocha': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/black-white-mocha-1793337026511.png',
+      'Flat White': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/flat-white-1793337026440.png',
+      'Latte': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/latte-1793337026336.png',
+      'Latte Macchiato': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/latte-macchiato-1793337026657.png',
+      'Mocha Café': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/mocha-cafe-1793337026264.png',
+      'Vainilla Latte': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/vainilla-latte-1793337026413.png',
+      'Caramel Macchiato': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/caramel-macchiato-1793337026561.png',
+      'Mocha Blanco Café': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/mocha-blanco-cafe-1793337026559.png',
+      'Skinny Vainilla Latte': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/skinny-vainilla-latte-1793337026514.png',
+      'Algarrobina Latte': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/algarrobina-latte-1793337026659.png',
+      'Americano': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/americano-1793337026246.png',
+      'Pumpkin Spice Latte': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/pumpkin-spice-latte-1793337026295.png',
+      'Pecan Crunch Latte': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/pecan-crunch-latte-1793337027262.png',
+      'Mocha Macchiato Frío con Bebida de Avena': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/mocha-macchiato-frio-con-bebida-de-avena-1793337026670.png',
+      'Black Cold Brew': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/black-cold-brew-1793337026280.png',
+      'Americano Helado': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/americano-helado-1793337026418.png',
+      'Latte Helado': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/latte-helado-1793337026442.png',
+      'Vainilla Latte Helado': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/vainilla-latte-helado-1793337026276.png',
+      'Mocha Blanco Café Helado': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/mocha-blanco-cafe-helado-1793337026312.png',
+      'Caramel Macchiato Helado': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/caramel-macchiato-helado-1793337026358.png',
+      'Mocha Café Helado': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/mocha-cafe-helado-1793337026484.png',
+      'Skinny Vainilla Latte Helado': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/skinny-vainilla-latte-helado-1793337026277.png',
+      'Pumpkin Spice Latte Helado': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/pumpkin-spice-latte-helado-1793337026248.png',
+      'Pecan Crunch Latte Helado': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/pecan-crunch-latte-helado-1793337027213.png',
+      'Strawberry Acaí Refresher': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/strawberry-acai-refresher-1793337026414.png',
+      'Strawberry Acaí Lemonade Refresher': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/strawberry-acai-lemonade-refresher-1793337026359.png',
+      'Pink Drink Refresher': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/pink-drink-refresher-1793337026615.png',
+      'Mango Dragon Fruit Refresher': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/mango-dragon-fruit-refresher-1793337026655.png',
+      'Mango Dragon Fruit Lemonade Refresher': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/mango-dragon-fruit-lemonade-refresher-1793337026539.png',
+      'Dragon Drink Refresher': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/dragon-drink-refresher-1793337026323.png',
+      'Berry Pearls Lemonade Refresher': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/berry-pearls-lemonade-refresher-1793337026461.png',
+      'Chocolate Caliente': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/chocolate-caliente-1793337026563.png',
+      'Té Chai Latte': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/te-chai-latte-1793337026667.png',
+      'Té Chai Teavana': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/te-chai-teavana-1793337026588.png',
+      'Té Chamomile Teavana': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/te-chamomile-teavana-1793337026441.png',
+      'Té Hibiscus Teavana': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/te-hibiscus-teavana-1793337026539.png',
+      'Té Mint Citrus Teavana': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/te-mint-citrus-teavana-1793337026517.png',
+      'Matcha Latte': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/matcha-latte-1793337027194.png',
+      'Té Hibiscus Teavana Helado': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/te-hibiscus-teavana-helado-1793337026582.png',
+      'Chocolate Helado': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/chocolate-helado-1793337026585.png',
+      'Té Chamomile Teavana Helado': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/te-chamoline-teavana-helado-1793337026658.png',
+      'Té Mint Citrus Teavana Helado': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/te-mint-citrus-teavana-helado-1793337026717.png',
+      'Aranciata Sanpellegrino': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/aranciata-sanpellegrino-1793337026854.png',
+      'Peach and Clementine Sanpellegrino Zero': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/peach-and-clementine-sanpellegrino-zero-1793337027257.png',
+      'Iced Matcha Latte': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/iced-matcha-latte-1793337027134.png',
+      'Limonata Sanpellegrino': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/limonata-sanpellegrino-1793337026884.png',
+      'Choco Shaken Espresso c/ Bebida de Avena': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/choco-shaken-espresso-c-bebida-de-avena-1793337026427.png',
+      'Mocha Blanco Shaken Espresso Frío con Bebida de Avena': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/mocha-blanco-shaken-espresso-frio-con-bebida-de-avena-1793337026683.png',
+      'Brown Sugar Shaken Espresso con Bebida de Avena': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/brown-sugar-shaken-espresso-con-bebida-de-avena-1793337026420.png'
+    };
+
     const STARBUCKS_FIXED_PRICE_PRODUCTS = new Set([
       'Aranciata Sanpellegrino',
       'Peach and Clementine Sanpellegrino Zero',
@@ -4972,22 +5051,6 @@
       return `Espresso batido con hielo: ${name}.`;
     }
 
-    function createStarbucksProductImage(category, name, index) {
-      const color = /matcha/i.test(name) ? '#8cba68'
-        : /fresa|strawberry|pink drink|dragon/i.test(name) ? '#e97891'
-          : /hibiscus/i.test(name) ? '#bd526a'
-            : /mango|pumpkin|caramel|pecan|algarrobina|lúcuma|lucuma/i.test(name) ? '#ce8a39'
-              : /mocha|chocolate|cocoa|brown sugar|cold brew/i.test(name) ? '#754534'
-                : /lemon|limon|citrus|aranciata|peach/i.test(name) ? '#e7be4b'
-                  : ['#b18a69', '#d7c0a2', '#9d704f', '#e0b873'][index % 4];
-      const hotDrink = ['Café Caliente', 'Bebidas Calientes'].includes(category);
-      const drinkShape = hotDrink
-        ? `<path d="M130 139h114v120c0 20-14 34-34 34h-46c-20 0-34-14-34-34z" fill="${color}" stroke="#d9e2dc" stroke-width="5"/><path d="M244 161h22a25 25 0 0 1 0 50h-22" fill="none" stroke="#d9e2dc" stroke-width="9"/><path d="M131 143h112" stroke="#fff9e8" stroke-width="12"/>`
-        : `<path d="m140 126h94l-9 145c-1 17-13 29-29 29h-19c-17 0-29-12-30-29z" fill="${color}" stroke="#e2e9e4" stroke-width="5"/><path d="M135 132h104v16H135z" fill="#f4f3e8"/><path d="M172 120V82h8v39" fill="none" stroke="#e2b63f" stroke-width="8" stroke-linecap="round"/>`;
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 384"><defs><linearGradient id="cup" x2="1" y2="1"><stop stop-color="#ffffff" stop-opacity=".4"/><stop offset="1" stop-color="#ffffff" stop-opacity=".04"/></linearGradient></defs><circle cx="192" cy="192" r="178" fill="#075344"/><ellipse cx="204" cy="307" rx="76" ry="13" fill="#062f2a" opacity=".7"/>${drinkShape}<path d="M145 153h84l-8 116c-1 14-9 23-23 23h-26c-14 0-22-9-23-23z" fill="url(#cup)" opacity=".45"/><circle cx="160" cy="176" r="4" fill="#fff" opacity=".35"/><circle cx="208" cy="221" r="3" fill="#fff" opacity=".3"/></svg>`;
-      return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
-    }
-
     const STARBUCKS_PRODUCTS = STARBUCKS_PRODUCT_SOURCE.map(([menuCategory, name, price], index) => ({
       id: `starbucks-${index + 1}`,
       name,
@@ -5000,7 +5063,7 @@
       time: '5 min',
       badge: 'Starbucks',
       isPopular: false,
-      image: createStarbucksProductImage(menuCategory, name, index),
+      image: STARBUCKS_PRODUCT_IMAGE_URLS[name],
       components: []
     }));
 
@@ -8714,12 +8777,12 @@
                     <div className="grid grid-cols-2 gap-6">
                       {products.map((product) => (
                         <article key={product.id} className="menu-pop-card menu-pop-card--compact flex min-w-0 flex-col rounded-2xl border border-gray-200 bg-white p-2.5 shadow-sm">
-                          <div className="menu-pop-media relative mb-2 aspect-square rounded-xl bg-[#eff4f1]">
+                          <div className="menu-pop-media starbucks-product-media relative mx-auto mb-2 aspect-square w-[88%] rounded-full border-2 border-[#d6bb79] bg-[#075344] p-2.5 shadow-md">
                             <img
                               src={product.image}
-                              alt={`Imagen referencial de ${product.name}`}
+                              alt={`Bebida de Starbucks: ${product.name}`}
                               loading="lazy"
-                              className="menu-pop-image h-full w-full rounded-xl object-cover"
+                              className="menu-pop-image starbucks-product-image h-full w-full"
                             />
                             {product.hasDiscount && (
                               <div className="menu-pop-promo-logo absolute bottom-1.5 right-1.5 rounded-full bg-white/95 p-1 shadow-md" aria-label="Producto con descuento Al Toque">
