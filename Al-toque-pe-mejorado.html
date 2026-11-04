@@ -879,6 +879,18 @@
       transition: transform 360ms ease, filter 360ms ease;
     }
 
+    .starbucks-upcoming-card {
+      transition: transform 260ms ease, box-shadow 260ms ease, border-color 260ms ease;
+    }
+
+    .starbucks-upcoming-media {
+      position: relative;
+      z-index: 1;
+      overflow: visible;
+      transform-origin: center;
+      transition: transform 360ms cubic-bezier(0.2, 0.8, 0.2, 1), filter 360ms ease;
+    }
+
     .starbucks-product-image {
       border-radius: 50%;
       object-fit: contain;
@@ -1048,6 +1060,19 @@
     }
 
     @media (hover: none) and (pointer: coarse) {
+      .starbucks-upcoming-card:has(> .starbucks-upcoming-media:active) {
+        z-index: 3;
+        transform: translateY(-2px) scale(1.015);
+        border-color: #d3ae55;
+        box-shadow: 0 8px 18px rgba(43, 23, 24, 0.12), 0 0 0 1px rgba(197, 164, 92, 0.32);
+      }
+
+      .starbucks-upcoming-card:has(> .starbucks-upcoming-media:active) .starbucks-upcoming-media {
+        z-index: 3;
+        transform: translateY(-5px) scale(1.06);
+        filter: drop-shadow(0 8px 8px rgba(43, 23, 24, 0.2));
+      }
+
       .bembos-promo-card:has(> .menu-pop-media:active) {
         z-index: 4;
         transform: none;
@@ -1113,6 +1138,19 @@
       .home-menu-card:has(> .home-menu-card-media:hover) .home-menu-card-image,
       .home-menu-card:has(> .home-menu-card-media:hover) .combo-card-image {
         transform: translateY(0) scale(1.1);
+        filter: drop-shadow(0 8px 8px rgba(43, 23, 24, 0.2));
+      }
+
+      .starbucks-upcoming-card:has(> .starbucks-upcoming-media:hover) {
+        z-index: 3;
+        transform: translateY(-2px) scale(1.015);
+        border-color: #d3ae55;
+        box-shadow: 0 8px 18px rgba(43, 23, 24, 0.12), 0 0 0 1px rgba(197, 164, 92, 0.32);
+      }
+
+      .starbucks-upcoming-card:has(> .starbucks-upcoming-media:hover) .starbucks-upcoming-media {
+        z-index: 3;
+        transform: translateY(-7px) scale(1.08);
         filter: drop-shadow(0 8px 8px rgba(43, 23, 24, 0.2));
       }
     }
@@ -1189,6 +1227,11 @@
       .menu-pop-media,
       .menu-pop-image,
       .menu-pop-promo-logo {
+        transition: none !important;
+      }
+
+      .starbucks-upcoming-card,
+      .starbucks-upcoming-media {
         transition: none !important;
       }
 
@@ -8739,9 +8782,9 @@
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     {matchingUpcomingPromotions.map((product) => (
-                      <article key={product.name} className="menu-pop-card menu-pop-card--compact flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[#ead4d9] bg-white shadow-sm">
+                      <article key={product.name} className="menu-pop-card menu-pop-card--compact starbucks-upcoming-card flex min-w-0 flex-col overflow-visible rounded-2xl border border-[#ead4d9] bg-white shadow-sm">
                         <div
-                          className="aspect-[4/3] w-full bg-[#a80f3d] bg-no-repeat"
+                          className="starbucks-upcoming-media aspect-[4/3] w-full rounded-t-2xl bg-[#a80f3d] bg-no-repeat"
                           style={{
                             backgroundImage: `url("${STARBUCKS_CAMPAIGN_BANNER}")`,
                             backgroundPosition: `${product.imagePosition}% center`,

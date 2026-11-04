@@ -438,6 +438,13 @@ test('shows the Starbucks Panettone launch modal and upcoming items without pric
   const productCardsStart = html.indexOf('aria-labelledby="starbucks-upcoming-title"');
   const productCardsEnd = html.indexOf('{STARBUCKS_MENU_CATEGORIES.map', productCardsStart);
   const productCards = html.slice(productCardsStart, productCardsEnd);
+  const touchStylesStart = html.indexOf('@media (hover: none) and (pointer: coarse)');
+  const touchStylesEnd = html.indexOf('@media (hover: hover) and (pointer: fine)', touchStylesStart);
+  const touchStyles = html.slice(touchStylesStart, touchStylesEnd);
+  const homeCardHoverStart = html.indexOf('.home-menu-card:has(> .home-menu-card-media:hover)');
+  const upcomingHoverStylesStart = html.lastIndexOf('@media (hover: hover) and (pointer: fine)', homeCardHoverStart);
+  const upcomingHoverStylesEnd = html.indexOf('@media (hover: none) and (pointer: coarse)', upcomingHoverStylesStart);
+  const upcomingHoverStyles = html.slice(upcomingHoverStylesStart, upcomingHoverStylesEnd);
 
   assert.equal(response.status, 200);
   assert.match(html, /const STARBUCKS_CAMPAIGN_END_TIME = 1793854740000;/);
@@ -456,10 +463,19 @@ test('shows the Starbucks Panettone launch modal and upcoming items without pric
     assert.ok(upcomingPromotions.includes(product), `missing upcoming promotion: ${product}`);
   }
   assert.match(productCards, /\{matchingUpcomingPromotions\.map\(\(product\) =>/);
+  assert.match(productCards, /className="menu-pop-card menu-pop-card--compact starbucks-upcoming-card flex min-w-0 flex-col overflow-visible rounded-2xl/);
+  assert.match(productCards, /className="starbucks-upcoming-media aspect-\[4\/3\] w-full rounded-t-2xl/);
   assert.match(productCards, /<h4 className="text-xs font-bold leading-snug text-dark">\{product\.name\}<\/h4>/);
   assert.doesNotMatch(upcomingPromotions, /\bprice\s*:/, 'upcoming Starbucks products should not have prices');
   assert.match(productCards, /Próximamente/);
   assert.doesNotMatch(productCards, /onAddStarbucks|toFixed\(/, 'upcoming products should not be purchasable or display prices');
+  assert.match(html, /\.starbucks-upcoming-media\s*\{[^}]*transform-origin:\s*center;[^}]*transition:\s*transform 360ms/);
+  assert.match(upcomingHoverStyles, /\.starbucks-upcoming-card:has\(> \.starbucks-upcoming-media:hover\)/);
+  assert.match(html, /\.starbucks-upcoming-card:has\(> \.starbucks-upcoming-media:hover\) \.starbucks-upcoming-media\s*\{[^}]*transform: translateY\(-7px\) scale\(1\.08\);/);
+  assert.ok(touchStylesStart >= 0 && touchStylesEnd > touchStylesStart, 'touch-specific upcoming card styles should be present');
+  assert.match(touchStyles, /\.starbucks-upcoming-card:has\(> \.starbucks-upcoming-media:active\)/);
+  assert.match(touchStyles, /\.starbucks-upcoming-card:has\(> \.starbucks-upcoming-media:active\) \.starbucks-upcoming-media\s*\{[^}]*transform: translateY\(-5px\) scale\(1\.06\);/);
+  assert.match(html, /\.starbucks-upcoming-card,\s*\.starbucks-upcoming-media\s*\{\s*transition:\s*none !important;/);
 });
 
 test('shows official Starbucks prices and starting-price labels', async (t) => {
