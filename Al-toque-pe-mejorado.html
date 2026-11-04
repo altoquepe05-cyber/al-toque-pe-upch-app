@@ -1395,6 +1395,14 @@
       background: linear-gradient(135deg, #68162f 0%, #861c3e 55%, #a32649 100%);
     }
 
+    .campus-service-description {
+      font-family: 'Fredoka', 'Outfit', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.12;
+      letter-spacing: 0.005em;
+    }
+
     .campus-service-card::before {
       position: absolute;
       z-index: -1;
@@ -8844,24 +8852,26 @@
             className={`campus-service-card ${serviceStatus.state === 'online' ? 'campus-service-card--online' : 'campus-service-card--offline'} ${isServiceCardExpanded ? 'campus-service-card--expanded' : ''}`}
             aria-label={`Servicio de delivery: ${serviceStatus.label}`}
           >
-            <div className="relative z-10 flex items-center gap-2.5">
-              <p className="min-w-0 flex-1 text-[12px] font-semibold leading-snug">
+            <div className="relative z-10">
+              <p className="campus-service-description">
                 Delivery de comida para estudiantes del campus de Miraflores
               </p>
-              <span className="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/25 bg-white/15 px-2.5 py-1.5 text-[10px] font-extrabold" aria-live="polite">
-                <span className="campus-service-status-dot" aria-hidden="true"></span>
-                {serviceStatus.label}
-              </span>
-              <button
-                type="button"
-                className="campus-service-card-toggle shrink-0"
-                aria-label={isServiceCardExpanded ? 'Ocultar horario de atención' : 'Mostrar horario de atención'}
-                aria-expanded={isServiceCardExpanded}
-                aria-controls="campus-service-details"
-                onClick={() => setIsServiceCardExpanded((expanded) => !expanded)}
-              >
-                <i data-lucide="chevron-down" className="h-4 w-4"></i>
-              </button>
+              <div className="mt-2 flex items-center justify-end gap-2">
+                <span className="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/25 bg-white/15 px-2.5 py-1.5 text-[10px] font-extrabold" aria-live="polite">
+                  <span className="campus-service-status-dot" aria-hidden="true"></span>
+                  {serviceStatus.label}
+                </span>
+                <button
+                  type="button"
+                  className="campus-service-card-toggle shrink-0"
+                  aria-label={isServiceCardExpanded ? 'Ocultar horario de atención' : 'Mostrar horario de atención'}
+                  aria-expanded={isServiceCardExpanded}
+                  aria-controls="campus-service-details"
+                  onClick={() => setIsServiceCardExpanded((expanded) => !expanded)}
+                >
+                  <i data-lucide="chevron-down" className="h-4 w-4"></i>
+                </button>
+              </div>
             </div>
             <div id="campus-service-details" className="campus-service-details" aria-hidden={!isServiceCardExpanded}>
               <div className="campus-service-details-inner relative z-10">

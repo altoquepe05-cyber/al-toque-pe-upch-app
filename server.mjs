@@ -129,7 +129,8 @@ const VENDOR_ASSETS = new Map([
     'outfit-600.ttf',
     'outfit-700.ttf',
     'space-grotesk-600.ttf',
-    'space-grotesk-700.ttf'
+    'space-grotesk-700.ttf',
+    'fredoka-700.ttf'
   ].map((font) => [`/vendor/fonts/${font}`, [font, 'font/ttf']])
 ]);
 

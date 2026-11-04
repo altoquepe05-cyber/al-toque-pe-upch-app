@@ -85,6 +85,8 @@ test('shows the Miraflores delivery schedule and updates its status using Lima t
   assert.match(html, /aria-controls="campus-service-details"/);
   assert.match(html, /data-lucide="chevron-down"/);
   assert.match(html, /aria-hidden=\{!isServiceCardExpanded\}/);
+  assert.match(html, /className="campus-service-description"/);
+  assert.match(html, /\.campus-service-description\s*\{\s*font-family: 'Fredoka', 'Outfit', sans-serif;\s*font-size: 15px;\s*font-weight: 700;/);
   assert.ok(html.indexOf('aria-label={`Servicio de delivery: ${serviceStatus.label}`}') < html.indexOf("timeString || 'LUNES, 12:38 P. M.'"),
     'the collapsed service card should appear above the date and time');
   assert.match(html, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.campus-service-card::before,[\s\S]*?\.campus-service-details\s*\{\s*animation: none !important;\s*transition: none !important;/);
@@ -993,7 +995,8 @@ test('serves the offline JavaScript and font assets from local paths', async (t)
     ['/vendor/fonts/outfit-600.ttf', 'font/ttf'],
     ['/vendor/fonts/outfit-700.ttf', 'font/ttf'],
     ['/vendor/fonts/space-grotesk-600.ttf', 'font/ttf'],
-    ['/vendor/fonts/space-grotesk-700.ttf', 'font/ttf']
+    ['/vendor/fonts/space-grotesk-700.ttf', 'font/ttf'],
+    ['/vendor/fonts/fredoka-700.ttf', 'font/ttf']
   ];
 
   for (const [path, contentType] of assets) {
@@ -1002,6 +1005,9 @@ test('serves the offline JavaScript and font assets from local paths', async (t)
     assert.equal(response.headers.get('content-type'), contentType);
     assert.ok(Number(response.headers.get('content-length')) > 0, `${path} should not be empty`);
   }
+
+  const fontStylesResponse = await fetch(`http://127.0.0.1:${server.address().port}/vendor/fonts.css`);
+  assert.match(await fontStylesResponse.text(), /font-family: 'Fredoka';[^}]*font-weight: 700;[^}]*fredoka-700\.ttf/);
 });
 
 test('compresses large text assets when the client accepts gzip', async (t) => {
