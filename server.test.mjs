@@ -462,6 +462,26 @@ test('shows the Starbucks Panettone launch modal and upcoming items without pric
   assert.doesNotMatch(productCards, /onAddStarbucks|toFixed\(/, 'upcoming products should not be purchasable or display prices');
 });
 
+test('shows official Starbucks prices and starting-price labels', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  const server = await createReelsTestServer(t, testDataDir);
+  const response = await fetch(`http://127.0.0.1:${server.address().port}/`);
+  const html = await response.text();
+  const sourceStart = html.indexOf('const STARBUCKS_PRODUCT_SOURCE = [');
+  const sourceEnd = html.indexOf('\n    ];', sourceStart);
+  const productSource = html.slice(sourceStart, sourceEnd);
+
+  assert.equal(response.status, 200);
+  assert.match(productSource, /\['Bebidas Proteicas', 'Iced Protein Matcha', 22\]/);
+  assert.match(productSource, /\['Frappuccinos', 'Pumpkin Spice Frappuccino', 18\]/);
+  assert.match(productSource, /\['Refreshers', 'Strawberry Acaí Refresher', 14\.5\]/);
+  assert.match(productSource, /\['Shaken Espresso', 'Mocha Blanco Shaken Espresso Frío con Bebida de Avena', 17\.5\]/);
+  assert.match(html, /const STARBUCKS_FIXED_PRICE_PRODUCTS = new Set\(\[\s*'Aranciata Sanpellegrino',\s*'Peach and Clementine Sanpellegrino Zero',\s*'Limonata Sanpellegrino'\s*\]\)/);
+  assert.match(html, /price,\s*pricePrefix: STARBUCKS_FIXED_PRICE_PRODUCTS\.has\(name\) \? 'S\/' : 'Desde S\/'/);
+  assert.match(html, /\{product\.pricePrefix\}\{product\.price\.toFixed\(2\)\}/);
+  assert.doesNotMatch(html, /STARBUCKS_DISCOUNTED_PRODUCTS/);
+});
+
 test('animates the walking rider from the first blue point through the route to the destination', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);

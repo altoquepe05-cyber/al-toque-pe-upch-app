@@ -4893,7 +4893,7 @@
       ['Frappuccinos', 'Algarrobina Frappuccino', 16.5],
       ['Frappuccinos', 'Chocolate Creme Frappuccino', 16],
       ['Frappuccinos', 'Lúcuma Creme Frappuccino', 17.5],
-      ['Frappuccinos', 'Vanilla Creme Frappuccino', 16],
+      ['Frappuccinos', 'Vainilla Creme Frappuccino', 16],
       ['Frappuccinos', 'Café Frappuccino', 13.5],
       ['Frappuccinos', 'Algarrobina Creme Frappuccino', 15.5],
       ['Frappuccinos', 'Mocha Blanco Frappuccino', 16],
@@ -4906,10 +4906,10 @@
       ['Café Caliente', 'Latte', 13],
       ['Café Caliente', 'Latte Macchiato', 15],
       ['Café Caliente', 'Mocha Café', 15.5],
-      ['Café Caliente', 'Vanilla Latte', 14.5],
+      ['Café Caliente', 'Vainilla Latte', 14.5],
       ['Café Caliente', 'Caramel Macchiato', 15.5],
       ['Café Caliente', 'Mocha Blanco Café', 15.5],
-      ['Café Caliente', 'Skinny Vanilla Latte', 14.5],
+      ['Café Caliente', 'Skinny Vainilla Latte', 14.5],
       ['Café Caliente', 'Algarrobina Latte', 16],
       ['Café Caliente', 'Americano', 11],
       ['Café Caliente', 'Pumpkin Spice Latte', 16],
@@ -4918,15 +4918,15 @@
       ['Café Frío', 'Black Cold Brew', 11.5],
       ['Café Frío', 'Americano Helado', 11],
       ['Café Frío', 'Latte Helado', 13],
-      ['Café Frío', 'Vanilla Latte Helado', 14.5],
+      ['Café Frío', 'Vainilla Latte Helado', 14.5],
       ['Café Frío', 'Mocha Blanco Café Helado', 15.5],
       ['Café Frío', 'Caramel Macchiato Helado', 15.5],
       ['Café Frío', 'Mocha Café Helado', 15.5],
-      ['Café Frío', 'Skinny Vanilla Latte Helado', 14.5],
+      ['Café Frío', 'Skinny Vainilla Latte Helado', 14.5],
       ['Café Frío', 'Pumpkin Spice Latte Helado', 16],
       ['Café Frío', 'Pecan Crunch Latte Helado', 16],
-      ['Refreshers', 'Strawberry Acai Refresher', 14.5],
-      ['Refreshers', 'Strawberry Acai Lemonade Refresher', 15.5],
+      ['Refreshers', 'Strawberry Acaí Refresher', 14.5],
+      ['Refreshers', 'Strawberry Acaí Lemonade Refresher', 15.5],
       ['Refreshers', 'Pink Drink Refresher', 16.5],
       ['Refreshers', 'Mango Dragon Fruit Refresher', 14.5],
       ['Refreshers', 'Mango Dragon Fruit Lemonade Refresher', 15.5],
@@ -4948,18 +4948,13 @@
       ['Bebidas Frías', 'Iced Matcha Latte', 14.5],
       ['Bebidas Frías', 'Limonata Sanpellegrino', 10],
       ['Shaken Espresso', 'Choco Shaken Espresso c/ Bebida de Avena', 17.5],
-      ['Shaken Espresso', 'Mocha Blanco Shaken Espresso con Bebida de Avena', 17.5],
+      ['Shaken Espresso', 'Mocha Blanco Shaken Espresso Frío con Bebida de Avena', 17.5],
       ['Shaken Espresso', 'Brown Sugar Shaken Espresso con Bebida de Avena', 17.5]
     ];
-    const STARBUCKS_DISCOUNTED_PRODUCTS = new Set([
-      'Iced Protein Matcha',
-      'Black & White Mocha Frappuccino',
-      'Latte',
-      'Black Cold Brew',
-      'Strawberry Acai Refresher',
-      'Chocolate Caliente',
-      'Iced Matcha Latte',
-      'Choco Shaken Espresso c/ Bebida de Avena'
+    const STARBUCKS_FIXED_PRICE_PRODUCTS = new Set([
+      'Aranciata Sanpellegrino',
+      'Peach and Clementine Sanpellegrino Zero',
+      'Limonata Sanpellegrino'
     ]);
 
     function getStarbucksProductDescription(category, name) {
@@ -4999,8 +4994,8 @@
       category: 'bebidas',
       menuCategory,
       brand: 'Starbucks',
-      price: STARBUCKS_DISCOUNTED_PRODUCTS.has(name) ? Math.max(0, price - 2) : price,
-      hasDiscount: STARBUCKS_DISCOUNTED_PRODUCTS.has(name),
+      price,
+      pricePrefix: STARBUCKS_FIXED_PRICE_PRODUCTS.has(name) ? 'S/' : 'Desde S/',
       description: getStarbucksProductDescription(menuCategory, name),
       time: '5 min',
       badge: 'Starbucks',
@@ -8740,7 +8735,7 @@
                           <h4 className="min-h-9 text-xs font-bold leading-snug text-dark">{product.name}</h4>
                           <p className="mt-1 min-h-10 text-[10px] leading-snug text-gray-500">{product.description}</p>
                           <div className="mt-auto flex items-center justify-between gap-1 pt-2">
-                            <span className="text-xs font-extrabold text-[#006241]">S/{product.price.toFixed(2)}</span>
+                            <span className="text-xs font-extrabold text-[#006241]">{product.pricePrefix}{product.price.toFixed(2)}</span>
                             <button
                               type="button"
                               onClick={() => onAddStarbucks(product)}
