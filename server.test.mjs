@@ -490,7 +490,7 @@ test('shows the Starbucks Panettone launch modal and upcoming items without pric
   assert.match(html, /if \(!showStarbucksCampaign\) return undefined;\s*const countdownInterval = window\.setInterval\(\(\) => setCampaignClock\(Date\.now\(\)\), 1000\)/);
   assert.match(html, /setFilter\('starbucks'\);\s*setStarbucksSection\('bebidas'\);\s*setCampaignClock\(Date\.now\(\)\);\s*setShowStarbucksCampaign\(true\);/);
   assert.match(html, /role="dialog"\s*aria-modal="true"\s*aria-labelledby="starbucks-campaign-title"/);
-  assert.match(html, /\.starbucks-campaign-overlay\s*\{[^}]*min-height:\s*100vh;[^}]*min-height:\s*100dvh;[^}]*overflow-y:\s*auto;/);
+  assert.match(html, /\.starbucks-campaign-overlay\s*\{[^}]*height:\s*100vh;[^}]*height:\s*100dvh;[^}]*min-height:\s*0;[^}]*overflow-y:\s*auto;/);
   assert.match(html, /\.starbucks-campaign-dialog\s*\{[^}]*width:\s*min\(100%,\s*850px\);[^}]*max-height:\s*calc\(100vh - 16px - env\(safe-area-inset-top\) - env\(safe-area-inset-bottom\)\);[^}]*max-height:\s*calc\(100dvh - 16px - env\(safe-area-inset-top\) - env\(safe-area-inset-bottom\)\);[^}]*overscroll-behavior:\s*contain;/);
   assert.match(html, /className="starbucks-campaign-overlay fixed inset-0/);
   assert.match(html, /className="starbucks-campaign-dialog space-y-3/);
