@@ -8188,7 +8188,7 @@
               <button onClick={() => onNavigate('menu')} className="text-xs font-bold text-brand hover:underline">Ver todo</button>
             </div>
 
-            <div className="flex space-x-3 overflow-x-auto no-scrollbar py-3 -mx-4 px-4">
+            <div className="flex space-x-3 overflow-x-auto no-scrollbar py-6 -mx-4 px-4">
               {popularDishes.map((dish) => (
                 <div key={dish.id} className="home-menu-card min-w-[220px] bg-white border border-gray-100 rounded-3xl p-2.5 shadow-sm flex flex-col justify-between">
                   <div className="home-menu-card-media relative h-28 rounded-2xl">
@@ -8221,7 +8221,7 @@
               <h3 className="font-title font-bold text-base">Combos que rinden</h3>
               <p className="text-[11px] text-gray-500">Para tu día a día en campus</p>
             </div>
-            <div className="flex space-x-3 overflow-x-auto no-scrollbar py-3 -mx-4 px-4">
+            <div className="flex space-x-3 overflow-x-auto no-scrollbar py-6 -mx-4 px-4">
               {INITIAL_MENU.filter((m) => m.category === 'combos').map((dish) => (
                 <div key={dish.id} className="home-menu-card combo-card min-w-[220px] bg-white border border-gray-100 rounded-3xl p-2.5 shadow-sm flex flex-col justify-between">
                   <div className="home-menu-card-media relative h-36 rounded-2xl">
