@@ -356,6 +356,21 @@ test('preloads the order received animation when serving the application page', 
   assert.match(html, /<link rel="preload" href="\/caminante-ruta\.png" as="image" type="image\/png"\s*\/?>/);
 });
 
+test('animates the home menu cards with a glowing outline and honors reduced motion', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  const server = await createReelsTestServer(t, testDataDir);
+  const response = await fetch(`http://127.0.0.1:${server.address().port}/`);
+  const html = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(html, /\.home-menu-card\s*\{[^}]*animation:\s*homeMenuCardGlow 5\.8s ease-in-out infinite;/);
+  assert.match(html, /\.home-menu-card::after\s*\{[^}]*border:\s*1px solid rgba\(197, 164, 92, 0\.32\)/);
+  assert.match(html, /\.home-menu-card:hover \.home-menu-card-image\s*\{\s*transform: scale\(1\.05\);/);
+  assert.match(html, /className="home-menu-card min-w-\[220px\] bg-white/);
+  assert.match(html, /className="home-menu-card combo-card min-w-\[220px\] bg-white/);
+  assert.match(html, /prefers-reduced-motion: reduce\)\s*\{\s*\.home-menu-card,\s*\.home-menu-card::after,\s*\.home-menu-card-image\s*\{\s*animation: none !important;\s*transition: none !important;/);
+});
+
 test('animates the walking rider from the first blue point through the route to the destination', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);
