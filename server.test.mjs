@@ -110,8 +110,8 @@ test('shows the Miraflores delivery schedule and updates its status using Lima t
   assert.match(html, /aria-hidden=\{!isServiceCardExpanded\}/);
   assert.match(html, /className="campus-service-description"/);
   assert.match(html, /\.campus-service-description\s*\{\s*font-family: 'Coiny', 'Fredoka', 'Outfit', sans-serif;\s*font-size: 16px;\s*font-weight: 400;/);
-  assert.ok(html.indexOf('aria-label={`Servicio de delivery: ${serviceStatus.label}`}') < html.indexOf("timeString || 'LUNES, 12:38 P. M.'"),
-    'the collapsed service card should appear above the date and time');
+  assert.ok(html.indexOf("timeString || 'LUNES, 12:38 P. M.'") < html.indexOf('aria-label={`Servicio de delivery: ${serviceStatus.label}`}'),
+    'the date and time should appear above the campus service card');
   assert.match(html, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.campus-service-highlight::before,[\s\S]*?\.campus-service-highlight::after\s*\{\s*animation: none !important;\s*transition: none !important;/);
 });
 

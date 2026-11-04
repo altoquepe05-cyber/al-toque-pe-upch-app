@@ -8906,6 +8906,8 @@
             </div>
           </div>
 
+          <p className="text-[11px] font-bold text-brand tracking-wider uppercase mb-1">{timeString || 'LUNES, 12:38 P. M.'}</p>
+
           <section
             className={`campus-service-card ${serviceStatus.state === 'online' ? 'campus-service-card--online' : 'campus-service-card--offline'} ${isServiceCardExpanded ? 'campus-service-card--expanded' : ''}`}
             aria-label={`Servicio de delivery: ${serviceStatus.label}`}
@@ -8959,7 +8961,6 @@
           </section>
 
           <div>
-            <p className="text-[11px] font-bold text-brand tracking-wider uppercase mb-1">{timeString || 'LUNES, 12:38 P. M.'}</p>
             <h2 className="home-headline-message font-title font-semibold text-[21px] leading-tight mb-3">
               {headline || HOME_MESSAGES[dayPart][mood][0]}
             </h2>
