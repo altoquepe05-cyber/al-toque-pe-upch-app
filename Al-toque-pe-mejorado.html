@@ -850,14 +850,21 @@
 
     @media (max-width: 480px) {
       .menu-pop-card {
-        margin-left: 12px;
-        margin-right: 12px;
+        margin-left: 20px;
+        margin-right: 20px;
       }
     }
 
     .menu-pop-card > * {
       position: relative;
       z-index: 1;
+    }
+
+    @media (max-width: 480px) {
+      .menu-pop-card--compact {
+        margin-left: 0;
+        margin-right: 0;
+      }
     }
 
     .menu-pop-media {
@@ -989,18 +996,18 @@
     @media (hover: none) and (pointer: coarse) {
       .menu-pop-card:has(> .menu-pop-media:active) {
         z-index: 3;
-        transform: translateY(-3px) scale(1.05);
+        transform: translateY(-2px) scale(1.015);
         border-color: #d3ae55;
         box-shadow: 0 8px 18px rgba(43, 23, 24, 0.12), 0 0 0 1px rgba(197, 164, 92, 0.32);
       }
 
       .menu-pop-card:has(> .menu-pop-media:active) .menu-pop-media {
-        transform: translateY(-8px) scale(1.04);
+        transform: translateY(-4px) scale(1.01);
       }
 
       .menu-pop-card:has(> .menu-pop-media:active) .menu-pop-image {
         z-index: 3;
-        transform: scale(1.1);
+        transform: scale(1.03);
         filter: drop-shadow(0 8px 8px rgba(43, 23, 24, 0.2));
       }
     }
@@ -1054,13 +1061,13 @@
       .home-menu-card:has(> .home-menu-card-media:active) {
         animation-play-state: paused;
         z-index: 3;
-        transform: translateY(-3px) scale(1.05);
+        transform: translateY(-2px) scale(1.015);
         border-color: #d3ae55;
         box-shadow: 0 8px 18px rgba(43, 23, 24, 0.12), 0 0 0 1px rgba(197, 164, 92, 0.32);
       }
 
       .home-menu-card:has(> .home-menu-card-media:active) .home-menu-card-media {
-        transform: translateY(-8px) scale(1.04);
+        transform: translateY(-4px) scale(1.01);
       }
 
       .home-menu-card:has(> .home-menu-card-media:active)::after {
@@ -1070,7 +1077,7 @@
 
       .home-menu-card:has(> .home-menu-card-media:active) .home-menu-card-image,
       .home-menu-card:has(> .home-menu-card-media:active) .combo-card-image {
-        transform: translateY(0) scale(1.1);
+        transform: translateY(0) scale(1.03);
         filter: drop-shadow(0 8px 8px rgba(43, 23, 24, 0.2));
       }
     }
@@ -8312,7 +8319,7 @@
               <button onClick={() => onNavigate('menu')} className="text-xs font-bold text-brand hover:underline">Ver todo</button>
             </div>
 
-            <div className="flex space-x-3 overflow-x-auto no-scrollbar py-6 -mx-4 px-4">
+            <div className="flex space-x-3 overflow-x-auto no-scrollbar py-6 -mx-4 px-6">
               {popularDishes.map((dish) => (
                 <div key={dish.id} className="home-menu-card min-w-[220px] bg-white border border-gray-100 rounded-3xl p-2.5 shadow-sm flex flex-col justify-between">
                   <div className="home-menu-card-media relative h-28 rounded-2xl">
@@ -8345,7 +8352,7 @@
               <h3 className="font-title font-bold text-base">Combos que rinden</h3>
               <p className="text-[11px] text-gray-500">Para tu día a día en campus</p>
             </div>
-            <div className="flex space-x-3 overflow-x-auto no-scrollbar py-6 -mx-4 px-4">
+            <div className="flex space-x-3 overflow-x-auto no-scrollbar py-6 -mx-4 px-6">
               {INITIAL_MENU.filter((m) => m.category === 'combos').map((dish) => (
                 <div key={dish.id} className="home-menu-card combo-card min-w-[220px] bg-white border border-gray-100 rounded-3xl p-2.5 shadow-sm flex flex-col justify-between">
                   <div className="home-menu-card-media relative h-36 rounded-2xl">
@@ -8557,7 +8564,7 @@
                     </div>
                     <div className="grid grid-cols-2 gap-2.5">
                       {products.map((product) => (
-                        <article key={product.id} className="menu-pop-card flex min-w-0 flex-col rounded-2xl border border-gray-200 bg-white p-2.5 shadow-sm">
+                        <article key={product.id} className="menu-pop-card menu-pop-card--compact flex min-w-0 flex-col rounded-2xl border border-gray-200 bg-white p-2.5 shadow-sm">
                           <div className="menu-pop-media relative mb-2 aspect-square rounded-xl bg-[#eff4f1]">
                             <img
                               src={product.image}
