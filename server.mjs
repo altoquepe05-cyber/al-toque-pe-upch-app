@@ -94,6 +94,7 @@ const PUBLIC_ASSETS = new Set([
   'al-toque-pe-logo.png',
   'al-toque-pe-emblema.png',
   'al-toque-reel-watermark.png',
+  'miraflores-logo-transparent.png',
   'promo-profesor-martin.png',
   'promo-profesor-martin-limpio.png',
   'promo-profesor-martin-referencia.png',

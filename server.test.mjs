@@ -46,6 +46,18 @@ test('serves the Reel watermark image as a public PNG asset', async (t) => {
   assert.equal(image.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
 });
 
+test('serves the transparent Miraflores logo as a public PNG asset', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  const server = await createReelsTestServer(t, testDataDir);
+  const response = await fetch(`http://127.0.0.1:${server.address().port}/miraflores-logo-transparent.png`);
+  const image = Buffer.from(await response.arrayBuffer());
+
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('content-type'), 'image/png');
+  assert.equal(image.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
+  assert.equal(image[25], 6, 'the PNG should retain its alpha channel');
+});
+
 test('shows the Miraflores delivery schedule and updates its status using Lima time', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);
@@ -78,7 +90,10 @@ test('shows the Miraflores delivery schedule and updates its status using Lima t
   }
 
   assert.match(html, /className=\{`campus-service-card \$\{serviceStatus\.state === 'online' \? 'campus-service-card--online' : 'campus-service-card--offline'\} \$\{isServiceCardExpanded \? 'campus-service-card--expanded' : ''\}`\}/);
-  assert.match(html, /Delivery de <span className="campus-service-highlight">COMIDA<\/span> para estudiantes del campus de Miraflores/);
+  assert.match(html, /Delivery de <span className="campus-service-highlight">COMIDA<\/span> para estudiantes del campus de\{' '\}\s*<img\s+src="miraflores-logo-transparent\.png"\s+alt="Miraflores"\s+className="campus-service-location-logo"/);
+  assert.match(html, /\.campus-service-location-logo\s*\{[^}]*animation: campusLocationLogoFloat 2\.8s ease-in-out infinite;/);
+  assert.match(html, /@keyframes campusLocationLogoFloat[\s\S]*?50% \{ transform: translateY\(-2px\) rotate\(1deg\); \}/);
+  assert.match(html, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.campus-service-location-logo \{ animation: none; \}\s*\}/);
   assert.match(html, /\.campus-service-highlight\s*\{[^}]*animation: campusServiceWordPulse 1\.8s ease-in-out infinite;/);
   assert.match(html, /\.campus-service-highlight::before,\s*\.campus-service-highlight::after\s*\{[^}]*animation: campusServiceQuotePop 1\.8s ease-out infinite;/);
   assert.match(html, /\.campus-service-highlight::before\s*\{[^}]*content: "“";/);
