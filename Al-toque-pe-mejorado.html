@@ -842,24 +842,6 @@
     .home-menu-card:nth-child(3) .home-menu-card-image { animation-delay: 140ms; }
     .home-menu-card:nth-child(4) .home-menu-card-image { animation-delay: 210ms; }
 
-    @media (hover: hover) {
-      .home-menu-card:hover {
-        animation-play-state: paused;
-        transform: translateY(-3px);
-        border-color: #d3ae55;
-        box-shadow: 0 8px 18px rgba(43, 23, 24, 0.12), 0 0 0 1px rgba(197, 164, 92, 0.32);
-      }
-
-      .home-menu-card:hover::after {
-        animation-play-state: paused;
-        opacity: 0.95;
-      }
-
-      .home-menu-card:hover .home-menu-card-image {
-        transform: scale(1.05);
-      }
-    }
-
     @keyframes homeMenuCardGlow {
       0%, 100% {
         border-color: #eee5d7;
@@ -893,6 +875,25 @@
 
     .combo-card:hover .combo-card-image {
       transform: scale(1.06);
+    }
+
+    @media (hover: hover) {
+      .home-menu-card:hover {
+        animation-play-state: paused;
+        transform: translateY(-3px) scale(1.05);
+        border-color: #d3ae55;
+        box-shadow: 0 8px 18px rgba(43, 23, 24, 0.12), 0 0 0 1px rgba(197, 164, 92, 0.32);
+      }
+
+      .home-menu-card:hover::after {
+        animation-play-state: paused;
+        opacity: 0.95;
+      }
+
+      .home-menu-card:hover .home-menu-card-image,
+      .home-menu-card:hover .combo-card-image {
+        transform: scale(1.1);
+      }
     }
 
     .combo-card:nth-child(2) .combo-card-image { animation-delay: 70ms; }

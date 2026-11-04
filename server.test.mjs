@@ -367,7 +367,10 @@ test('animates the home menu cards with a glowing outline and honors reduced mot
   assert.match(html, /\.home-menu-card::after\s*\{[^}]*z-index:\s*0;[^}]*border:\s*1px solid rgba\(197, 164, 92, 0\.32\)/);
   assert.match(html, /\.home-menu-card > \* \{\s*position: relative;\s*z-index: 1;\s*\}/);
   assert.equal((html.match(/overflow-x-auto no-scrollbar py-3 -mx-4 px-4/g) || []).length, 2);
-  assert.match(html, /\.home-menu-card:hover \.home-menu-card-image\s*\{\s*transform: scale\(1\.05\);/);
+  assert.match(html, /\.home-menu-card:hover\s*\{[^}]*transform: translateY\(-3px\) scale\(1\.05\);/);
+  assert.match(html, /\.home-menu-card:hover \.home-menu-card-image,\s*\.home-menu-card:hover \.combo-card-image\s*\{\s*transform: scale\(1\.1\);/);
+  assert.ok(html.indexOf('.home-menu-card:hover .combo-card-image') > html.indexOf('.combo-card:hover .combo-card-image'),
+    'home card hover styles should override the generic combo hover effects');
   assert.match(html, /className="home-menu-card min-w-\[220px\] bg-white/);
   assert.match(html, /className="home-menu-card combo-card min-w-\[220px\] bg-white/);
   assert.match(html, /prefers-reduced-motion: reduce\)\s*\{\s*\.home-menu-card,\s*\.home-menu-card::after,\s*\.home-menu-card-image\s*\{\s*animation: none !important;\s*transition: none !important;/);
