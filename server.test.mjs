@@ -549,6 +549,53 @@ test('offers animated WhatsApp support for the Al Toque help phone number', asyn
   assert.match(html, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.help-whatsapp-button\s*\{\s*animation:\s*none;\s*\}\s*\}/);
 });
 
+test('offers the three new pickup points and accepts them for customer orders', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  const server = await createReelsTestServer(t, testDataDir);
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const htmlResponse = await fetch(baseUrl);
+  const html = await htmlResponse.text();
+  const pickupSelectorStart = html.indexOf('<select value={pickupPoint}');
+  const pickupSelectorEnd = html.indexOf('</select>', pickupSelectorStart);
+  const pickupSelector = html.slice(pickupSelectorStart, pickupSelectorEnd);
+  const pickupPoints = ['En la puerta principal', 'En el patio', 'Área de tutoría'];
+
+  assert.equal(htmlResponse.status, 200);
+  assert.ok(pickupSelectorStart >= 0 && pickupSelectorEnd > pickupSelectorStart);
+  assert.match(pickupSelector, /<option value="En la puerta principal">En la puerta principal<\/option>/);
+  assert.match(pickupSelector, /<option value="En el patio">En el patio<\/option>/);
+  assert.match(pickupSelector, /<option value="Área de tutoría">Área de tutoría<\/option>/);
+  assert.doesNotMatch(pickupSelector, /Cafetería Central|Facultad de Medicina|Pabellón de Aulas/);
+
+  for (const [index, pickupPoint] of pickupPoints.entries()) {
+    const response = await fetch(`${baseUrl}/api/orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: baseUrl },
+      body: JSON.stringify({
+        idempotencyKey: `pickup-test-${index}-${randomUUID()}`,
+        customer: 'Cliente',
+        items: [{ name: 'Lomo saltado', quantity: 1, price: 12 }],
+        pickupPoint,
+        paymentMethod: 'yape'
+      })
+    });
+    assert.equal(response.status, 201, `${pickupPoint} should be accepted for an order`);
+    assert.equal((await response.json()).order.pickupPoint, pickupPoint);
+  }
+
+  const oldPickupPointResponse = await fetch(`${baseUrl}/api/orders`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: baseUrl },
+    body: JSON.stringify({
+      customer: 'Cliente',
+      items: [{ name: 'Lomo saltado', quantity: 1, price: 12 }],
+      pickupPoint: 'Cafetería Central',
+      paymentMethod: 'yape'
+    })
+  });
+  assert.equal(oldPickupPointResponse.status, 400);
+});
+
 test('shows official Starbucks prices and starting-price labels', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);
@@ -1050,7 +1097,7 @@ test('shares customer orders with riders when HTTPS terminates at the reverse pr
     idempotencyKey: 'proxy-order-123456',
     customer: 'Cliente',
     items: [{ name: 'Lomo saltado', quantity: 1, price: 12 }],
-    pickupPoint: 'Cafetería Central',
+    pickupPoint: 'En la puerta principal',
     paymentMethod: 'yape'
   });
 
@@ -1066,7 +1113,7 @@ test('shares customer orders with riders when HTTPS terminates at the reverse pr
     idempotencyKey: 'proxy-order-654321',
     customer: 'Origen ajeno',
     items: [{ name: 'Lomo saltado', quantity: 1, price: 12 }],
-    pickupPoint: 'Cafetería Central',
+    pickupPoint: 'En la puerta principal',
     paymentMethod: 'yape'
   });
   assert.equal(rejectedResponse.status, 403);
@@ -1865,7 +1912,7 @@ test('shares customer orders with the rider queue and enforces delivery transiti
         description: 'Bebida de matcha con proteína.',
         image: 'data:image/svg+xml;charset=UTF-8,%3Csvg%3E%3C%2Fsvg%3E'
       }],
-      pickupPoint: 'Cafetería Central',
+      pickupPoint: 'En la puerta principal',
       paymentMethod: 'yape'
     })
   });
@@ -1894,7 +1941,7 @@ test('shares customer orders with the rider queue and enforces delivery transiti
         description: 'Bebida de matcha con proteína.',
         image: 'data:image/svg+xml;charset=UTF-8,%3Csvg%3E%3C%2Fsvg%3E'
       }],
-      pickupPoint: 'Cafetería Central',
+      pickupPoint: 'En la puerta principal',
       paymentMethod: 'yape'
     })
   });
@@ -2088,7 +2135,7 @@ test('rejects rider-declined orders and allows cancellation until pickup', async
     id: 'UPCH-EXPIRED-ORDER',
     customer: 'Cliente UPCH',
     items: [{ name: 'Pedido vencido', quantity: 1, price: 10 }],
-    pickupPoint: 'Cafetería Central',
+    pickupPoint: 'En la puerta principal',
     paymentMethod: 'yape',
     subtotal: 10,
     total: 11,
@@ -2135,7 +2182,7 @@ test('rejects rider-declined orders and allows cancellation until pickup', async
     body: JSON.stringify({
       customer: 'Cliente UPCH',
       items: [{ name: 'Pedido cancelable', quantity: 1, price: 10 }],
-      pickupPoint: 'Cafetería Central',
+      pickupPoint: 'En la puerta principal',
       paymentMethod: 'yape'
     })
   });
@@ -2148,7 +2195,7 @@ test('rejects rider-declined orders and allows cancellation until pickup', async
     body: JSON.stringify({
       customer: 'Cliente UPCH',
       items: [{ name: 'Pedido rechazable', quantity: 1, price: 8 }],
-      pickupPoint: 'Cafetería Central',
+      pickupPoint: 'En la puerta principal',
       paymentMethod: 'yape'
     })
   });
@@ -2207,7 +2254,7 @@ test('accepts Gorritos redemptions without a cash total or service fee', async (
     body: JSON.stringify({
       customer: 'Armando',
       items: [{ id: '1', name: 'Lomo saltado', quantity: 1, price: 0 }],
-      pickupPoint: 'Cafetería Central',
+      pickupPoint: 'En la puerta principal',
       paymentMethod: 'gorritos',
       gorritosSpent: 12,
       ...details
@@ -2245,7 +2292,7 @@ test('accepts Gorritos redemptions without a cash total or service fee', async (
     body: JSON.stringify({
       idempotencyKey: 'cash-with-gorritos-123456',
       items: [{ id: '1', name: 'Lomo saltado', quantity: 1, price: 12 }],
-      pickupPoint: 'Cafetería Central',
+      pickupPoint: 'En la puerta principal',
       paymentMethod: 'efectivo',
       gorritosSpent: 12
     })

@@ -6285,7 +6285,7 @@
       });
       const [orderHistoryStorageError, setOrderHistoryStorageError] = useState('');
       const [customizingDish, setCustomizingDish] = useState(null);
-      const [pickupPoint, setPickupPoint] = useState('Cafetería Central');
+      const [pickupPoint, setPickupPoint] = useState('En la puerta principal');
       const [notifications, setNotifications] = useState(true);
       const [toast, setToast] = useState(null);
       const [orderConfirmed, setOrderConfirmed] = useState(() => Boolean(localStorage.getItem('altoque_current_order')));
@@ -14492,9 +14492,9 @@
                   <div>
                     <h5 className="font-bold text-xs">Punto de recojo</h5>
                     <select value={pickupPoint} onChange={(e) => setPickupPoint(e.target.value)} className="text-[10px] text-gray-500 bg-transparent focus:outline-none font-medium cursor-pointer">
-                      <option value="Cafetería Central">Cafetería Central</option>
-                      <option value="Facultad de Medicina">Facultad de Medicina</option>
-                      <option value="Pabellón de Aulas">Pabellón de Aulas</option>
+                      <option value="En la puerta principal">En la puerta principal</option>
+                      <option value="En el patio">En el patio</option>
+                      <option value="Área de tutoría">Área de tutoría</option>
                     </select>
                   </div>
                 </div>

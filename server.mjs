@@ -1515,7 +1515,7 @@ async function handleRequest(request, response, orders, riderLocations, idempote
     }
 
     const isDemo = body.isDemo === true;
-    const validPickupPoints = new Set(['Cafetería Central', 'Facultad de Medicina', 'Pabellón de Aulas']);
+    const validPickupPoints = new Set(['En la puerta principal', 'En el patio', 'Área de tutoría']);
     const validPaymentMethods = new Set(['yape', 'plin', 'tarjeta', 'efectivo', 'gorritos']);
     const isGorritosOrder = body.paymentMethod === 'gorritos';
     const gorritosSpent = body.gorritosSpent;
