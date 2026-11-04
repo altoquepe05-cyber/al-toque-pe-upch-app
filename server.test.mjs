@@ -390,6 +390,10 @@ test('animates the home menu cards with a glowing outline and honors reduced mot
   assert.match(html, /\.menu-pop-card:has\(> \.menu-pop-media:hover\) \.menu-pop-image\s*\{[^}]*transform: scale\(1\.1\);/);
   assert.match(html, /\.menu-pop-card:has\(> \.menu-pop-media:active\)\s*\{[^}]*transform: translateY\(-3px\) scale\(1\.05\);/);
   assert.match(html, /@media \(max-width: 480px\)\s*\{\s*\.menu-pop-card\s*\{\s*margin-left: 12px;\s*margin-right: 12px;/);
+  assert.match(html, /\.bembos-promo-media\s*\{[^}]*aspect-ratio:\s*1\.15 \/ 1;[^}]*overflow:\s*hidden;[^}]*border-radius:\s*1\.25rem;/);
+  assert.match(html, /\.bembos-promo-image\s*\{[^}]*object-fit:\s*cover;[^}]*object-position:\s*center;/);
+  assert.match(html, /className="menu-pop-media bembos-promo-media relative rounded-2xl bg-white"/);
+  assert.match(html, /className="menu-pop-image bembos-promo-image h-full w-full rounded-2xl"/);
   assert.match(html, /className="menu-pop-card rounded-3xl border border-gray-100 bg-white p-3 shadow-sm"/);
   assert.match(html, /className="menu-pop-card flex min-w-0 flex-col rounded-2xl border border-gray-200 bg-white p-2\.5 shadow-sm"/);
   assert.match(html, /className="menu-pop-card bg-white border border-gray-100 rounded-3xl p-3 shadow-sm space-y-2"/);

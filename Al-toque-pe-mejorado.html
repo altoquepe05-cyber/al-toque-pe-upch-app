@@ -872,6 +872,19 @@
       transition: transform 360ms ease, filter 360ms ease;
     }
 
+    .bembos-promo-media {
+      height: auto;
+      aspect-ratio: 1.15 / 1;
+      overflow: hidden;
+      border-radius: 1.25rem;
+    }
+
+    .bembos-promo-image {
+      border-radius: inherit;
+      object-fit: cover;
+      object-position: center;
+    }
+
     .menu-popular-badge {
       isolation: isolate;
       overflow: hidden;
@@ -8473,13 +8486,13 @@
                     <h3 id={group.id === 'pareja' ? 'bembos-promotions-title' : undefined} className="font-title text-lg font-bold">{group.title}</h3>
                     {promotions.map((promo) => (
                       <article key={promo.id} className="menu-pop-card rounded-3xl border border-gray-100 bg-white p-3 shadow-sm">
-                        <div className="menu-pop-media relative h-48 rounded-2xl bg-white">
+                        <div className="menu-pop-media bembos-promo-media relative rounded-2xl bg-white">
                           <img
                             src={promo.image}
                             alt={promo.name}
                             loading="lazy"
                             referrerPolicy="no-referrer"
-                            className="menu-pop-image h-full w-full rounded-2xl object-contain"
+                            className="menu-pop-image bembos-promo-image h-full w-full rounded-2xl"
                           />
                           {group.id === 'cupones' ? (
                             <img
