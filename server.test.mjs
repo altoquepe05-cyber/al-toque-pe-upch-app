@@ -67,6 +67,8 @@ test('shows the Miraflores delivery schedule and updates its status using Lima t
 
   assert.equal(response.status, 200);
   assert.ok(statusFunction, 'the home screen should calculate the campus service status');
+  assert.match(html, /<link rel="preload" href="\/vendor\/fonts\/coiny-400\.ttf" as="font" type="font\/ttf" crossorigin\s*\/?>/,
+    'the rounded delivery font should preload before the first paint');
   const getCampusServiceStatus = vm.runInNewContext(`(${statusFunction[0]})`, { Intl });
   const cases = [
     ['2026-01-15T09:59:00-05:00', 'offline', '10:00 a. m.'],
