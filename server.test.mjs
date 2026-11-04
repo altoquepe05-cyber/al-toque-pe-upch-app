@@ -595,7 +595,7 @@ test('shows official Starbucks food items with prices, circular photos and inter
   assert.equal(imageEntries.length, products.length, 'every Starbucks food product should have an official image');
   assert.deepEqual(imageEntries.map((entry) => entry[1]).sort(), products.map((product) => product.name).sort());
   assert.ok(imageEntries.every((entry) => entry[2].startsWith('https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/')));
-  assert.match(html, /STARBUCKS_PRODUCTS\.length \+ STARBUCKS_FOOD_PRODUCTS\.length \+ STARBUCKS_MERCH_PRODUCTS\.length \+ STARBUCKS_UPCOMING_PROMOTIONS\.length/);
+  assert.match(html, /STARBUCKS_PRODUCTS\.length \+ STARBUCKS_FOOD_PRODUCTS\.length \+ STARBUCKS_MERCH_PRODUCTS\.length \+ STARBUCKS_PACK_PRODUCTS\.length \+ STARBUCKS_UPCOMING_PROMOTIONS\.length/);
   assert.ok(products.some((product) => product.name === 'Galleta Rellena de Crema de Avellanas' && product.price === 11));
   assert.ok(products.some((product) => product.name === 'Cheesecake de Arándanos' && product.price === 16));
   assert.ok(products.some((product) => product.name === 'Sándwich Chicken Ciabatta' && product.price === 14.5));
@@ -647,6 +647,53 @@ test('shows Starbucks coffee and merch with official prices, photos and add-to-o
   assert.match(merchPanel, /STARBUCKS_MERCH_CATEGORIES\.map\(\(category\) =>/);
   assert.match(merchPanel, /alt=\{`Producto Starbucks: \$\{product\.name\}`\}/);
   assert.match(merchPanel, /onClick=\{\(\) => onAddStarbucks\(product\)\}/);
+});
+
+test('shows Starbucks packs with official prices, photos and starting-price labels', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  const server = await createReelsTestServer(t, testDataDir);
+  const response = await fetch(`http://127.0.0.1:${server.address().port}/`);
+  const html = await response.text();
+  const sourceStart = html.indexOf('const STARBUCKS_PACK_SOURCE = [');
+  const sourceEnd = html.indexOf('\n    ];', sourceStart);
+  const productSource = html.slice(sourceStart, sourceEnd);
+  const imageMapStart = html.indexOf('const STARBUCKS_PACK_IMAGE_URLS = {');
+  const imageMapEnd = html.indexOf('\n    };', imageMapStart);
+  const imageMap = html.slice(imageMapStart, imageMapEnd);
+  const products = Array.from(productSource.matchAll(/\['([^']+)', '([^']+)', ([0-9.]+), (true|false)\]/g), (match) => ({
+    category: match[1],
+    name: match[2],
+    price: Number(match[3]),
+    priceVaries: match[4] === 'true'
+  }));
+  const imageEntries = Array.from(imageMap.matchAll(/^\s+'([^']+)': '(https:\/\/[^']+\.png)'[,]?$/gm));
+  const packsPanelStart = html.indexOf("starbucksSection === 'packs' ?");
+  const packsPanelEnd = html.indexOf('Estamos preparando esta categoría de Starbucks.', packsPanelStart);
+  const packsPanel = html.slice(packsPanelStart, packsPanelEnd);
+
+  assert.equal(response.status, 200);
+  assert.ok(sourceStart >= 0 && sourceEnd > sourceStart, 'Starbucks packs should be defined');
+  assert.deepEqual(products, [
+    { category: 'Dosis de Proteína', name: 'Dúo Proteico', price: 25, priceVaries: true },
+    { category: 'Coffee for Share', name: 'Coffee Traveler', price: 60, priceVaries: false },
+    { category: 'Coffee for Share', name: 'Pack Coffee Mixto', price: 121, priceVaries: false },
+    { category: 'Coffee for Share', name: 'Pack Coffee Sándwich', price: 136, priceVaries: false },
+    { category: 'Coffee for Share', name: 'Pack Coffee Galleta', price: 96, priceVaries: false },
+    { category: 'Desayunos', name: 'Desayuno Para 2', price: 31, priceVaries: true },
+    { category: 'Desayunos', name: 'Desayuno Ligero', price: 15, priceVaries: true },
+    { category: 'Desayunos', name: 'Dúo Desayuno winter', price: 12, priceVaries: true },
+    { category: 'Antojos de la tarde', name: 'Momentos Dulces', price: 15, priceVaries: true },
+    { category: 'Antojos de la tarde', name: 'Tardes con Starbucks', price: 13, priceVaries: true },
+    { category: 'Antojos de la tarde', name: 'Dúo tardes winter', price: 12, priceVaries: true }
+  ]);
+  assert.equal(imageEntries.length, products.length, 'every Starbucks pack should have an official image');
+  assert.deepEqual(imageEntries.map((entry) => entry[1]).sort(), products.map((product) => product.name).sort());
+  assert.ok(imageEntries.every((entry) => entry[2].startsWith('https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/')));
+  assert.match(html, /const STARBUCKS_PACK_CATEGORIES = \['Dosis de Proteína', 'Coffee for Share', 'Desayunos', 'Antojos de la tarde'\]/);
+  assert.match(html, /pricePrefix: priceVaries \? 'Desde S\/' : 'S\/'/);
+  assert.match(packsPanel, /STARBUCKS_PACK_CATEGORIES\.map\(\(category\) =>/);
+  assert.match(packsPanel, /alt=\{`Pack Starbucks: \$\{product\.name\}`\}/);
+  assert.match(packsPanel, /onClick=\{\(\) => onAddStarbucks\(product\)\}/);
 });
 
 test('animates the walking rider from the first blue point through the route to the destination', async (t) => {

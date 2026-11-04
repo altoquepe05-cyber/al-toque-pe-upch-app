@@ -5175,6 +5175,33 @@
       'Colombia 250 gr.': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/colombia-250-gr-1793337025664.png',
       'Bearista Bear Llama': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/bearista-bear-llama-1793337027258.png'
     };
+    const STARBUCKS_PACK_CATEGORIES = ['Dosis de Proteína', 'Coffee for Share', 'Desayunos', 'Antojos de la tarde'];
+    const STARBUCKS_PACK_SOURCE = [
+      ['Dosis de Proteína', 'Dúo Proteico', 25, true],
+      ['Coffee for Share', 'Coffee Traveler', 60, false],
+      ['Coffee for Share', 'Pack Coffee Mixto', 121, false],
+      ['Coffee for Share', 'Pack Coffee Sándwich', 136, false],
+      ['Coffee for Share', 'Pack Coffee Galleta', 96, false],
+      ['Desayunos', 'Desayuno Para 2', 31, true],
+      ['Desayunos', 'Desayuno Ligero', 15, true],
+      ['Desayunos', 'Dúo Desayuno winter', 12, true],
+      ['Antojos de la tarde', 'Momentos Dulces', 15, true],
+      ['Antojos de la tarde', 'Tardes con Starbucks', 13, true],
+      ['Antojos de la tarde', 'Dúo tardes winter', 12, true]
+    ];
+    const STARBUCKS_PACK_IMAGE_URLS = {
+      'Dúo Proteico': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/duo-proteico-1793337027125.png',
+      'Coffee Traveler': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/coffee-traveler-1793337025708.png',
+      'Pack Coffee Mixto': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/pack-coffee-mixto-1793337028694.png',
+      'Pack Coffee Sándwich': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/pack-coffee-sandwich-1793337026017.png',
+      'Pack Coffee Galleta': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/pack-coffee-galleta-1793337025716.png',
+      'Desayuno Para 2': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/desayuno-para-2-1793337026237.png',
+      'Desayuno Ligero': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/desayuno-ligero-1793337026877.png',
+      'Dúo Desayuno winter': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/duo-desayuno-winter-1793337027243.png',
+      'Momentos Dulces': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/momentos-dulces-1793337026394.png',
+      'Tardes con Starbucks': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/tardes-con-starbucks-1793337026536.png',
+      'Dúo tardes winter': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/duo-tardes-winter-1793337026784.png'
+    };
 
     const STARBUCKS_FIXED_PRICE_PRODUCTS = new Set([
       'Aranciata Sanpellegrino',
@@ -5240,6 +5267,21 @@
       badge: 'Starbucks',
       isPopular: false,
       image: STARBUCKS_MERCH_IMAGE_URLS[name],
+      components: []
+    }));
+    const STARBUCKS_PACK_PRODUCTS = STARBUCKS_PACK_SOURCE.map(([menuCategory, name, price, priceVaries], index) => ({
+      id: `starbucks-pack-${index + 1}`,
+      name,
+      category: 'packs',
+      menuCategory,
+      brand: 'Starbucks',
+      price,
+      pricePrefix: priceVaries ? 'Desde S/' : 'S/',
+      description: menuCategory,
+      time: '5 min',
+      badge: 'Starbucks',
+      isPopular: false,
+      image: STARBUCKS_PACK_IMAGE_URLS[name],
       components: []
     }));
 
@@ -8798,7 +8840,7 @@
                 setCampaignClock(Date.now());
                 setShowStarbucksCampaign(true);
               }}
-              aria-label={`Promos Starbucks: ${STARBUCKS_PRODUCTS.length + STARBUCKS_FOOD_PRODUCTS.length + STARBUCKS_MERCH_PRODUCTS.length + STARBUCKS_UPCOMING_PROMOTIONS.length} elementos`}
+              aria-label={`Promos Starbucks: ${STARBUCKS_PRODUCTS.length + STARBUCKS_FOOD_PRODUCTS.length + STARBUCKS_MERCH_PRODUCTS.length + STARBUCKS_PACK_PRODUCTS.length + STARBUCKS_UPCOMING_PROMOTIONS.length} elementos`}
               aria-pressed={filter === 'starbucks'}
               className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition ${
                 filter === 'starbucks' ? 'bg-[#006241] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -8806,7 +8848,7 @@
             >
               Promos Starbucks
               <span className={`ml-1.5 text-[10px] font-medium ${filter === 'starbucks' ? 'text-white/70' : 'text-gray-500'}`}>
-                {STARBUCKS_PRODUCTS.length + STARBUCKS_FOOD_PRODUCTS.length + STARBUCKS_MERCH_PRODUCTS.length + STARBUCKS_UPCOMING_PROMOTIONS.length}
+                {STARBUCKS_PRODUCTS.length + STARBUCKS_FOOD_PRODUCTS.length + STARBUCKS_MERCH_PRODUCTS.length + STARBUCKS_PACK_PRODUCTS.length + STARBUCKS_UPCOMING_PROMOTIONS.length}
               </span>
             </button>
           </div>
@@ -9125,6 +9167,59 @@
                       return !query || `${product.name} ${product.menuCategory}`.toLocaleLowerCase('es').includes(query);
                     }).length === 0 && (
                       <p className="rounded-2xl bg-gray-50 p-4 text-center text-xs text-gray-500">No encontramos productos Starbucks que coincidan con la búsqueda.</p>
+                    )}
+                  </div>
+                ) : starbucksSection === 'packs' ? (
+                  <div className="space-y-5">
+                    {STARBUCKS_PACK_CATEGORIES.map((category) => {
+                      const query = searchQuery.trim().toLocaleLowerCase('es');
+                      const products = STARBUCKS_PACK_PRODUCTS.filter((product) =>
+                        product.menuCategory === category
+                        && (!query || `${product.name} ${product.menuCategory}`.toLocaleLowerCase('es').includes(query))
+                      );
+                      if (products.length === 0) return null;
+
+                      return (
+                        <section key={category} className="space-y-2.5" aria-labelledby={`starbucks-packs-${category}`}>
+                          <div className="flex items-center justify-between border-b border-gray-200 pb-2">
+                            <h3 id={`starbucks-packs-${category}`} className="font-title text-lg font-bold">{category}</h3>
+                            <span className="text-[10px] font-semibold text-gray-500">{products.length}</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-6">
+                            {products.map((product) => (
+                              <article key={product.id} className="menu-pop-card menu-pop-card--compact flex min-w-0 flex-col rounded-2xl border border-gray-200 bg-white p-2.5 shadow-sm">
+                                <div className="menu-pop-media starbucks-product-media relative mx-auto mb-2 flex aspect-square w-[88%] items-center justify-center rounded-full border-2 border-[#d6bb79] bg-[#075344] p-2.5 shadow-md">
+                                  <img
+                                    src={product.image}
+                                    alt={`Pack Starbucks: ${product.name}`}
+                                    loading="lazy"
+                                    className="menu-pop-image starbucks-product-image"
+                                  />
+                                </div>
+                                <h4 className="min-h-9 text-xs font-bold leading-snug text-dark">{product.name}</h4>
+                                <p className="mt-1 min-h-10 text-[10px] leading-snug text-gray-500">{product.description}</p>
+                                <div className="mt-auto flex items-center justify-between gap-1 pt-2">
+                                  <span className="text-xs font-extrabold text-[#006241]">{product.pricePrefix}{product.price.toFixed(2)}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => onAddStarbucks(product)}
+                                    aria-label={`Añadir ${product.name} al pedido`}
+                                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#006241] text-xl font-bold text-white transition hover:bg-[#004d33] active:scale-95"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              </article>
+                            ))}
+                          </div>
+                        </section>
+                      );
+                    })}
+                    {STARBUCKS_PACK_PRODUCTS.filter((product) => {
+                      const query = searchQuery.trim().toLocaleLowerCase('es');
+                      return !query || `${product.name} ${product.menuCategory}`.toLocaleLowerCase('es').includes(query);
+                    }).length === 0 && (
+                      <p className="rounded-2xl bg-gray-50 p-4 text-center text-xs text-gray-500">No encontramos packs Starbucks que coincidan con la búsqueda.</p>
                     )}
                   </div>
                 ) : (
