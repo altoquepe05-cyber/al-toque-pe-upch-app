@@ -1789,6 +1789,9 @@
       pointer-events: none;
       transform: translate(-50%, -88%);
     }
+    .delivery-map .walking-route-character {
+      width: clamp(56px, 16%, 70px);
+    }
     .live-route-map-status {
       position: absolute;
       z-index: 2;
@@ -9847,8 +9850,29 @@
     const DELIVERY_DURATION_MS = 300000;
     const DELIVERY_ROUTE_START = [-12.1348222, -77.0260012];
     const DELIVERY_ROUTE_END = [-12.1341675, -77.0260721];
-    // Google Maps is cross-origin, so the character follows this visual route approximation.
+    // Google Maps is cross-origin, so these points trace the visible route in the fixed map viewport.
     const WALKING_ROUTE_POINTS = [
+      { x: 61, y: 74 },
+      { x: 58, y: 70 },
+      { x: 54, y: 66 },
+      { x: 50, y: 62 },
+      { x: 47, y: 59 },
+      { x: 44, y: 56 },
+      { x: 41, y: 53 },
+      { x: 39, y: 52 },
+      { x: 41, y: 49 },
+      { x: 44, y: 45 },
+      { x: 47, y: 41 },
+      { x: 49, y: 37 },
+      { x: 51, y: 33 },
+      { x: 53, y: 29 },
+      { x: 55, y: 25 },
+      { x: 54, y: 21 },
+      { x: 51, y: 17 },
+      { x: 47, y: 13 },
+      { x: 44, y: 8 }
+    ];
+    const RIDER_WALKING_ROUTE_POINTS = [
       { x: 59, y: 77 },
       { x: 56, y: 73 },
       { x: 52, y: 68 },
@@ -9866,10 +9890,10 @@
       { x: 10, y: 20 }
     ];
 
-    function getWalkingRoutePosition(progress) {
+    function getWalkingRoutePosition(progress, routePoints = WALKING_ROUTE_POINTS) {
       const safeProgress = Math.max(0, Math.min(1, progress));
-      const segmentLengths = WALKING_ROUTE_POINTS.slice(1).map((point, index) => {
-        const previousPoint = WALKING_ROUTE_POINTS[index];
+      const segmentLengths = routePoints.slice(1).map((point, index) => {
+        const previousPoint = routePoints[index];
         return Math.hypot((point.x - previousPoint.x) * (4 / 3), point.y - previousPoint.y);
       });
       const totalLength = segmentLengths.reduce((sum, length) => sum + length, 0);
@@ -9877,8 +9901,8 @@
 
       for (let index = 0; index < segmentLengths.length; index += 1) {
         const segmentLength = segmentLengths[index];
-        const start = WALKING_ROUTE_POINTS[index];
-        const end = WALKING_ROUTE_POINTS[index + 1];
+        const start = routePoints[index];
+        const end = routePoints[index + 1];
         if (remainingLength <= segmentLength || index === segmentLengths.length - 1) {
           const ratio = segmentLength === 0 ? 0 : Math.min(1, remainingLength / segmentLength);
           return {
@@ -9889,7 +9913,7 @@
         remainingLength -= segmentLength;
       }
 
-      return WALKING_ROUTE_POINTS[WALKING_ROUTE_POINTS.length - 1];
+      return routePoints[routePoints.length - 1];
     }
 
     class LiveRouteMapErrorBoundary extends React.Component {
@@ -9917,7 +9941,14 @@
       }
     }
 
-    function LiveRouteMap({ location, className, label, walkingStartedAt = null, allowMapInteraction = false }) {
+    function LiveRouteMap({
+      location,
+      className,
+      label,
+      walkingStartedAt = null,
+      allowMapInteraction = false,
+      walkingRoutePoints = WALKING_ROUTE_POINTS
+    }) {
       const lastMapOriginRef = useRef(null);
       const walkingCharacterRef = useRef(null);
       const [mapOrigin, setMapOrigin] = useState(DELIVERY_ROUTE_START);
@@ -9956,7 +9987,7 @@
         let animationFrame = 0;
         const updatePosition = () => {
           const progress = Math.max(0, Math.min(1, (Date.now() - walkingStartedAt) / DELIVERY_DURATION_MS));
-          const position = getWalkingRoutePosition(progress);
+          const position = getWalkingRoutePosition(progress, walkingRoutePoints);
           const character = walkingCharacterRef.current;
           if (character) {
             character.style.left = `${position.x}%`;
@@ -12349,6 +12380,7 @@
               ? activeOrder?.routeStartedAt || activeOrder?.pickedUpAt
               : null}
             allowMapInteraction
+            walkingRoutePoints={RIDER_WALKING_ROUTE_POINTS}
           />
         </LiveRouteMapErrorBoundary>
       );

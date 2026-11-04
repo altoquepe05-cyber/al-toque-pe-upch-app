@@ -369,13 +369,15 @@ test('animates the walking rider from the first blue point through the route to 
     x: Number(match[1]),
     y: Number(match[2])
   }));
-  assert.deepEqual(routePoints[0], { x: 59, y: 77 }, 'the character should start at the first blue point near KOU-XIN');
-  assert.deepEqual(routePoints.at(-1), { x: 10, y: 20 }, 'the character should finish at the destination marker');
-  assert.ok(routePoints.length >= 15, 'the character should follow all visible route waypoints');
-  assert.ok(routePoints.slice(1).every((point, index) => (
-    point.x <= routePoints[index].x && point.y <= routePoints[index].y
-  )), 'the character should follow the route from the lower-right start to the upper-left destination');
-  assert.match(html, /function getWalkingRoutePosition\(progress\)/);
+  assert.deepEqual(routePoints[0], { x: 61, y: 74 }, 'the character should start at the first blue point near KOU-XIN');
+  assert.deepEqual(routePoints.at(-1), { x: 44, y: 8 }, 'the character should finish at the destination end of the blue route');
+  assert.ok(routePoints.length >= 18, 'the character should follow the visible route waypoints');
+  assert.ok(routePoints.slice(1, 8).every((point, index) => (
+    point.x < routePoints[index].x && point.y < routePoints[index].y
+  )), 'the character should follow the first diagonal section of blue route points');
+  assert.ok(routePoints.slice(8).some((point, index) => point.x > routePoints[index + 7].x),
+    'the route should follow the visible bend instead of cutting diagonally across the map');
+  assert.match(html, /function getWalkingRoutePosition\(progress, routePoints = WALKING_ROUTE_POINTS\)/);
   assert.match(html, /walkingStartedAt=\{deliveryPhase === 'tracking' && assignedRider\?\.vehicle === 'Caminando'\s*\? deliveryStartedAtRef\.current\s*: null\}/);
   assert.match(html, /walking-route-character/);
   assert.match(html, /window\.requestAnimationFrame\(updatePosition\)/);
@@ -386,11 +388,13 @@ test('animates the walking rider from the first blue point through the route to 
   assert.match(html, /tabIndex=\{isMapInteractionLocked \? -1 : undefined\}/);
   assert.match(html, /Ruta fija a pie · 5 min/);
   assert.match(html, /allowMapInteraction \? 'Ruta a pie · 5 min' : 'Ruta fija a pie · 5 min'/);
-  assert.match(html, /function LiveRouteMap\(\{ location, className, label, walkingStartedAt = null, allowMapInteraction = false \}\)/);
+  assert.match(html, /function LiveRouteMap\(\{\s*location,\s*className,\s*label,\s*walkingStartedAt = null,\s*allowMapInteraction = false,\s*walkingRoutePoints = WALKING_ROUTE_POINTS\s*\}\)/);
   assert.match(html, /walkingStartedAt=\{step === 1 && riderDetails\.vehicle === 'Caminando'\s*\?\s*activeOrder\?\.routeStartedAt \|\| activeOrder\?\.pickedUpAt\s*:\s*null\}/);
   assert.match(html, /label=\{`Ruta en vivo del pedido \$\{activeOrder\?\.id \|\| ''\}`\}\s*walkingStartedAt=\{step === 1 && riderDetails\.vehicle === 'Caminando'/);
-  assert.match(html, /allowMapInteraction\s*\/>/);
-  assert.match(html, /const isMapInteractionLocked = isWalkingAnimationActive && !allowMapInteraction/);
+  assert.match(html, /\.delivery-map \.walking-route-character\s*\{\s*width:\s*clamp\(56px, 16%, 70px\)/);
+  assert.match(html, /\.walking-route-character\s*\{[\s\S]*?width:\s*clamp\(34px, 12%, 48px\)/);
+  assert.match(html, /walkingStartedAt=\{step === 1 && riderDetails\.vehicle === 'Caminando'[\s\S]{0,240}?allowMapInteraction\s*walkingRoutePoints=\{RIDER_WALKING_ROUTE_POINTS\}/);
+  assert.match(html, /function getWalkingRoutePosition\(progress, routePoints = WALKING_ROUTE_POINTS\)/);
   assert.match(html, /Date\.now\(\) - walkingStartedAt\) \/ DELIVERY_DURATION_MS/);
   assert.match(html, /isWalkingAnimationActive\s*\?\s*allowMapInteraction \? 'Ruta a pie · 5 min' : 'Ruta fija a pie · 5 min'/);
 });
