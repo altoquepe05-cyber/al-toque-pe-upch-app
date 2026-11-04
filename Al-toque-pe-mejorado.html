@@ -3431,10 +3431,26 @@
       const callRef = useRef(call);
       const peerRef = useRef(null);
       const localStreamRef = useRef(null);
+      const audioSessionTypeRef = useRef(null);
       const signalCursorRef = useRef(0);
       const pendingCandidatesRef = useRef([]);
       const isPollingRef = useRef(false);
       callRef.current = call;
+
+      const setSpeakerOutputEnabled = (enabled) => {
+        const audioSession = navigator.audioSession;
+        if (!audioSession || typeof audioSession.type !== 'string') return false;
+        if (audioSessionTypeRef.current === null) audioSessionTypeRef.current = audioSession.type;
+        audioSession.type = enabled ? 'playback' : 'play-and-record';
+        return true;
+      };
+
+      const setMicrophoneMuted = (muted) => {
+        const tracks = localStreamRef.current?.getAudioTracks() || [];
+        if (!tracks.length) return false;
+        tracks.forEach((track) => { track.enabled = !muted; });
+        return true;
+      };
 
       const releaseMedia = () => {
         peerRef.current?.close();
@@ -3443,6 +3459,10 @@
         localStreamRef.current = null;
         pendingCandidatesRef.current = [];
         setRemoteStream(null);
+        if (audioSessionTypeRef.current !== null && navigator.audioSession) {
+          navigator.audioSession.type = audioSessionTypeRef.current;
+          audioSessionTypeRef.current = null;
+        }
       };
 
       const postCallAction = async (action, data) => {
@@ -3459,6 +3479,11 @@
       const createPeerConnection = async () => {
         if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
           throw new Error('El micrófono requiere abrir ambas apps desde localhost o una dirección HTTPS.');
+        }
+        const audioSession = navigator.audioSession;
+        if (audioSession && typeof audioSession.type === 'string') {
+          if (audioSessionTypeRef.current === null) audioSessionTypeRef.current = audioSession.type;
+          audioSession.type = 'play-and-record';
         }
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
         localStreamRef.current = stream;
@@ -3649,16 +3674,61 @@
         setCall({ status: 'idle', caller: '', error: '' });
       };
 
-      return { call, remoteStream, startCall, acceptCall, rejectCall: () => endCall('reject'), endCall, dismissCall };
+      return {
+        call,
+        remoteStream,
+        startCall,
+        acceptCall,
+        rejectCall: () => endCall('reject'),
+        endCall,
+        dismissCall,
+        setSpeakerOutputEnabled,
+        setMicrophoneMuted
+      };
     }
 
     function VoiceCallDialog({ controller, contactName }) {
-      const { call, remoteStream, acceptCall, rejectCall, endCall, dismissCall } = controller;
+      const { call, remoteStream, acceptCall, rejectCall, endCall, dismissCall, setSpeakerOutputEnabled, setMicrophoneMuted } = controller;
       const audioRef = useRef(null);
+      const [isSpeakerEnabled, setIsSpeakerEnabled] = useState(false);
+      const [isMicrophoneMuted, setIsMicrophoneMuted] = useState(false);
+      const [controlError, setControlError] = useState('');
 
       useEffect(() => {
         if (audioRef.current) audioRef.current.srcObject = remoteStream;
       }, [remoteStream]);
+
+      const toggleSpeaker = async () => {
+        const nextEnabled = !isSpeakerEnabled;
+        setControlError('');
+        try {
+          if (!setSpeakerOutputEnabled(nextEnabled)) {
+            const audio = audioRef.current;
+            if (!audio || typeof audio.setSinkId !== 'function') {
+              throw new Error('Este navegador no permite cambiar la salida del audio de la llamada.');
+            }
+            if (nextEnabled && typeof navigator.mediaDevices?.selectAudioOutput === 'function') {
+              const output = await navigator.mediaDevices.selectAudioOutput();
+              await audio.setSinkId(output.deviceId);
+            } else {
+              await audio.setSinkId('default');
+            }
+          }
+          setIsSpeakerEnabled(nextEnabled);
+        } catch (error) {
+          setControlError(error.message || 'No se pudo cambiar la salida del audio.');
+        }
+      };
+
+      const toggleMicrophone = () => {
+        const nextMuted = !isMicrophoneMuted;
+        if (!setMicrophoneMuted(nextMuted)) {
+          setControlError('El micrófono aún no está disponible.');
+          return;
+        }
+        setControlError('');
+        setIsMicrophoneMuted(nextMuted);
+      };
 
       useEffect(() => {
         if (call.status !== 'ended') return undefined;
@@ -3668,13 +3738,10 @@
 
       if (!['incoming', 'ringing', 'connecting', 'connected', 'ended', 'error'].includes(call.status)) return null;
       const isIncoming = call.status === 'incoming';
-      const isActive = ['ringing', 'connecting', 'connected', 'incoming'].includes(call.status);
+      const isActive = ['ringing', 'connecting', 'connected'].includes(call.status);
       return ReactDOM.createPortal(
         <div className="absolute inset-0 z-[120] flex items-center justify-center bg-black/55 p-5">
           <section className="relative w-full max-w-sm space-y-4 rounded-2xl bg-white p-5 text-center shadow-2xl" role="dialog" aria-modal="true" aria-label="Llamada de voz en la app">
-            <button type="button" onClick={isActive ? () => endCall() : dismissCall} aria-label="Cerrar llamada" className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100">
-              <i data-lucide="x" className="h-5 w-5"></i>
-            </button>
             <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#fff2df] text-[#a90000]">
               <i data-lucide="phone" className={`h-7 w-7 ${call.status === 'ringing' || isIncoming ? 'animate-pulse' : ''}`}></i>
             </span>
@@ -3683,17 +3750,26 @@
               <p className="mt-1 text-xs text-gray-500">{call.status === 'incoming' ? 'Llamada entrante' : call.status === 'ringing' ? 'Llamando…' : call.status === 'connecting' ? 'Conectando audio…' : call.status === 'connected' ? 'En llamada' : call.status === 'error' ? 'No se pudo iniciar la llamada' : 'Llamada finalizada'}</p>
             </div>
             {call.error && <p className="rounded-xl bg-red-50 p-2 text-[10px] text-red-700" role="alert">{call.error}</p>}
+            {controlError && <p className="rounded-xl bg-red-50 p-2 text-[10px] text-red-700" role="alert">{controlError}</p>}
             <audio ref={audioRef} autoPlay playsInline className="hidden" />
-            <div className="flex justify-center gap-3">
+            <div className="flex justify-center gap-4">
               {isIncoming ? (
                 <>
                   <button type="button" onClick={rejectCall} className="rounded-xl bg-gray-100 px-4 py-2.5 text-xs font-bold text-gray-700">Rechazar</button>
                   <button type="button" onClick={acceptCall} className="rounded-xl bg-green-600 px-4 py-2.5 text-xs font-bold text-white">Contestar</button>
                 </>
               ) : isActive ? (
-                <button type="button" onClick={() => endCall()} className="flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-xs font-bold text-white">
-                  <i data-lucide="phone-off" className="h-4 w-4"></i> Finalizar llamada
-                </button>
+                <>
+                  <button type="button" onClick={toggleSpeaker} aria-label={isSpeakerEnabled ? 'Desactivar altavoz' : 'Activar altavoz'} aria-pressed={isSpeakerEnabled} className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-gray-900 shadow-md ring-1 ring-gray-200 hover:bg-gray-100">
+                    <i data-lucide={isSpeakerEnabled ? 'volume-2' : 'volume-1'} className="h-5 w-5"></i>
+                  </button>
+                  <button type="button" onClick={toggleMicrophone} aria-label={isMicrophoneMuted ? 'Activar micrófono' : 'Silenciar micrófono'} aria-pressed={isMicrophoneMuted} className={`flex h-12 w-12 items-center justify-center rounded-full shadow-md ${isMicrophoneMuted ? 'bg-red-100 text-red-700' : 'bg-gray-800 text-white'} hover:opacity-90`}>
+                    <i data-lucide={isMicrophoneMuted ? 'mic-off' : 'mic'} className="h-5 w-5"></i>
+                  </button>
+                  <button type="button" onClick={() => endCall()} aria-label="Colgar llamada" className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-600 text-white shadow-md hover:bg-rose-700">
+                    <i data-lucide="phone" className="h-5 w-5 rotate-[135deg]"></i>
+                  </button>
+                </>
               ) : (
                 <button type="button" onClick={dismissCall} className="rounded-xl bg-gray-100 px-4 py-2.5 text-xs font-bold text-gray-700">Cerrar</button>
               )}
