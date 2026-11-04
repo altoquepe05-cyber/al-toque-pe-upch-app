@@ -389,6 +389,7 @@ test('animates the home menu cards with a glowing outline and honors reduced mot
   assert.match(html, /\.menu-pop-card:has\(> \.menu-pop-media:hover\)\s*\{[^}]*transform: translateY\(-3px\) scale\(1\.05\);/);
   assert.match(html, /\.menu-pop-card:has\(> \.menu-pop-media:hover\) \.menu-pop-image\s*\{[^}]*transform: scale\(1\.1\);/);
   assert.match(html, /\.menu-pop-card:has\(> \.menu-pop-media:active\)\s*\{[^}]*transform: translateY\(-3px\) scale\(1\.05\);/);
+  assert.match(html, /@media \(max-width: 480px\)\s*\{\s*\.menu-pop-card\s*\{\s*margin-left: 12px;\s*margin-right: 12px;/);
   assert.match(html, /className="menu-pop-card rounded-3xl border border-gray-100 bg-white p-3 shadow-sm"/);
   assert.match(html, /className="menu-pop-card flex min-w-0 flex-col rounded-2xl border border-gray-200 bg-white p-2\.5 shadow-sm"/);
   assert.match(html, /className="menu-pop-card bg-white border border-gray-100 rounded-3xl p-3 shadow-sm space-y-2"/);
