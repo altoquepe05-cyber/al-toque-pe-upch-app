@@ -849,6 +849,24 @@
       transition: transform 260ms ease, box-shadow 260ms ease, border-color 260ms ease;
     }
 
+    .starbucks-campaign-overlay {
+      box-sizing: border-box;
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow-y: auto;
+      padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+    }
+
+    .starbucks-campaign-dialog {
+      width: min(100%, 850px);
+      max-height: calc(100vh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+      max-height: calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+
     @media (max-width: 480px) {
       .menu-pop-card {
         margin-inline: 24px;
@@ -9279,13 +9297,13 @@
           )}
           {showStarbucksCampaign && (
             <div
-              className="fixed inset-0 z-[120] flex items-center justify-center bg-[#162b25]/70 p-3 backdrop-blur-sm"
+              className="starbucks-campaign-overlay fixed inset-0 z-[120] flex items-center justify-center bg-[#162b25]/70 backdrop-blur-sm"
               onMouseDown={(event) => {
                 if (event.target === event.currentTarget) setShowStarbucksCampaign(false);
               }}
             >
               <section
-                className="w-full max-w-[850px] max-h-[calc(100vh-24px)] space-y-3 overflow-y-auto rounded-[24px] bg-white p-4 shadow-2xl sm:p-5"
+                className="starbucks-campaign-dialog space-y-3 rounded-[24px] bg-white p-4 shadow-2xl sm:p-5"
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="starbucks-campaign-title"
