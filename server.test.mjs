@@ -78,7 +78,12 @@ test('shows the Miraflores delivery schedule and updates its status using Lima t
   }
 
   assert.match(html, /className=\{`campus-service-card \$\{serviceStatus\.state === 'online' \? 'campus-service-card--online' : 'campus-service-card--offline'\} \$\{isServiceCardExpanded \? 'campus-service-card--expanded' : ''\}`\}/);
-  assert.match(html, /Delivery de comida para estudiantes del campus de Miraflores/);
+  assert.match(html, /Delivery de <span className="campus-service-highlight">COMIDA<\/span> para estudiantes del campus de Miraflores/);
+  assert.match(html, /\.campus-service-highlight\s*\{[^}]*animation: campusServiceWordPulse 1\.8s ease-in-out infinite;/);
+  assert.match(html, /\.campus-service-highlight::before,\s*\.campus-service-highlight::after\s*\{[^}]*animation: campusServiceQuotePop 1\.8s ease-out infinite;/);
+  assert.match(html, /\.campus-service-highlight::before\s*\{[^}]*content: "“";/);
+  assert.match(html, /\.campus-service-highlight::after\s*\{[^}]*content: "”";/);
+  assert.match(html, /@keyframes campusServiceWordPulse[\s\S]*?45% \{ transform: scale\(1\.09\); \}/);
   assert.match(html, /10:00 a\. m\.–1:20 p\. m\. · 1:30–6:00 p\. m\. · 8:00–10:00 p\. m\./);
   assert.match(html, /setServiceStatus\(getCampusServiceStatus\(now\)\)/);
   assert.match(html, /aria-expanded=\{isServiceCardExpanded\}/);
@@ -89,7 +94,7 @@ test('shows the Miraflores delivery schedule and updates its status using Lima t
   assert.match(html, /\.campus-service-description\s*\{\s*font-family: 'Coiny', 'Fredoka', 'Outfit', sans-serif;\s*font-size: 16px;\s*font-weight: 400;/);
   assert.ok(html.indexOf('aria-label={`Servicio de delivery: ${serviceStatus.label}`}') < html.indexOf("timeString || 'LUNES, 12:38 P. M.'"),
     'the collapsed service card should appear above the date and time');
-  assert.match(html, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.campus-service-card::before,[\s\S]*?\.campus-service-details\s*\{\s*animation: none !important;\s*transition: none !important;/);
+  assert.match(html, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.campus-service-highlight::before,[\s\S]*?\.campus-service-highlight::after\s*\{\s*animation: none !important;\s*transition: none !important;/);
 });
 
 test('serves the four Starbucks Panettone product photos as public PNG assets', async (t) => {

@@ -1350,7 +1350,10 @@
       .campus-service-status-dot,
       .campus-service-card,
       .campus-service-card-toggle,
-      .campus-service-details {
+      .campus-service-details,
+      .campus-service-highlight,
+      .campus-service-highlight::before,
+      .campus-service-highlight::after {
         animation: none !important;
         transition: none !important;
       }
@@ -1402,6 +1405,53 @@
       line-height: 1.1;
       letter-spacing: 0;
     }
+
+    .campus-service-highlight {
+      position: relative;
+      display: inline-block;
+      text-transform: uppercase;
+      animation: campusServiceWordPulse 1.8s ease-in-out infinite;
+    }
+
+    .campus-service-highlight::before,
+    .campus-service-highlight::after {
+      position: absolute;
+      top: -0.18em;
+      color: #ffe28a;
+      font-family: 'Coiny', 'Outfit', sans-serif;
+      font-size: 0.72em;
+      line-height: 1;
+      opacity: 0;
+      pointer-events: none;
+      animation: campusServiceQuotePop 1.8s ease-out infinite;
+    }
+
+    .campus-service-highlight::before {
+      left: -0.58em;
+      content: "“";
+      transform-origin: bottom right;
+    }
+
+    .campus-service-highlight::after {
+      right: -0.58em;
+      content: "”";
+      animation-delay: 180ms;
+      transform-origin: bottom left;
+    }
+
+    @keyframes campusServiceWordPulse {
+      0%, 100% { transform: scale(1); }
+      45% { transform: scale(1.09); }
+    }
+
+    @keyframes campusServiceQuotePop {
+      0%, 100% { opacity: 0; transform: translateX(0) scale(0.65); }
+      24%, 58% { opacity: 1; }
+      76% { opacity: 0; transform: translateX(var(--quote-outward, 0)) scale(1.12); }
+    }
+
+    .campus-service-highlight::before { --quote-outward: -5px; }
+    .campus-service-highlight::after { --quote-outward: 5px; }
 
     .campus-service-card::before {
       position: absolute;
@@ -8854,7 +8904,7 @@
           >
             <div className="relative z-10">
               <p className="campus-service-description">
-                Delivery de comida para estudiantes del campus de Miraflores
+                Delivery de <span className="campus-service-highlight">COMIDA</span> para estudiantes del campus de Miraflores
               </p>
               <div className="mt-2 flex items-center justify-end gap-2">
                 <span className="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/25 bg-white/15 px-2.5 py-1.5 text-[10px] font-extrabold" aria-live="polite">
