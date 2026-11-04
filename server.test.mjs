@@ -92,6 +92,7 @@ test('shows the Miraflores delivery schedule and updates its status using Lima t
   assert.match(html, /className=\{`campus-service-card \$\{serviceStatus\.state === 'online' \? 'campus-service-card--online' : 'campus-service-card--offline'\} \$\{isServiceCardExpanded \? 'campus-service-card--expanded' : ''\}`\}/);
   assert.match(html, /Delivery de <span className="campus-service-highlight">COMIDA<\/span> para estudiantes del campus de\{' '\}\s*<img\s+src="\/miraflores-logo-transparent\.png\?v=3"\s+alt="Miraflores"\s+className="campus-service-location-logo"/);
   assert.match(html, /\.campus-service-location-logo\s*\{[^}]*height: 2\.5em;[^}]*max-width: 42vw;/);
+  assert.match(html, /\.campus-service-location-logo\s*\{[^}]*filter: drop-shadow\(0 1px 0 #fff\)[^}]*animation: campusLocationLogoFloat/);
   assert.match(html, /\.campus-service-location-logo\s*\{[^}]*animation: campusLocationLogoFloat 2\.8s ease-in-out infinite;/);
   assert.match(html, /@keyframes campusLocationLogoFloat[\s\S]*?50% \{ transform: translateY\(-2px\) rotate\(1deg\); \}/);
   assert.match(html, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.campus-service-location-logo \{ animation: none; \}\s*\}/);
