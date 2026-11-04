@@ -827,9 +827,17 @@
       z-index: 1;
     }
 
+    .home-menu-card-media {
+      z-index: 2;
+      margin: -12px -2px 8px;
+      overflow: visible;
+    }
+
     .home-menu-card-image {
       animation: homeMenuImageEnter 520ms ease-out both;
       transition: transform 360ms ease;
+      border-radius: 1rem;
+      filter: drop-shadow(0 3px 4px rgba(43, 23, 24, 0.18));
     }
 
     .home-menu-card:nth-child(2) { animation-delay: 650ms; }
@@ -859,8 +867,8 @@
     }
 
     @keyframes homeMenuImageEnter {
-      from { opacity: 0.7; transform: scale(0.97); }
-      to { opacity: 1; transform: scale(1); }
+      from { opacity: 0.7; transform: translateY(0) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1.02); }
     }
 
     .combo-card:hover {
@@ -871,6 +879,12 @@
     .combo-card-image {
       animation: comboImageEnter 480ms ease-out both;
       transition: transform 420ms ease;
+    }
+
+    .home-menu-card .combo-card-image {
+      animation: homeMenuImageEnter 520ms ease-out both;
+      border-radius: 1rem;
+      filter: drop-shadow(0 3px 4px rgba(43, 23, 24, 0.18));
     }
 
     .combo-card:hover .combo-card-image {
@@ -892,7 +906,7 @@
 
       .home-menu-card:hover .home-menu-card-image,
       .home-menu-card:hover .combo-card-image {
-        transform: scale(1.1);
+        transform: translateY(0) scale(1.1);
       }
     }
 
@@ -8124,7 +8138,7 @@
             <div className="flex space-x-3 overflow-x-auto no-scrollbar py-3 -mx-4 px-4">
               {popularDishes.map((dish) => (
                 <div key={dish.id} className="home-menu-card min-w-[220px] bg-white border border-gray-100 rounded-3xl p-2.5 shadow-sm flex flex-col justify-between">
-                  <div className="relative h-28 rounded-2xl overflow-hidden mb-2">
+                  <div className="home-menu-card-media relative h-28 rounded-2xl">
                     <img src={dish.image} alt={dish.name} className="home-menu-card-image w-full h-full object-cover" />
                     <span className="absolute top-2 left-2 bg-white/90 backdrop-blur-md text-[10px] font-bold px-2 py-0.5 rounded-full text-dark">{dish.badge}</span>
                   </div>
@@ -8157,8 +8171,8 @@
             <div className="flex space-x-3 overflow-x-auto no-scrollbar py-3 -mx-4 px-4">
               {INITIAL_MENU.filter((m) => m.category === 'combos').map((dish) => (
                 <div key={dish.id} className="home-menu-card combo-card min-w-[220px] bg-white border border-gray-100 rounded-3xl p-2.5 shadow-sm flex flex-col justify-between">
-                  <div className="relative h-36 rounded-2xl overflow-hidden mb-2">
-                    <img src={dish.image} alt={dish.name} className="combo-card-image w-full h-full object-cover" />
+                  <div className="home-menu-card-media relative h-36 rounded-2xl">
+                      <img src={dish.image} alt={dish.name} className="home-menu-card-image combo-card-image w-full h-full object-cover" />
                     <span className="absolute top-2 left-2 bg-white/90 backdrop-blur-md text-[10px] font-bold px-2 py-0.5 rounded-full text-dark">{dish.badge}</span>
                   </div>
                   <div>
