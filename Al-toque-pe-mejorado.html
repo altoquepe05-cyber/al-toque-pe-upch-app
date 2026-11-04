@@ -829,15 +829,16 @@
 
     .home-menu-card-media {
       z-index: 2;
-      margin: -12px -2px 8px;
+      margin: 0 0 8px;
       overflow: visible;
+      transition: transform 360ms cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
     .home-menu-card-image {
       animation: homeMenuImageEnter 520ms ease-out both;
       transition: transform 360ms ease;
       border-radius: 1rem;
-      filter: drop-shadow(0 3px 4px rgba(43, 23, 24, 0.18));
+      filter: drop-shadow(0 0 0 rgba(43, 23, 24, 0));
     }
 
     .home-menu-card:nth-child(2) { animation-delay: 650ms; }
@@ -867,8 +868,8 @@
     }
 
     @keyframes homeMenuImageEnter {
-      from { opacity: 0.7; transform: translateY(0) scale(0.97); }
-      to { opacity: 1; transform: translateY(0) scale(1.02); }
+      from { opacity: 0.7; }
+      to { opacity: 1; }
     }
 
     .combo-card:hover {
@@ -884,19 +885,24 @@
     .home-menu-card .combo-card-image {
       animation: homeMenuImageEnter 520ms ease-out both;
       border-radius: 1rem;
-      filter: drop-shadow(0 3px 4px rgba(43, 23, 24, 0.18));
+      filter: drop-shadow(0 0 0 rgba(43, 23, 24, 0));
     }
 
     .combo-card:hover .combo-card-image {
       transform: scale(1.06);
     }
 
-    @media (hover: hover) {
+    @media (hover: hover) and (pointer: fine) {
       .home-menu-card:hover {
         animation-play-state: paused;
+        z-index: 3;
         transform: translateY(-3px) scale(1.05);
         border-color: #d3ae55;
         box-shadow: 0 8px 18px rgba(43, 23, 24, 0.12), 0 0 0 1px rgba(197, 164, 92, 0.32);
+      }
+
+      .home-menu-card:hover .home-menu-card-media {
+        transform: translateY(-8px) scale(1.04);
       }
 
       .home-menu-card:hover::after {
@@ -907,6 +913,52 @@
       .home-menu-card:hover .home-menu-card-image,
       .home-menu-card:hover .combo-card-image {
         transform: translateY(0) scale(1.1);
+        filter: drop-shadow(0 8px 8px rgba(43, 23, 24, 0.2));
+      }
+    }
+
+    @media (hover: none) and (pointer: coarse) {
+      .home-menu-card:hover {
+        animation-play-state: running;
+        z-index: auto;
+        transform: none;
+        border-color: #eee5d7;
+        box-shadow: 0 2px 7px rgba(43, 23, 24, 0.07);
+      }
+
+      .home-menu-card:hover::after {
+        animation-play-state: running;
+        opacity: 0.45;
+      }
+
+      .home-menu-card:hover .home-menu-card-media,
+      .home-menu-card:hover .home-menu-card-image,
+      .home-menu-card:hover .combo-card-image {
+        transform: none;
+        filter: drop-shadow(0 0 0 rgba(43, 23, 24, 0));
+      }
+
+      .home-menu-card:active {
+        animation-play-state: paused;
+        z-index: 3;
+        transform: translateY(-3px) scale(1.05);
+        border-color: #d3ae55;
+        box-shadow: 0 8px 18px rgba(43, 23, 24, 0.12), 0 0 0 1px rgba(197, 164, 92, 0.32);
+      }
+
+      .home-menu-card:active .home-menu-card-media {
+        transform: translateY(-8px) scale(1.04);
+      }
+
+      .home-menu-card:active::after {
+        animation-play-state: paused;
+        opacity: 0.95;
+      }
+
+      .home-menu-card:active .home-menu-card-image,
+      .home-menu-card:active .combo-card-image {
+        transform: translateY(0) scale(1.1);
+        filter: drop-shadow(0 8px 8px rgba(43, 23, 24, 0.2));
       }
     }
 
@@ -922,6 +974,7 @@
     @media (prefers-reduced-motion: reduce) {
       .home-menu-card,
       .home-menu-card::after,
+      .home-menu-card-media,
       .home-menu-card-image {
         animation: none !important;
         transition: none !important;
