@@ -112,6 +112,10 @@ test('shows the Miraflores delivery schedule and updates its status using Lima t
   assert.match(html, /\.campus-service-description\s*\{\s*font-family: 'Coiny', 'Fredoka', 'Outfit', sans-serif;\s*font-size: 16px;\s*font-weight: 400;/);
   assert.ok(html.indexOf("timeString || 'LUNES, 12:38 P. M.'") < html.indexOf('aria-label={`Servicio de delivery: ${serviceStatus.label}`}'),
     'the date and time should appear above the campus service card');
+  assert.ok(html.indexOf('aria-label={`Servicio de delivery: ${serviceStatus.label}`}') < html.indexOf('>Lo más pedido</h3>'),
+    'the popular dishes section should appear directly after the campus service card');
+  assert.ok(html.indexOf('>Lo más pedido</h3>') < html.indexOf('className="home-headline-message'),
+    'the popular dishes section should appear before the home headline');
   assert.match(html, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.campus-service-highlight::before,[\s\S]*?\.campus-service-highlight::after\s*\{\s*animation: none !important;\s*transition: none !important;/);
 });
 
