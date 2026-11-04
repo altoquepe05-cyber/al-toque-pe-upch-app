@@ -899,6 +899,11 @@
       object-fit: cover;
     }
 
+    .starbucks-upcoming-image--panettone-latte {
+      width: 82%;
+      height: 82%;
+    }
+
     .starbucks-product-image {
       display: block;
       width: 84%;
@@ -8801,7 +8806,7 @@
                             src={product.image}
                             alt={`Bebida de temporada: ${product.name}`}
                             loading="lazy"
-                            className="starbucks-upcoming-image"
+                            className={`starbucks-upcoming-image ${product.name === 'Panettone Latte' ? 'starbucks-upcoming-image--panettone-latte' : ''}`}
                           />
                         </div>
                         <div className="flex flex-1 flex-col gap-2 p-2.5">

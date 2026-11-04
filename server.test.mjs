@@ -494,8 +494,9 @@ test('shows the Starbucks Panettone launch modal and upcoming items without pric
   assert.match(productCards, /className="menu-pop-card menu-pop-card--compact starbucks-upcoming-card flex min-w-0 flex-col overflow-visible rounded-2xl/);
   assert.match(productCards, /className="starbucks-upcoming-media mx-auto my-2 flex aspect-square w-\[88%\] items-center justify-center rounded-full border-2 border-\[#d6bb79\] bg-\[#075344\] p-1\.5 shadow-md"/);
   assert.match(productCards, /src=\{product\.image\}/);
-  assert.match(productCards, /className="starbucks-upcoming-image"/);
+  assert.match(productCards, /className=\{`starbucks-upcoming-image \$\{product\.name === 'Panettone Latte' \? 'starbucks-upcoming-image--panettone-latte' : ''\}`\}/);
   assert.match(html, /\.starbucks-upcoming-image\s*\{\s*display:\s*block;\s*width:\s*100%;\s*height:\s*100%;\s*border-radius:\s*50%;\s*object-fit:\s*cover;/);
+  assert.match(html, /\.starbucks-upcoming-image--panettone-latte\s*\{\s*width:\s*82%;\s*height:\s*82%;\s*\}/);
   assert.match(productCards, /<h4 className="text-xs font-bold leading-snug text-dark">\{product\.name\}<\/h4>/);
   assert.doesNotMatch(upcomingPromotions, /\bprice\s*:/, 'upcoming Starbucks products should not have prices');
   assert.match(productCards, /Próximamente/);
