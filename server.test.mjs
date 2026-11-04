@@ -116,6 +116,10 @@ test('shows the Miraflores delivery schedule and updates its status using Lima t
     'the popular dishes section should appear directly after the campus service card');
   assert.ok(html.indexOf('>Lo más pedido</h3>') < html.indexOf('className="home-headline-message'),
     'the popular dishes section should appear before the home headline');
+  assert.ok(html.indexOf('>Lo más pedido</h3>') < html.indexOf('>Combos que rinden</h3>'),
+    'the combos section should appear after popular dishes');
+  assert.ok(html.indexOf('>Combos que rinden</h3>') < html.indexOf('className="home-headline-message'),
+    'the combos section should appear before the home headline');
   assert.match(html, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.campus-service-highlight::before,[\s\S]*?\.campus-service-highlight::after\s*\{\s*animation: none !important;\s*transition: none !important;/);
 });
 
