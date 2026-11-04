@@ -534,6 +534,21 @@ test('shows the Starbucks Panettone launch modal and upcoming items without pric
   assert.match(html, /\.starbucks-upcoming-card,\s*\.starbucks-upcoming-media\s*\{\s*transition:\s*none !important;/);
 });
 
+test('offers animated WhatsApp support for the Al Toque help phone number', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  const server = await createReelsTestServer(t, testDataDir);
+  const response = await fetch(`http://127.0.0.1:${server.address().port}/`);
+  const html = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(html, /href="https:\/\/wa\.me\/51967059396\?text=Hola%2C%20necesito%20ayuda%20con%20Al%20Toque\."/);
+  assert.match(html, /target="_blank"\s*rel="noopener noreferrer"/);
+  assert.match(html, /className="help-whatsapp-button flex w-full items-center justify-center gap-2 rounded-2xl p-3 text-sm font-bold text-white transition"/);
+  assert.match(html, /aria-label="Enviar mensaje por WhatsApp al 967 059 396"/);
+  assert.match(html, /\.help-whatsapp-button\s*\{[^}]*animation:\s*helpWhatsappPulse 1\.8s ease-in-out infinite;[^}]*background:\s*#128c4a;/);
+  assert.match(html, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.help-whatsapp-button\s*\{\s*animation:\s*none;\s*\}\s*\}/);
+});
+
 test('shows official Starbucks prices and starting-price labels', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);
