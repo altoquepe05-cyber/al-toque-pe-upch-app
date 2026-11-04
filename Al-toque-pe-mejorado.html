@@ -892,6 +892,9 @@
     }
 
     .starbucks-product-image {
+      display: block;
+      width: 84%;
+      height: 84%;
       border-radius: 50%;
       object-fit: contain;
     }
@@ -8820,12 +8823,12 @@
                     <div className="grid grid-cols-2 gap-6">
                       {products.map((product) => (
                         <article key={product.id} className="menu-pop-card menu-pop-card--compact flex min-w-0 flex-col rounded-2xl border border-gray-200 bg-white p-2.5 shadow-sm">
-                          <div className="menu-pop-media starbucks-product-media relative mx-auto mb-2 aspect-square w-[88%] rounded-full border-2 border-[#d6bb79] bg-[#075344] p-2.5 shadow-md">
+                          <div className="menu-pop-media starbucks-product-media relative mx-auto mb-2 flex aspect-square w-[88%] items-center justify-center rounded-full border-2 border-[#d6bb79] bg-[#075344] p-2.5 shadow-md">
                             <img
                               src={product.image}
                               alt={`Bebida de Starbucks: ${product.name}`}
                               loading="lazy"
-                              className="menu-pop-image starbucks-product-image h-full w-full"
+                              className="menu-pop-image starbucks-product-image"
                             />
                             {product.hasDiscount && (
                               <div className="menu-pop-promo-logo absolute bottom-1.5 right-1.5 rounded-full bg-white/95 p-1 shadow-md" aria-label="Producto con descuento Al Toque">

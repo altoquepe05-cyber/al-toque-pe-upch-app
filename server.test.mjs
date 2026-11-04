@@ -497,8 +497,9 @@ test('shows official Starbucks prices and starting-price labels', async (t) => {
   assert.equal(imageEntries.length, productNames.length, 'every Starbucks catalog product should have an image URL');
   assert.deepEqual(imageEntries.map((entry) => entry[1]).sort(), [...productNames].sort());
   assert.match(html, /image: STARBUCKS_PRODUCT_IMAGE_URLS\[name\]/);
-  assert.match(html, /className="menu-pop-media starbucks-product-media relative mx-auto mb-2 aspect-square w-\[88%\] rounded-full border-2 border-\[#d6bb79\] bg-\[#075344\] p-2\.5 shadow-md"/);
-  assert.match(html, /\.starbucks-product-image\s*\{\s*border-radius:\s*50%;\s*object-fit:\s*contain;/);
+  assert.match(html, /className="menu-pop-media starbucks-product-media relative mx-auto mb-2 flex aspect-square w-\[88%\] items-center justify-center rounded-full border-2 border-\[#d6bb79\] bg-\[#075344\] p-2\.5 shadow-md"/);
+  assert.match(html, /\.starbucks-product-image\s*\{\s*display:\s*block;\s*width:\s*84%;\s*height:\s*84%;\s*border-radius:\s*50%;\s*object-fit:\s*contain;/);
+  assert.match(html, /className="menu-pop-image starbucks-product-image"/);
   assert.match(html, /alt=\{`Bebida de Starbucks: \$\{product\.name\}`\}/);
   assert.doesNotMatch(html, /function createStarbucksProductImage/);
   assert.match(productSource, /\['Bebidas Proteicas', 'Iced Protein Matcha', 22\]/);
