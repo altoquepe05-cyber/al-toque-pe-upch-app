@@ -364,7 +364,9 @@ test('animates the home menu cards with a glowing outline and honors reduced mot
 
   assert.equal(response.status, 200);
   assert.match(html, /\.home-menu-card\s*\{[^}]*animation:\s*homeMenuCardGlow 5\.8s ease-in-out infinite;/);
-  assert.match(html, /\.home-menu-card::after\s*\{[^}]*border:\s*1px solid rgba\(197, 164, 92, 0\.32\)/);
+  assert.match(html, /\.home-menu-card::after\s*\{[^}]*z-index:\s*0;[^}]*border:\s*1px solid rgba\(197, 164, 92, 0\.32\)/);
+  assert.match(html, /\.home-menu-card > \* \{\s*position: relative;\s*z-index: 1;\s*\}/);
+  assert.equal((html.match(/overflow-x-auto no-scrollbar py-3 -mx-4 px-4/g) || []).length, 2);
   assert.match(html, /\.home-menu-card:hover \.home-menu-card-image\s*\{\s*transform: scale\(1\.05\);/);
   assert.match(html, /className="home-menu-card min-w-\[220px\] bg-white/);
   assert.match(html, /className="home-menu-card combo-card min-w-\[220px\] bg-white/);
