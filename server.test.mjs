@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
+import vm from 'node:vm';
 import { randomUUID } from 'node:crypto';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -382,6 +383,29 @@ test('animates the walking rider from the first blue point through the route to 
   assert.ok(routePoints.slice(13).every((point, index) => point.x < routePoints[index + 12].x && point.y < routePoints[index + 12].y),
     'the last route section should continue toward the destination marker');
   assert.match(html, /function getWalkingRoutePosition\(progress, routePoints = WALKING_ROUTE_POINTS\)/);
+  assert.match(html, /function getWalkingGpsPosition\(location, routeOrigin, routeDestination, mapWidth, mapHeight\)/);
+  const gpsPositionStart = html.indexOf('function getWalkingGpsPosition(');
+  const gpsPositionEnd = html.indexOf('class LiveRouteMapErrorBoundary', gpsPositionStart);
+  assert.ok(gpsPositionStart >= 0 && gpsPositionEnd > gpsPositionStart, 'GPS position projection should be defined');
+  const gpsPositionSource = html.slice(gpsPositionStart, gpsPositionEnd).trim();
+  const getWalkingGpsPosition = vm.runInNewContext(`(${gpsPositionSource})`);
+  const originPosition = getWalkingGpsPosition(
+    { latitude: -12.1348222, longitude: -77.0260012 },
+    [-12.1348222, -77.0260012],
+    [-12.1341675, -77.0260721],
+    400,
+    300
+  );
+  const destinationPosition = getWalkingGpsPosition(
+    { latitude: -12.1341675, longitude: -77.0260721 },
+    [-12.1348222, -77.0260012],
+    [-12.1341675, -77.0260721],
+    400,
+    300
+  );
+  assert.ok(originPosition.y > destinationPosition.y, 'GPS projection should move north as the rider approaches the destination');
+  assert.match(html, /if \(isGpsLocationActive\) return undefined;/);
+  assert.match(html, /getWalkingGpsPosition\(\s*gpsLocation,\s*mapOrigin,\s*DELIVERY_ROUTE_END,\s*bounds\.width,\s*bounds\.height\s*\)/);
   assert.match(html, /style=\{\{ left: `\$\{walkingRoutePoints\[0\]\.x\}%`, top: `\$\{walkingRoutePoints\[0\]\.y\}%` \}\}/);
   assert.match(html, /walkingStartedAt=\{deliveryPhase === 'tracking' && assignedRider\?\.vehicle === 'Caminando'\s*\? deliveryStartedAtRef\.current\s*: null\}/);
   assert.match(html, /walking-route-character/);
@@ -393,13 +417,15 @@ test('animates the walking rider from the first blue point through the route to 
   assert.match(html, /tabIndex=\{isMapInteractionLocked \? -1 : undefined\}/);
   assert.match(html, /Ruta fija a pie · 5 min/);
   assert.match(html, /allowMapInteraction \? 'Ruta a pie · 5 min' : 'Ruta fija a pie · 5 min'/);
-  assert.match(html, /function LiveRouteMap\(\{\s*location,\s*className,\s*label,\s*walkingStartedAt = null,\s*allowMapInteraction = false,\s*walkingRoutePoints = WALKING_ROUTE_POINTS\s*\}\)/);
+  assert.match(html, /function LiveRouteMap\(\{\s*location,\s*className,\s*label,\s*walkingStartedAt = null,\s*allowMapInteraction = false,\s*walkingRoutePoints = WALKING_ROUTE_POINTS,\s*gpsLocation = null\s*\}\)/);
   assert.match(html, /walkingStartedAt=\{step === 1 && riderDetails\.vehicle === 'Caminando'\s*\?\s*activeOrder\?\.routeStartedAt \|\| activeOrder\?\.pickedUpAt\s*:\s*null\}/);
   assert.match(html, /label=\{`Ruta en vivo del pedido \$\{activeOrder\?\.id \|\| ''\}`\}\s*walkingStartedAt=\{step === 1 && riderDetails\.vehicle === 'Caminando'/);
   assert.match(html, /\.delivery-map \.walking-route-character\s*\{\s*width:\s*clamp\(56px, 16%, 70px\)/);
   assert.match(html, /\.rider-map \.walking-route-character\s*\{\s*width:\s*clamp\(56px, 16%, 70px\)/);
+  assert.match(html, /\.rider-map \.walking-route-character\s*\{[^}]*transition:\s*left \.7s linear, top \.7s linear/);
   assert.match(html, /\.walking-route-character\s*\{[\s\S]*?width:\s*clamp\(34px, 12%, 48px\)/);
   assert.match(html, /walkingStartedAt=\{step === 1 && riderDetails\.vehicle === 'Caminando'[\s\S]{0,240}?allowMapInteraction\s*walkingRoutePoints=\{RIDER_WALKING_ROUTE_POINTS\}/);
+  assert.match(html, /gpsLocation=\{riderDetails\.vehicle === 'Caminando' && gps\.status === 'active' \? gps : null\}/);
   assert.match(html, /function getWalkingRoutePosition\(progress, routePoints = WALKING_ROUTE_POINTS\)/);
   assert.match(html, /Date\.now\(\) - walkingStartedAt\) \/ DELIVERY_DURATION_MS/);
   assert.match(html, /isWalkingAnimationActive\s*\?\s*allowMapInteraction \? 'Ruta a pie · 5 min' : 'Ruta fija a pie · 5 min'/);

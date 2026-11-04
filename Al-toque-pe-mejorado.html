@@ -1794,6 +1794,7 @@
     }
     .rider-map .walking-route-character {
       width: clamp(56px, 16%, 70px);
+      transition: left .7s linear, top .7s linear;
     }
     .live-route-map-status {
       position: absolute;
@@ -9919,6 +9920,39 @@
       return routePoints[routePoints.length - 1];
     }
 
+    function getWalkingGpsPosition(location, routeOrigin, routeDestination, mapWidth, mapHeight) {
+      if (!location
+        || !Number.isFinite(location.latitude)
+        || !Number.isFinite(location.longitude)
+        || !Number.isFinite(mapWidth)
+        || !Number.isFinite(mapHeight)
+        || mapWidth <= 0
+        || mapHeight <= 0) return null;
+
+      const worldSize = 256 * (2 ** 18);
+      const toWorldPoint = ([latitude, longitude]) => {
+        const clampedLatitude = Math.max(-85.05112878, Math.min(85.05112878, latitude));
+        const latitudeRadians = (clampedLatitude * Math.PI) / 180;
+        return {
+          x: ((longitude + 180) / 360) * worldSize,
+          y: ((1 - Math.asinh(Math.tan(latitudeRadians)) / Math.PI) / 2) * worldSize
+        };
+      };
+      const origin = toWorldPoint(routeOrigin);
+      const destination = toWorldPoint(routeDestination);
+      const rider = toWorldPoint([location.latitude, location.longitude]);
+      const centerX = (origin.x + destination.x) / 2;
+      const centerY = (origin.y + destination.y) / 2;
+      let horizontalOffset = rider.x - centerX;
+      if (horizontalOffset > worldSize / 2) horizontalOffset -= worldSize;
+      if (horizontalOffset < -worldSize / 2) horizontalOffset += worldSize;
+
+      return {
+        x: 50 + (horizontalOffset / mapWidth) * 100,
+        y: 50 + ((rider.y - centerY) / mapHeight) * 100
+      };
+    }
+
     class LiveRouteMapErrorBoundary extends React.Component {
       state = { hasError: false };
 
@@ -9950,17 +9984,23 @@
       label,
       walkingStartedAt = null,
       allowMapInteraction = false,
-      walkingRoutePoints = WALKING_ROUTE_POINTS
+      walkingRoutePoints = WALKING_ROUTE_POINTS,
+      gpsLocation = null
     }) {
       const lastMapOriginRef = useRef(null);
+      const mapContainerRef = useRef(null);
       const walkingCharacterRef = useRef(null);
       const [mapOrigin, setMapOrigin] = useState(DELIVERY_ROUTE_START);
       const [mapError, setMapError] = useState(false);
-      const isWalkingAnimationActive = Number.isFinite(walkingStartedAt) && walkingStartedAt > 0;
+      const isGpsLocationActive = Boolean(gpsLocation
+        && Number.isFinite(gpsLocation.latitude)
+        && Number.isFinite(gpsLocation.longitude));
+      const isWalkingAnimationActive = (Number.isFinite(walkingStartedAt) && walkingStartedAt > 0)
+        || isGpsLocationActive;
       const isMapInteractionLocked = isWalkingAnimationActive && !allowMapInteraction;
 
       useEffect(() => {
-        if (isWalkingAnimationActive) {
+        if (isWalkingAnimationActive && !isGpsLocationActive) {
           lastMapOriginRef.current = null;
           setMapOrigin(DELIVERY_ROUTE_START);
           return;
@@ -9982,10 +10022,11 @@
           lastMapOriginRef.current = nextOrigin;
           setMapOrigin([nextOrigin.latitude, nextOrigin.longitude]);
         }
-      }, [isWalkingAnimationActive, location]);
+      }, [isGpsLocationActive, isWalkingAnimationActive, location]);
 
       useEffect(() => {
         if (!isWalkingAnimationActive) return undefined;
+        if (isGpsLocationActive) return undefined;
 
         let animationFrame = 0;
         const updatePosition = () => {
@@ -10000,7 +10041,30 @@
         };
         updatePosition();
         return () => window.cancelAnimationFrame(animationFrame);
-      }, [isWalkingAnimationActive, walkingStartedAt]);
+      }, [isGpsLocationActive, isWalkingAnimationActive, walkingStartedAt]);
+
+      useEffect(() => {
+        if (!gpsLocation) return undefined;
+        const updateGpsPosition = () => {
+          const map = mapContainerRef.current;
+          const character = walkingCharacterRef.current;
+          if (!map || !character) return;
+          const bounds = map.getBoundingClientRect();
+          const position = getWalkingGpsPosition(
+            gpsLocation,
+            mapOrigin,
+            DELIVERY_ROUTE_END,
+            bounds.width,
+            bounds.height
+          );
+          if (!position) return;
+          character.style.left = `${position.x}%`;
+          character.style.top = `${position.y}%`;
+        };
+        updateGpsPosition();
+        window.addEventListener('resize', updateGpsPosition);
+        return () => window.removeEventListener('resize', updateGpsPosition);
+      }, [gpsLocation, mapOrigin]);
 
       const mapUrl = new URL('https://www.google.com/maps');
       mapUrl.searchParams.set('output', 'embed');
@@ -10016,7 +10080,7 @@
       directionsUrl.searchParams.set('destination', `${DELIVERY_ROUTE_END[0]},${DELIVERY_ROUTE_END[1]}`);
       directionsUrl.searchParams.set('travelmode', 'walking');
       return (
-        <div className={`live-route-map ${className}${isMapInteractionLocked ? ' walking-route-locked' : ''}`}>
+        <div ref={mapContainerRef} className={`live-route-map ${className}${isMapInteractionLocked ? ' walking-route-locked' : ''}`}>
           <iframe
             className="live-route-map-frame"
             src={mapUrl.toString()}
@@ -10040,8 +10104,10 @@
             />
           )}
           <span className="live-route-map-status" role="status">
-            {isWalkingAnimationActive
-              ? allowMapInteraction ? 'Ruta a pie · 5 min' : 'Ruta fija a pie · 5 min'
+            {isGpsLocationActive
+              ? `GPS en vivo · ±${Math.round(gpsLocation.accuracy || 0)} m`
+              : isWalkingAnimationActive
+                ? allowMapInteraction ? 'Ruta a pie · 5 min' : 'Ruta fija a pie · 5 min'
               : location ? `GPS en vivo · ±${Math.round(location.accuracy || 0)} m` : 'Ruta de Google Maps · Esperando GPS'}
           </span>
           {mapError && (
@@ -12376,7 +12442,9 @@
           label={`Ruta en vivo del pedido ${activeOrder?.id || ''}`}
         >
           <LiveRouteMap
-            location={step > 0 ? riderLiveLocation || activeOrder?.riderLocation : null}
+            location={gps.status === 'active'
+              ? gps
+              : step > 0 ? riderLiveLocation || activeOrder?.riderLocation : null}
             className="rider-map"
             label={`Ruta en vivo del pedido ${activeOrder?.id || ''}`}
             walkingStartedAt={step === 1 && riderDetails.vehicle === 'Caminando'
@@ -12384,6 +12452,7 @@
               : null}
             allowMapInteraction
             walkingRoutePoints={RIDER_WALKING_ROUTE_POINTS}
+            gpsLocation={riderDetails.vehicle === 'Caminando' && gps.status === 'active' ? gps : null}
           />
         </LiveRouteMapErrorBoundary>
       );
