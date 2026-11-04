@@ -310,6 +310,22 @@ test('serves the bicycle order received animation as a public video asset', asyn
   assert.deepEqual(Buffer.from(await response.arrayBuffer()), video.subarray(0, 32));
 });
 
+test('serves the walking order received animation as a public video asset', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  const server = await createReelsTestServer(t, testDataDir);
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const video = await readFile(new URL('./pedido-recibido-caminando.mp4', import.meta.url));
+  const response = await fetch(`${baseUrl}/pedido-recibido-caminando.mp4`, {
+    headers: { Range: 'bytes=0-31' }
+  });
+
+  assert.equal(response.status, 206);
+  assert.equal(response.headers.get('content-type'), 'video/mp4');
+  assert.equal(response.headers.get('accept-ranges'), 'bytes');
+  assert.equal(response.headers.get('content-range'), `bytes 0-31/${video.length}`);
+  assert.deepEqual(Buffer.from(await response.arrayBuffer()), video.subarray(0, 32));
+});
+
 test('preloads the order received animation when serving the application page', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);
@@ -319,17 +335,18 @@ test('preloads the order received animation when serving the application page', 
   assert.equal(response.status, 200);
   assert.match(html, /<link rel="preload" href="\/pedido-recibido\.mp4" as="video" type="video\/mp4"\s*\/?>/);
   assert.match(html, /<link rel="preload" href="\/pedido-recibido-bicicleta\.mp4" as="video" type="video\/mp4"\s*\/?>/);
+  assert.match(html, /<link rel="preload" href="\/pedido-recibido-caminando\.mp4" as="video" type="video\/mp4"\s*\/?>/);
 });
 
-test('shows the matching order received animation for motorcycle and bicycle riders', async (t) => {
+test('shows the matching order received animation for each assigned rider transport', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);
   const response = await fetch(`http://127.0.0.1:${server.address().port}/`);
   const html = await response.text();
 
   assert.equal(response.status, 200);
-  assert.match(html, /const shouldShowArrivalVideo = isArrivalVisible && \['Moto', 'Bicicleta'\]\.includes\(assignedRider\?\.vehicle\);/);
-  assert.match(html, /const arrivalVideoSrc = assignedRider\?\.vehicle === 'Bicicleta'\s+\? '\/pedido-recibido-bicicleta\.mp4'\s+: '\/pedido-recibido\.mp4';/);
+  assert.match(html, /const shouldShowArrivalVideo = isArrivalVisible && \['Moto', 'Bicicleta', 'Caminando'\]\.includes\(assignedRider\?\.vehicle\);/);
+  assert.match(html, /const arrivalVideoSrc = assignedRider\?\.vehicle === 'Bicicleta'\s+\? '\/pedido-recibido-bicicleta\.mp4'\s+: assignedRider\?\.vehicle === 'Caminando'\s+\? '\/pedido-recibido-caminando\.mp4'\s+: '\/pedido-recibido\.mp4';/);
   assert.match(html, /\{shouldShowArrivalVideo && \(\s*<video\s+ref=\{arrivalVideoRef\}\s+src=\{arrivalVideoSrc\}/);
   assert.match(html, /if \(!shouldShowArrivalVideo \|\| !video\) return undefined;/);
 });

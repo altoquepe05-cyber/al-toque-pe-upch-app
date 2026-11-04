@@ -6,6 +6,7 @@
   <title>Al Toque - UPCH Campus</title>
   <link rel="preload" href="/pedido-recibido.mp4" as="video" type="video/mp4" />
   <link rel="preload" href="/pedido-recibido-bicicleta.mp4" as="video" type="video/mp4" />
+  <link rel="preload" href="/pedido-recibido-caminando.mp4" as="video" type="video/mp4" />
   <script src="https://cdn.botpress.cloud/webchat/v5.0/inject.js" defer></script>
   <script src="https://files.bpcontent.cloud/2026/10/11/22/20261011222049-IGT6DVHC.js" defer></script>
   <script>
@@ -10288,10 +10289,12 @@
       }, [deliveryPhase]);
 
       const isArrivalVisible = orderStatus === 'delivered' || deliveryPhase === 'arrived';
-      const shouldShowArrivalVideo = isArrivalVisible && ['Moto', 'Bicicleta'].includes(assignedRider?.vehicle);
+      const shouldShowArrivalVideo = isArrivalVisible && ['Moto', 'Bicicleta', 'Caminando'].includes(assignedRider?.vehicle);
       const arrivalVideoSrc = assignedRider?.vehicle === 'Bicicleta'
         ? '/pedido-recibido-bicicleta.mp4'
-        : '/pedido-recibido.mp4';
+        : assignedRider?.vehicle === 'Caminando'
+          ? '/pedido-recibido-caminando.mp4'
+          : '/pedido-recibido.mp4';
       useEffect(() => {
         const video = arrivalVideoRef.current;
         if (!shouldShowArrivalVideo || !video) return undefined;

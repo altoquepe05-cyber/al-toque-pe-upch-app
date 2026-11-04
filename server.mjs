@@ -88,6 +88,7 @@ const PUBLIC_ASSETS = new Set([
   'pedido-instrucciones.mp4',
   'pedido-recibido.mp4',
   'pedido-recibido-bicicleta.mp4',
+  'pedido-recibido-caminando.mp4',
   'coin-front-red.png',
   'al-toque-pe-logo.png',
   'al-toque-pe-emblema.png',
