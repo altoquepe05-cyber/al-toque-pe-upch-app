@@ -845,13 +845,13 @@
       position: relative;
       isolation: isolate;
       overflow: visible;
+      margin-inline: 12px;
       transition: transform 260ms ease, box-shadow 260ms ease, border-color 260ms ease;
     }
 
     @media (max-width: 480px) {
       .menu-pop-card {
-        margin-left: 20px;
-        margin-right: 20px;
+        margin-inline: 24px;
       }
     }
 
@@ -900,8 +900,8 @@
     }
 
     .starbucks-upcoming-image--panettone-latte {
-      width: 82%;
-      height: 82%;
+      width: 100%;
+      height: 100%;
     }
 
     .starbucks-product-image {
@@ -910,6 +910,11 @@
       height: 84%;
       border-radius: 50%;
       object-fit: contain;
+    }
+
+    .starbucks-product-image--sugar-free-vanilla-protein-latte {
+      width: 64%;
+      height: 64%;
     }
 
     .menu-pop-promo-logo {
@@ -4925,6 +4930,12 @@
       'Bebidas Frías',
       'Shaken Espresso'
     ];
+    const STARBUCKS_SECTIONS = [
+      { id: 'bebidas', label: 'Bebidas' },
+      { id: 'alimentos', label: 'Alimentos' },
+      { id: 'merch', label: 'Merch & Café en Grano' },
+      { id: 'packs', label: 'Packs & Boxes' }
+    ];
     const STARBUCKS_CAMPAIGN_END_TIME = 1793854740000;
     const STARBUCKS_CAMPAIGN_BANNER = 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/genericfiles/bebidas%20holidayst-1120x400%20%282%29.png';
     const STARBUCKS_UPCOMING_PROMOTIONS = [
@@ -5019,7 +5030,7 @@
       'Iced Protein Matcha': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/iced-protein-matcha-1793337027065.png',
       'Protein Matcha': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/protein-matcha-1793337027031.png',
       'Iced Sugar Free Vanilla Protein Latte': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/iced-sugar-free-vanilla-protein-latte-1793337027048.png',
-      'Sugar Free Vanilla Protein Latte': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/sugar-free-vanilla-protein-latte-1793337027044.png',
+      'Sugar Free Vanilla Protein Latte': '/starbucks-sugar-free-vanilla-protein-latte.png',
       'Black & White Mocha Frappuccino': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/black-white-mocha-frappuccino-1793337026262.png',
       'Cookies & Cream Creme Frappuccino': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/cookies-cream-creme-frappuccino-1793337026374.png',
       'Ultimate Caramel Frappuccino': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/ultimate-caramel-frappuccino-1793337026639.png',
@@ -5088,6 +5099,67 @@
       'Mocha Blanco Shaken Espresso Frío con Bebida de Avena': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/mocha-blanco-shaken-espresso-frio-con-bebida-de-avena-1793337026683.png',
       'Brown Sugar Shaken Espresso con Bebida de Avena': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/brown-sugar-shaken-espresso-con-bebida-de-avena-1793337026420.png'
     };
+    const STARBUCKS_FOOD_CATEGORIES = ['Pastries', 'Postres', 'Sándwiches'];
+    const STARBUCKS_FOOD_SOURCE = [
+      ['Pastries', 'Galleta Rellena de Crema de Avellanas', 11],
+      ['Pastries', 'Muffin de Naranja & Chocochips', 10.5],
+      ['Pastries', 'Keke de Zanahoria', 10.5],
+      ['Pastries', 'Galleta de Avena & Cranberry', 7.5],
+      ['Pastries', 'Keke de Limón', 10.5],
+      ['Pastries', 'Galleta de Chocochips', 7.5],
+      ['Pastries', 'Muffin de Berries', 10.5],
+      ['Pastries', 'Egg Bites (2 un)', 10],
+      ['Pastries', 'Keke de naranja con Pistacho', 10.5],
+      ['Postres', 'Cheesecake de Arándanos', 16],
+      ['Postres', 'Torta de Chocolate', 13.5],
+      ['Postres', 'Brownie Cookies & Creme', 9.5],
+      ['Postres', 'Cake Pop de Vainilla', 7.5],
+      ['Postres', 'Cuchareable de Torta de Chocolate', 18.5],
+      ['Postres', 'Cuchareable chocolúcuma con brownie', 19],
+      ['Postres', 'Cuchareable de Tres Leches', 18.5],
+      ['Sándwiches', 'Sándwich Finas Hierbas', 17.5],
+      ['Sándwiches', 'Croissant de Mantequilla', 7.5],
+      ['Sándwiches', 'Sandwich Croissant Jamón del País & Queso', 16.5],
+      ['Sándwiches', 'Sandwich Croissant Jamón Inglés & Queso', 16.5],
+      ['Sándwiches', 'Sándwich Pavita & Queso', 14.5],
+      ['Sándwiches', 'Sándwich Eggmont', 13.5],
+      ['Sándwiches', 'Sándwich Pavita, Queso & Espinaca', 15],
+      ['Sándwiches', 'Sándwich Brioche campesino', 16],
+      ['Sándwiches', 'Sándwich Panino vesubio', 13.5],
+      ['Sándwiches', 'Sándwich Chicken panino', 14.5],
+      ['Sándwiches', 'Sándwich Chicken Ciabatta', 14.5],
+      ['Sándwiches', 'Sándwich Triple', 16]
+    ];
+    const STARBUCKS_FOOD_IMAGE_URLS = {
+      'Galleta Rellena de Crema de Avellanas': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/galleta-rellena-de-crema-de-avellanas-1793337029321.png',
+      'Muffin de Naranja & Chocochips': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/muffin-de-naranja-chocochips-1793337028109.png',
+      'Keke de Zanahoria': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/keke-de-zanahoria-1793337028739.png',
+      'Galleta de Avena & Cranberry': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/galleta-de-avena-cranberry-1793337029368.png',
+      'Keke de Limón': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/keke-de-limon-1793337029342.png',
+      'Galleta de Chocochips': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/galleta-de-chocochips-1793337025638.png',
+      'Muffin de Berries': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/muffin-de-berries-1793337025538.png',
+      'Egg Bites (2 un)': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/egg-bites-2-un-1793337028172.png',
+      'Keke de naranja con Pistacho': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/keke-de-naranja-con-pistacho-1793337026853.png',
+      'Cheesecake de Arándanos': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/cheesecake-de-arandanos-1793337028770.png',
+      'Torta de Chocolate': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/torta-de-chocolate-1793337025797.png',
+      'Brownie Cookies & Creme': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/brownie-cookies-creme-1793337026047.png',
+      'Cake Pop de Vainilla': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/cake-pop-de-vainilla-1793337026032.png',
+      'Cuchareable de Torta de Chocolate': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/cuchareable-de-torta-de-chocolate-1793337026807.png',
+      'Cuchareable chocolúcuma con brownie': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/cuchareable-chocolucuma-con-brownie-1793337027254.png',
+      'Cuchareable de Tres Leches': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/cuchareable-de-tres-leches-1793337026874.png',
+      'Sándwich Finas Hierbas': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/sandwich-finas-hierbas-1793337029294.png',
+      'Croissant de Mantequilla': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/croissant-de-mantequilla-1793337029527.png',
+      'Sandwich Croissant Jamón del País & Queso': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/sandwich-croissant-jamon-del-pais-queso-1793337025783.png',
+      'Sandwich Croissant Jamón Inglés & Queso': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/sandwich-croissant-jamon-ingles-queso-1793337028527.png',
+      'Sándwich Pavita & Queso': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/sandwich-pavita-queso-1793337025466.png',
+      'Sándwich Eggmont': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/sandwich-eggmont-1793337025590.png',
+      'Sándwich Pavita, Queso & Espinaca': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/sandwich-pavita-queso-espinaca-1793337028533.png',
+      'Sándwich Brioche campesino': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/sandwich-brioche-campesino-1793337029344.png',
+      'Sándwich Panino vesubio': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/sandwich-panino-vesubio-1793337028484.png',
+      'Sándwich Chicken panino': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/sandwich-chicken-panino-1793337026040.png',
+      'Sándwich Chicken Ciabatta': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/sandwich-chicken-ciabatta-1793337025771.png',
+      'Sándwich Triple': 'https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/sandwich-triple-1793337025774.png'
+    };
 
     const STARBUCKS_FIXED_PRICE_PRODUCTS = new Set([
       'Aranciata Sanpellegrino',
@@ -5123,6 +5195,21 @@
       badge: 'Starbucks',
       isPopular: false,
       image: STARBUCKS_PRODUCT_IMAGE_URLS[name],
+      components: []
+    }));
+    const STARBUCKS_FOOD_PRODUCTS = STARBUCKS_FOOD_SOURCE.map(([menuCategory, name, price], index) => ({
+      id: `starbucks-food-${index + 1}`,
+      name,
+      category: 'alimentos',
+      menuCategory,
+      brand: 'Starbucks',
+      price,
+      pricePrefix: 'S/',
+      description: menuCategory,
+      time: '5 min',
+      badge: 'Starbucks',
+      isPopular: false,
+      image: STARBUCKS_FOOD_IMAGE_URLS[name],
       components: []
     }));
 
@@ -8529,7 +8616,7 @@
               <button onClick={() => onNavigate('menu')} className="text-xs font-bold text-brand hover:underline">Ver todo</button>
             </div>
 
-            <div className="flex space-x-3 overflow-x-auto no-scrollbar py-6 -mx-4 px-6">
+            <div className="flex space-x-3 overflow-x-auto no-scrollbar py-6 -mx-4 px-8">
               {popularDishes.map((dish) => (
                 <div key={dish.id} className="home-menu-card min-w-[220px] bg-white border border-gray-100 rounded-3xl p-2.5 shadow-sm flex flex-col justify-between">
                   <div className="home-menu-card-media relative h-28 rounded-2xl">
@@ -8562,7 +8649,7 @@
               <h3 className="font-title font-bold text-base">Combos que rinden</h3>
               <p className="text-[11px] text-gray-500">Para tu día a día en campus</p>
             </div>
-            <div className="flex space-x-3 overflow-x-auto no-scrollbar py-6 -mx-4 px-6">
+            <div className="flex space-x-3 overflow-x-auto no-scrollbar py-6 -mx-4 px-8">
               {INITIAL_MENU.filter((m) => m.category === 'combos').map((dish) => (
                 <div key={dish.id} className="home-menu-card combo-card min-w-[220px] bg-white border border-gray-100 rounded-3xl p-2.5 shadow-sm flex flex-col justify-between">
                   <div className="home-menu-card-media relative h-36 rounded-2xl">
@@ -8595,6 +8682,7 @@
 
     function MenuScreen({ onOpenCustomize, onAddBembos, onAddStarbucks, isPromoDay }) {
       const [filter, setFilter] = useState('todos');
+      const [starbucksSection, setStarbucksSection] = useState('bebidas');
       const [searchQuery, setSearchQuery] = useState('');
       const [showSearch, setShowSearch] = useState(false);
       const [showStarbucksCampaign, setShowStarbucksCampaign] = useState(false);
@@ -8676,10 +8764,11 @@
               type="button"
               onClick={() => {
                 setFilter('starbucks');
+                setStarbucksSection('bebidas');
                 setCampaignClock(Date.now());
                 setShowStarbucksCampaign(true);
               }}
-              aria-label={`Promos Starbucks: ${STARBUCKS_PRODUCTS.length + STARBUCKS_UPCOMING_PROMOTIONS.length} elementos`}
+              aria-label={`Promos Starbucks: ${STARBUCKS_PRODUCTS.length + STARBUCKS_FOOD_PRODUCTS.length + STARBUCKS_UPCOMING_PROMOTIONS.length} elementos`}
               aria-pressed={filter === 'starbucks'}
               className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition ${
                 filter === 'starbucks' ? 'bg-[#006241] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -8687,7 +8776,7 @@
             >
               Promos Starbucks
               <span className={`ml-1.5 text-[10px] font-medium ${filter === 'starbucks' ? 'text-white/70' : 'text-gray-500'}`}>
-                {STARBUCKS_PRODUCTS.length + STARBUCKS_UPCOMING_PROMOTIONS.length}
+                {STARBUCKS_PRODUCTS.length + STARBUCKS_FOOD_PRODUCTS.length + STARBUCKS_UPCOMING_PROMOTIONS.length}
               </span>
             </button>
           </div>
@@ -8786,8 +8875,31 @@
             </section>
           ) : filter === 'starbucks' ? (
             <section className="space-y-5" aria-labelledby="starbucks-menu-title">
-              <h3 id="starbucks-menu-title" className="sr-only">Bebidas Starbucks</h3>
-              {matchingUpcomingPromotions.length > 0 && (
+              <h3 id="starbucks-menu-title" className="sr-only">Menú Starbucks</h3>
+              <div className="flex gap-2 overflow-x-auto border-b border-gray-200 no-scrollbar" role="tablist" aria-label="Categorías de Starbucks">
+                {STARBUCKS_SECTIONS.map((section) => (
+                  <button
+                    key={section.id}
+                    type="button"
+                    role="tab"
+                    id={`starbucks-tab-${section.id}`}
+                    aria-selected={starbucksSection === section.id}
+                    aria-controls="starbucks-category-panel"
+                    onClick={() => setStarbucksSection(section.id)}
+                    className={`shrink-0 border-b-2 px-3 py-2 text-xs font-semibold transition ${
+                      starbucksSection === section.id
+                        ? 'border-[#006241] text-[#006241]'
+                        : 'border-transparent text-gray-500 hover:text-[#006241]'
+                    }`}
+                  >
+                    {section.label}
+                  </button>
+                ))}
+              </div>
+              <div id="starbucks-category-panel" role="tabpanel" aria-labelledby={`starbucks-tab-${starbucksSection}`}>
+                {starbucksSection === 'bebidas' ? (
+                  <div className="space-y-5">
+                    {matchingUpcomingPromotions.length > 0 && (
                 <section className="space-y-3" aria-labelledby="starbucks-upcoming-title">
                   <div className="flex items-center justify-between gap-2">
                     <div>
@@ -8818,8 +8930,8 @@
                     ))}
                   </div>
                 </section>
-              )}
-              {STARBUCKS_MENU_CATEGORIES.map((category) => {
+                    )}
+                    {STARBUCKS_MENU_CATEGORIES.map((category) => {
                 const query = searchQuery.trim().toLocaleLowerCase('es');
                 const products = STARBUCKS_PRODUCTS.filter((product) =>
                   product.menuCategory === category
@@ -8841,7 +8953,7 @@
                               src={product.image}
                               alt={`Bebida de Starbucks: ${product.name}`}
                               loading="lazy"
-                              className="menu-pop-image starbucks-product-image"
+                              className={`menu-pop-image starbucks-product-image ${product.name === 'Sugar Free Vanilla Protein Latte' ? 'starbucks-product-image--sugar-free-vanilla-protein-latte' : ''}`}
                             />
                             {product.hasDiscount && (
                               <div className="menu-pop-promo-logo absolute bottom-1.5 right-1.5 rounded-full bg-white/95 p-1 shadow-md" aria-label="Producto con descuento Al Toque">
@@ -8873,12 +8985,71 @@
                   </div>
                 );
               })}
-              {STARBUCKS_PRODUCTS.filter((product) => {
+                    {STARBUCKS_PRODUCTS.filter((product) => {
                 const query = searchQuery.trim().toLocaleLowerCase('es');
                 return !query || `${product.name} ${product.description}`.toLocaleLowerCase('es').includes(query);
               }).length === 0 && matchingUpcomingPromotions.length === 0 && (
                 <p className="rounded-2xl bg-gray-50 p-4 text-center text-xs text-gray-500">No encontramos bebidas Starbucks que coincidan con la búsqueda.</p>
               )}
+                  </div>
+                ) : starbucksSection === 'alimentos' ? (
+                  <div className="space-y-5">
+                    {STARBUCKS_FOOD_CATEGORIES.map((category) => {
+                      const query = searchQuery.trim().toLocaleLowerCase('es');
+                      const products = STARBUCKS_FOOD_PRODUCTS.filter((product) =>
+                        product.menuCategory === category
+                        && (!query || `${product.name} ${product.menuCategory}`.toLocaleLowerCase('es').includes(query))
+                      );
+                      if (products.length === 0) return null;
+
+                      return (
+                        <section key={category} className="space-y-2.5" aria-labelledby={`starbucks-food-${category}`}>
+                          <div className="flex items-center justify-between border-b border-gray-200 pb-2">
+                            <h3 id={`starbucks-food-${category}`} className="font-title text-lg font-bold">{category}</h3>
+                            <span className="text-[10px] font-semibold text-gray-500">{products.length}</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-6">
+                            {products.map((product) => (
+                              <article key={product.id} className="menu-pop-card menu-pop-card--compact flex min-w-0 flex-col rounded-2xl border border-gray-200 bg-white p-2.5 shadow-sm">
+                                <div className="menu-pop-media starbucks-product-media relative mx-auto mb-2 flex aspect-square w-[88%] items-center justify-center rounded-full border-2 border-[#d6bb79] bg-[#075344] p-2.5 shadow-md">
+                                  <img
+                                    src={product.image}
+                                    alt={`Alimento de Starbucks: ${product.name}`}
+                                    loading="lazy"
+                                    className="menu-pop-image starbucks-product-image"
+                                  />
+                                </div>
+                                <h4 className="min-h-9 text-xs font-bold leading-snug text-dark">{product.name}</h4>
+                                <div className="mt-auto flex items-center justify-between gap-1 pt-2">
+                                  <span className="text-xs font-extrabold text-[#006241]">{product.pricePrefix}{product.price.toFixed(2)}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => onAddStarbucks(product)}
+                                    aria-label={`Añadir ${product.name} al pedido`}
+                                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#006241] text-xl font-bold text-white transition hover:bg-[#004d33] active:scale-95"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              </article>
+                            ))}
+                          </div>
+                        </section>
+                      );
+                    })}
+                    {STARBUCKS_FOOD_PRODUCTS.filter((product) => {
+                      const query = searchQuery.trim().toLocaleLowerCase('es');
+                      return !query || `${product.name} ${product.menuCategory}`.toLocaleLowerCase('es').includes(query);
+                    }).length === 0 && (
+                      <p className="rounded-2xl bg-gray-50 p-4 text-center text-xs text-gray-500">No encontramos alimentos Starbucks que coincidan con la búsqueda.</p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="mt-4 rounded-2xl bg-gray-50 p-4 text-center text-xs text-gray-500" role="status">
+                    Estamos preparando esta categoría de Starbucks. Próximamente encontrarás aquí sus productos.
+                  </p>
+                )}
+              </div>
             </section>
           ) : (
           <div className="space-y-6">

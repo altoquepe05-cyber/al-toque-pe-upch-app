@@ -66,6 +66,17 @@ test('serves the four Starbucks Panettone product photos as public PNG assets', 
   }
 });
 
+test('serves the supplied Sugar Free Vanilla Protein Latte photo as a public PNG asset', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  const server = await createReelsTestServer(t, testDataDir);
+  const response = await fetch(`http://127.0.0.1:${server.address().port}/starbucks-sugar-free-vanilla-protein-latte.png`);
+  const image = Buffer.from(await response.arrayBuffer());
+
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('content-type'), 'image/png');
+  assert.equal(image.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
+});
+
 test('ends a connected voice call after ten minutes', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   let currentTime = 1_700_000_000_000;
@@ -395,7 +406,9 @@ test('animates the home menu cards with a glowing outline and honors reduced mot
   assert.match(html, /\.home-menu-card-media\s*\{[^}]*margin:\s*0 12px 8px;[^}]*overflow:\s*visible;/);
   assert.match(html, /\.home-menu-card \.combo-card-image\s*\{[^}]*animation:\s*homeMenuImageEnter 520ms ease-out both;/);
   assert.match(html, /@keyframes homeMenuImageEnter\s*\{\s*from \{ opacity: 0\.7; \}\s*to \{ opacity: 1; \}\s*\}/);
-  assert.equal((html.match(/overflow-x-auto no-scrollbar py-6 -mx-4 px-6/g) || []).length, 2);
+  assert.equal((html.match(/overflow-x-auto no-scrollbar py-6 -mx-4 px-8/g) || []).length, 2);
+  assert.match(html, /\.menu-pop-card\s*\{[^}]*margin-inline:\s*12px;/);
+  assert.match(html, /@media \(max-width: 480px\)\s*\{\s*\.menu-pop-card\s*\{\s*margin-inline:\s*24px;/);
   assert.match(html, /\.combo-card:not\(\.home-menu-card\):hover \.combo-card-image/);
   assert.match(html, /\.menu-popular-badge\s*\{[^}]*animation:\s*popularBadgeGlow 6\.8s ease-in-out infinite;/);
   assert.match(html, /\.menu-popular-badge::after\s*\{[^}]*animation:\s*popularBadgeSheen 6\.8s ease-in-out infinite;/);
@@ -428,7 +441,7 @@ test('animates the home menu cards with a glowing outline and honors reduced mot
   assert.match(html, /\.bembos-promo-card:has\(> \.menu-pop-media:hover\) \.bembos-promo-hover-label\s*\{\s*opacity:\s*1;/);
   assert.match(html, /\.bembos-promo-card:has\(> \.menu-pop-media:active\) \.bembos-promo-image\s*\{[^}]*transform: translateY\(-3px\) scale\(1\.035\);/);
   assert.match(html, /Bembos · promoción<\/span>/);
-  assert.match(html, /@media \(max-width: 480px\)\s*\{\s*\.menu-pop-card\s*\{\s*margin-left: 20px;\s*margin-right: 20px;/);
+  assert.match(html, /@media \(max-width: 480px\)\s*\{\s*\.menu-pop-card\s*\{\s*margin-inline:\s*24px;/);
   assert.match(html, /\.menu-pop-card--compact\s*\{\s*margin-left: 0;\s*margin-right: 0;/);
   assert.match(touchStyles, /\.menu-pop-card:not\(\.bembos-promo-card\):has\(> \.menu-pop-media:active\)\s*\{[^}]*transform: translateY\(-2px\) scale\(1\.015\);/);
   assert.match(touchStyles, /\.menu-pop-card:not\(\.bembos-promo-card\):has\(> \.menu-pop-media:active\) \.menu-pop-media\s*\{\s*transform: translateY\(-4px\) scale\(1\.01\);/);
@@ -467,10 +480,15 @@ test('shows the Starbucks Panettone launch modal and upcoming items without pric
   const upcomingHoverStyles = html.slice(upcomingHoverStylesStart, upcomingHoverStylesEnd);
 
   assert.equal(response.status, 200);
+  assert.match(html, /const STARBUCKS_SECTIONS = \[\s*\{ id: 'bebidas', label: 'Bebidas' \},\s*\{ id: 'alimentos', label: 'Alimentos' \},\s*\{ id: 'merch', label: 'Merch & Café en Grano' \},\s*\{ id: 'packs', label: 'Packs & Boxes' \}\s*\]/);
+  assert.match(html, /filter === 'starbucks' \? \(\s*<section className="space-y-5" aria-labelledby="starbucks-menu-title">\s*<h3 id="starbucks-menu-title" className="sr-only">Menú Starbucks<\/h3>\s*<div[^>]*role="tablist" aria-label="Categorías de Starbucks">/);
+  assert.match(html, /role="tab"\s*id=\{`starbucks-tab-\$\{section\.id\}`\}\s*aria-selected=\{starbucksSection === section\.id\}\s*aria-controls="starbucks-category-panel"\s*onClick=\{\(\) => setStarbucksSection\(section\.id\)\}/);
+  assert.match(html, /starbucksSection === 'bebidas' \? \(/);
+  assert.match(html, /Estamos preparando esta categoría de Starbucks\. Próximamente encontrarás aquí sus productos\./);
   assert.match(html, /const STARBUCKS_CAMPAIGN_END_TIME = 1793854740000;/);
   assert.match(html, /function formatStarbucksCountdown\(remainingMs\)/);
   assert.match(html, /if \(!showStarbucksCampaign\) return undefined;\s*const countdownInterval = window\.setInterval\(\(\) => setCampaignClock\(Date\.now\(\)\), 1000\)/);
-  assert.match(html, /setFilter\('starbucks'\);\s*setCampaignClock\(Date\.now\(\)\);\s*setShowStarbucksCampaign\(true\);/);
+  assert.match(html, /setFilter\('starbucks'\);\s*setStarbucksSection\('bebidas'\);\s*setCampaignClock\(Date\.now\(\)\);\s*setShowStarbucksCampaign\(true\);/);
   assert.match(html, /role="dialog"\s*aria-modal="true"\s*aria-labelledby="starbucks-campaign-title"/);
   assert.match(html, /bebidas%20holidayst-1120x400%20%282%29\.png/);
   assert.ok(promotionsStart >= 0 && promotionsEnd > promotionsStart, 'upcoming Starbucks promotions should be defined');
@@ -496,7 +514,7 @@ test('shows the Starbucks Panettone launch modal and upcoming items without pric
   assert.match(productCards, /src=\{product\.image\}/);
   assert.match(productCards, /className=\{`starbucks-upcoming-image \$\{product\.name === 'Panettone Latte' \? 'starbucks-upcoming-image--panettone-latte' : ''\}`\}/);
   assert.match(html, /\.starbucks-upcoming-image\s*\{\s*display:\s*block;\s*width:\s*100%;\s*height:\s*100%;\s*border-radius:\s*50%;\s*object-fit:\s*cover;/);
-  assert.match(html, /\.starbucks-upcoming-image--panettone-latte\s*\{\s*width:\s*82%;\s*height:\s*82%;\s*\}/);
+  assert.match(html, /\.starbucks-upcoming-image--panettone-latte\s*\{\s*width:\s*100%;\s*height:\s*100%;\s*\}/);
   assert.match(productCards, /<h4 className="text-xs font-bold leading-snug text-dark">\{product\.name\}<\/h4>/);
   assert.doesNotMatch(upcomingPromotions, /\bprice\s*:/, 'upcoming Starbucks products should not have prices');
   assert.match(productCards, /Próximamente/);
@@ -521,7 +539,7 @@ test('shows official Starbucks prices and starting-price labels', async (t) => {
   const imageMapStart = html.indexOf('const STARBUCKS_PRODUCT_IMAGE_URLS = {');
   const imageMapEnd = html.indexOf('\n    };', imageMapStart);
   const imageMap = html.slice(imageMapStart, imageMapEnd);
-  const imageEntries = Array.from(imageMap.matchAll(/^\s+'([^']+)': '(https:\/\/[^']+\.png)'[,]?$/gm));
+  const imageEntries = Array.from(imageMap.matchAll(/^\s+'([^']+)': '([^']+\.png)'[,]?$/gm));
   const productNames = Array.from(productSource.matchAll(/\['[^']+', '([^']+)', [0-9.]+\]/g), (match) => match[1]);
 
   assert.equal(response.status, 200);
@@ -529,9 +547,11 @@ test('shows official Starbucks prices and starting-price labels', async (t) => {
   assert.equal(imageEntries.length, productNames.length, 'every Starbucks catalog product should have an image URL');
   assert.deepEqual(imageEntries.map((entry) => entry[1]).sort(), [...productNames].sort());
   assert.match(html, /image: STARBUCKS_PRODUCT_IMAGE_URLS\[name\]/);
+  assert.match(imageMap, /'Sugar Free Vanilla Protein Latte': '\/starbucks-sugar-free-vanilla-protein-latte\.png'/);
   assert.match(html, /className="menu-pop-media starbucks-product-media relative mx-auto mb-2 flex aspect-square w-\[88%\] items-center justify-center rounded-full border-2 border-\[#d6bb79\] bg-\[#075344\] p-2\.5 shadow-md"/);
   assert.match(html, /\.starbucks-product-image\s*\{\s*display:\s*block;\s*width:\s*84%;\s*height:\s*84%;\s*border-radius:\s*50%;\s*object-fit:\s*contain;/);
-  assert.match(html, /className="menu-pop-image starbucks-product-image"/);
+  assert.match(html, /\.starbucks-product-image--sugar-free-vanilla-protein-latte\s*\{\s*width:\s*64%;\s*height:\s*64%;\s*\}/);
+  assert.match(html, /product\.name === 'Sugar Free Vanilla Protein Latte' \? 'starbucks-product-image--sugar-free-vanilla-protein-latte'/);
   assert.match(html, /alt=\{`Bebida de Starbucks: \$\{product\.name\}`\}/);
   assert.doesNotMatch(html, /function createStarbucksProductImage/);
   assert.match(productSource, /\['Bebidas Proteicas', 'Iced Protein Matcha', 22\]/);
@@ -542,6 +562,51 @@ test('shows official Starbucks prices and starting-price labels', async (t) => {
   assert.match(html, /price,\s*pricePrefix: STARBUCKS_FIXED_PRICE_PRODUCTS\.has\(name\) \? 'S\/' : 'Desde S\/'/);
   assert.match(html, /\{product\.pricePrefix\}\{product\.price\.toFixed\(2\)\}/);
   assert.doesNotMatch(html, /STARBUCKS_DISCOUNTED_PRODUCTS/);
+});
+
+test('shows official Starbucks food items with prices, circular photos and interactive cards', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  const server = await createReelsTestServer(t, testDataDir);
+  const response = await fetch(`http://127.0.0.1:${server.address().port}/`);
+  const html = await response.text();
+  const sourceStart = html.indexOf('const STARBUCKS_FOOD_SOURCE = [');
+  const sourceEnd = html.indexOf('\n    ];', sourceStart);
+  const productSource = html.slice(sourceStart, sourceEnd);
+  const imageMapStart = html.indexOf('const STARBUCKS_FOOD_IMAGE_URLS = {');
+  const imageMapEnd = html.indexOf('\n    };', imageMapStart);
+  const imageMap = html.slice(imageMapStart, imageMapEnd);
+  const products = Array.from(productSource.matchAll(/\['([^']+)', '([^']+)', ([0-9.]+)\]/g), (match) => ({
+    category: match[1],
+    name: match[2],
+    price: Number(match[3])
+  }));
+  const imageEntries = Array.from(imageMap.matchAll(/^\s+'([^']+)': '(https:\/\/[^']+\.png)'[,]?$/gm));
+  const foodPanelStart = html.indexOf("starbucksSection === 'alimentos' ?");
+  const foodPanelEnd = html.indexOf('Estamos preparando esta categoría de Starbucks.', foodPanelStart);
+  const foodPanel = html.slice(foodPanelStart, foodPanelEnd);
+
+  assert.equal(response.status, 200);
+  assert.ok(sourceStart >= 0 && sourceEnd > sourceStart, 'official Starbucks food items should be defined');
+  assert.equal(products.length, 28);
+  assert.deepEqual(
+    products.reduce((counts, product) => ({ ...counts, [product.category]: (counts[product.category] || 0) + 1 }), {}),
+    { Pastries: 9, Postres: 7, 'Sándwiches': 12 }
+  );
+  assert.equal(imageEntries.length, products.length, 'every Starbucks food product should have an official image');
+  assert.deepEqual(imageEntries.map((entry) => entry[1]).sort(), products.map((product) => product.name).sort());
+  assert.ok(imageEntries.every((entry) => entry[2].startsWith('https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/')));
+  assert.match(html, /STARBUCKS_PRODUCTS\.length \+ STARBUCKS_FOOD_PRODUCTS\.length \+ STARBUCKS_UPCOMING_PROMOTIONS\.length/);
+  assert.ok(products.some((product) => product.name === 'Galleta Rellena de Crema de Avellanas' && product.price === 11));
+  assert.ok(products.some((product) => product.name === 'Cheesecake de Arándanos' && product.price === 16));
+  assert.ok(products.some((product) => product.name === 'Sándwich Chicken Ciabatta' && product.price === 14.5));
+  assert.match(html, /const STARBUCKS_FOOD_CATEGORIES = \['Pastries', 'Postres', 'Sándwiches'\]/);
+  assert.match(html, /const STARBUCKS_FOOD_PRODUCTS = STARBUCKS_FOOD_SOURCE\.map\(\(\[menuCategory, name, price\], index\) => \(\{\s*id: `starbucks-food-\$\{index \+ 1\}`,\s*name,\s*category: 'alimentos'/);
+  assert.match(foodPanel, /STARBUCKS_FOOD_CATEGORIES\.map\(\(category\) =>/);
+  assert.match(foodPanel, /className="menu-pop-media starbucks-product-media relative mx-auto mb-2 flex aspect-square w-\[88%\] items-center justify-center rounded-full border-2 border-\[#d6bb79\]/);
+  assert.match(foodPanel, /alt=\{`Alimento de Starbucks: \$\{product\.name\}`\}/);
+  assert.match(foodPanel, /onClick=\{\(\) => onAddStarbucks\(product\)\}/);
+  assert.match(html, /\.menu-pop-card:not\(\.bembos-promo-card\):has\(> \.menu-pop-media:hover\) \.menu-pop-image\s*\{\s*z-index:\s*3;\s*transform:\s*scale\(1\.1\);/);
+  assert.match(html, /\.menu-pop-card:not\(\.bembos-promo-card\):has\(> \.menu-pop-media:active\) \.menu-pop-image\s*\{\s*z-index:\s*3;\s*transform:\s*scale\(1\.03\);/);
 });
 
 test('animates the walking rider from the first blue point through the route to the destination', async (t) => {

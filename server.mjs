@@ -105,6 +105,7 @@ const PUBLIC_ASSETS = new Set([
   'starbucks-panettone-frappuccino.png',
   'starbucks-panettone-latte-frio.png',
   'starbucks-panettone-matcha-frio.png',
+  'starbucks-sugar-free-vanilla-protein-latte.png',
   'Combo costa.png',
   'combo fitness.jpg',
   'combo herediano.jpg',
