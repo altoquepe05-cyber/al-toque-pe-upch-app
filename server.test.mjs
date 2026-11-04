@@ -46,6 +46,44 @@ test('serves the Reel watermark image as a public PNG asset', async (t) => {
   assert.equal(image.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
 });
 
+test('shows the Miraflores delivery schedule and updates its status using Lima time', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  const server = await createReelsTestServer(t, testDataDir);
+  const response = await fetch(`http://127.0.0.1:${server.address().port}/`);
+  const html = await response.text();
+  const statusFunction = html.match(/function getCampusServiceStatus\(date = new Date\(\)\) \{[\s\S]*?\n    \}/);
+
+  assert.equal(response.status, 200);
+  assert.ok(statusFunction, 'the home screen should calculate the campus service status');
+  const getCampusServiceStatus = vm.runInNewContext(`(${statusFunction[0]})`, { Intl });
+  const cases = [
+    ['2026-01-15T09:59:00-05:00', 'offline', '10:00 a. m.'],
+    ['2026-01-15T10:00:00-05:00', 'online', '1:20 p. m.'],
+    ['2026-01-15T13:19:00-05:00', 'online', '1:20 p. m.'],
+    ['2026-01-15T13:20:00-05:00', 'offline', 'Retomamos los pedidos a la 1:30 p. m.'],
+    ['2026-01-15T13:29:00-05:00', 'offline', 'Retomamos los pedidos a la 1:30 p. m.'],
+    ['2026-01-15T13:30:00-05:00', 'online', '6:00 p. m.'],
+    ['2026-01-15T17:59:00-05:00', 'online', '6:00 p. m.'],
+    ['2026-01-15T18:00:00-05:00', 'offline', '8:00 p. m.'],
+    ['2026-01-15T19:59:00-05:00', 'offline', '8:00 p. m.'],
+    ['2026-01-15T20:00:00-05:00', 'online', '10:00 p. m.'],
+    ['2026-01-15T21:59:00-05:00', 'online', '10:00 p. m.'],
+    ['2026-01-15T22:00:00-05:00', 'offline', '10:00 a. m. de mañana']
+  ];
+
+  for (const [timestamp, expectedState, expectedDetail] of cases) {
+    const status = getCampusServiceStatus(new Date(timestamp));
+    assert.equal(status.state, expectedState, `unexpected state at ${timestamp}`);
+    assert.ok(status.detail.includes(expectedDetail), `unexpected detail at ${timestamp}`);
+  }
+
+  assert.match(html, /className=\{`campus-service-card \$\{serviceStatus\.state === 'online' \? 'campus-service-card--online' : 'campus-service-card--offline'\}`\}/);
+  assert.match(html, /Delivery de comida para estudiantes del campus de Miraflores/);
+  assert.match(html, /10:00 a\. m\.–1:20 p\. m\. · 1:30–6:00 p\. m\. · 8:00–10:00 p\. m\./);
+  assert.match(html, /setServiceStatus\(getCampusServiceStatus\(now\)\)/);
+  assert.match(html, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.campus-service-card::before,[\s\S]*?\.campus-service-status-dot\s*\{\s*animation: none !important;/);
+});
+
 test('serves the four Starbucks Panettone product photos as public PNG assets', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);

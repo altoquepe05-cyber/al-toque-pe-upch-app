@@ -1345,7 +1345,9 @@
     @media (prefers-reduced-motion: reduce) {
       .home-profile-avatar,
       .home-profile-avatar svg,
-      .home-ai-sticker {
+      .home-ai-sticker,
+      .campus-service-card::before,
+      .campus-service-status-dot {
         animation: none !important;
       }
     }
@@ -1362,6 +1364,69 @@
       background: linear-gradient(135deg, #fffefb 0%, #fffaf0 58%, #f1e5cd 100%);
       color: #351c1c;
       transition: box-shadow 350ms ease;
+    }
+
+    .campus-service-card {
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+      min-height: 220px;
+      padding: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 26px;
+      color: #fff;
+      box-shadow: 0 14px 28px rgba(43, 23, 24, 0.2);
+      transition: background 500ms ease, box-shadow 350ms ease;
+    }
+
+    .campus-service-card--online {
+      background: linear-gradient(135deg, #087b48 0%, #15945d 55%, #27a36b 100%);
+    }
+
+    .campus-service-card--offline {
+      background: linear-gradient(135deg, #68162f 0%, #861c3e 55%, #a32649 100%);
+    }
+
+    .campus-service-card::before {
+      position: absolute;
+      z-index: -1;
+      top: -68px;
+      right: -44px;
+      width: 176px;
+      height: 176px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 50%;
+      box-shadow: 0 0 0 18px rgba(255, 255, 255, 0.045), 0 0 0 38px rgba(255, 255, 255, 0.035);
+      content: "";
+      animation: campusServiceFloat 5s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    .campus-service-status-dot {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #d7ffe6;
+      box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.16);
+      animation: campusServicePulse 1.8s ease-in-out infinite;
+    }
+
+    .campus-service-schedule {
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 16px;
+      background: rgba(36, 16, 25, 0.16);
+      backdrop-filter: blur(8px);
+    }
+
+    @keyframes campusServiceFloat {
+      0%, 100% { transform: translateY(0) rotate(0); }
+      50% { transform: translateY(8px) rotate(8deg); }
+    }
+
+    @keyframes campusServicePulse {
+      0%, 100% { box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.16); }
+      50% { box-shadow: 0 0 0 7px rgba(255, 255, 255, 0.08); }
     }
 
     .home-luxury-card::before {
@@ -7325,6 +7390,54 @@
       return 'night';
     }
 
+    function getCampusServiceStatus(date = new Date()) {
+      const timeParts = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'America/Lima',
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23'
+      }).formatToParts(date);
+      const parts = Object.fromEntries(timeParts.map(({ type, value }) => [type, value]));
+      const minuteOfDay = Number(parts.hour) * 60 + Number(parts.minute);
+
+      if ((minuteOfDay >= 600 && minuteOfDay < 800) || (minuteOfDay >= 810 && minuteOfDay < 1080) || (minuteOfDay >= 1200 && minuteOfDay < 1320)) {
+        const closesAt = minuteOfDay < 800 ? '1:20 p. m.' : minuteOfDay < 1080 ? '6:00 p. m.' : '10:00 p. m.';
+        return {
+          state: 'online',
+          label: 'En línea',
+          title: '¡Ya estamos en línea!',
+          description: 'Delivery de comida para estudiantes del campus de Miraflores.',
+          detail: `Recibimos pedidos hasta las ${closesAt}`
+        };
+      }
+
+      if (minuteOfDay >= 800 && minuteOfDay < 810) {
+        return {
+          state: 'offline',
+          label: 'Refrigerio',
+          title: 'Pausa para recargar',
+          description: 'Estamos en refrigerio. Enseguida volvemos a atender.',
+          detail: 'Retomamos los pedidos a la 1:30 p. m.'
+        };
+      }
+
+      const nextOpening = minuteOfDay < 600
+        ? '10:00 a. m.'
+        : minuteOfDay < 810
+          ? '1:30 p. m.'
+          : minuteOfDay < 1200
+            ? '8:00 p. m.'
+            : '10:00 a. m. de mañana';
+
+      return {
+        state: 'offline',
+        label: 'Fuera de línea',
+        title: 'Ahora estamos fuera de línea',
+        description: 'Delivery de comida para estudiantes del campus de Miraflores.',
+        detail: `Volvemos a recibir pedidos a las ${nextOpening}`
+      };
+    }
+
     function ReelsScreen({ onNavigate }) {
       const generateReelsProfileId = () => {
         if (window.crypto?.randomUUID) return window.crypto.randomUUID();
@@ -8545,6 +8658,7 @@
     function HomeScreen({ onNavigate, onOpenCustomize, mood, setMood, isMusicPlayerOpen, onToggleMusicPlayer }) {
       const [timeString, setTimeString] = useState('');
       const [dayPart, setDayPart] = useState(() => getDayPart(new Date().getHours()));
+      const [serviceStatus, setServiceStatus] = useState(() => getCampusServiceStatus());
       const [headline, setHeadline] = useState('');
       const [homeCardStickerId, setHomeCardStickerId] = useState(9);
       const [cardMessageIndex, setCardMessageIndex] = useState(() => Math.floor(Math.random() * HOME_AI_CARD_MESSAGES.length));
@@ -8562,6 +8676,7 @@
           hours = hours ? hours : 12;
           setTimeString(`${dayName}, ${hours}:${minutes} ${ampm}`);
           setDayPart(getDayPart(now.getHours()));
+          setServiceStatus(getCampusServiceStatus(now));
         };
 
         updateTime();
@@ -8685,6 +8800,39 @@
               ))}
             </div>
           </div>
+
+          <section
+            className={`campus-service-card ${serviceStatus.state === 'online' ? 'campus-service-card--online' : 'campus-service-card--offline'}`}
+            aria-label={`Servicio de delivery: ${serviceStatus.label}`}
+            aria-live="polite"
+          >
+            <div className="relative z-10">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <span className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-white/85">Al Toque · Miraflores</span>
+                <span className="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/25 bg-white/15 px-3 py-1.5 text-[10px] font-extrabold">
+                  <span className="campus-service-status-dot" aria-hidden="true"></span>
+                  {serviceStatus.label}
+                </span>
+              </div>
+              <h2 className="max-w-[280px] font-title text-[25px] font-extrabold leading-tight">{serviceStatus.title}</h2>
+              <p className="mt-2 max-w-[290px] text-[12px] font-medium leading-relaxed text-white/90">{serviceStatus.description}</p>
+              <p className="mt-1 text-[11px] font-bold text-white">{serviceStatus.detail}</p>
+              <div className="campus-service-schedule mt-4 flex items-center justify-between gap-3 px-3 py-2.5">
+                <div className="min-w-0">
+                  <p className="text-[9px] font-extrabold uppercase tracking-wider text-white/75">Horario de pedidos</p>
+                  <p className="mt-0.5 text-[10px] font-bold leading-relaxed">10:00 a. m.–1:20 p. m. · 1:30–6:00 p. m. · 8:00–10:00 p. m.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onNavigate('menu')}
+                  aria-label="Ver menú de Al Toque"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-[#68162f] shadow-md transition hover:scale-105 active:scale-95"
+                >
+                  <i data-lucide="arrow-right" className="h-4 w-4"></i>
+                </button>
+              </div>
+            </div>
+          </section>
 
           <section
             className="home-luxury-card"
