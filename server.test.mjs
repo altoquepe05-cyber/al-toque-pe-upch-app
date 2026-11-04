@@ -334,18 +334,18 @@ test('shows the matching order received animation for motorcycle and bicycle rid
   assert.match(html, /if \(!shouldShowArrivalVideo \|\| !video\) return undefined;/);
 });
 
-test('unlocks VIP Gorritos at twenty points and keeps the level for existing members', async (t) => {
+test('unlocks VIP Gorritos at twenty points or twenty purchases and keeps the level for existing members', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);
   const response = await fetch(`http://127.0.0.1:${server.address().port}/`);
   const html = await response.text();
 
   assert.equal(response.status, 200);
-  assert.match(html, /gorritosVip: savedProfile\.gorritosVip === true\s*\|\|\s*\(Number\.isInteger\(savedProfile\.gorritos\) && savedProfile\.gorritos >= 20\)/);
-  assert.match(html, /const isGorritosVip = profile\.gorritosVip === true \|\| points >= 20;/);
-  assert.match(html, /gorritosVip: alreadyVip \|\| nextBalance >= 20/);
-  assert.match(html, /Alcanza un saldo de 20 Gorritos para desbloquearlo\./);
-  assert.doesNotMatch(html, /completar 20 compras participantes|Completa 20 compras participantes|Con 20 compras/);
+  assert.match(html, /gorritosVip: savedProfile\.gorritosVip === true\s*\|\|\s*\(Number\.isInteger\(savedProfile\.gorritos\) && savedProfile\.gorritos >= 20\)\s*\|\|\s*\(Number\.isInteger\(savedProfile\.gorritosPurchaseCount\) && savedProfile\.gorritosPurchaseCount >= 20\)/);
+  assert.match(html, /const isGorritosVip = profile\.gorritosVip === true \|\| points >= 20 \|\| purchaseCount >= 20;/);
+  assert.match(html, /const alreadyVip = current\.gorritosVip === true \|\| currentPoints >= 20 \|\| completedPurchases >= 20;/);
+  assert.match(html, /gorritosVip: alreadyVip \|\| nextBalance >= 20 \|\| nextPurchaseCount >= 20/);
+  assert.match(html, /Alcanza 20 Gorritos o completa 20 compras participantes para desbloquearlo\./);
 });
 
 test('shares only public rider profile fields with customers and persists updates', async (t) => {

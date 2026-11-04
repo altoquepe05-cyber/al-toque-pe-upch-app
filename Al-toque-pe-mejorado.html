@@ -5029,7 +5029,10 @@
         welcome: getRandomNewStickerId()
       }));
       const points = Number.isInteger(profile.gorritos) && profile.gorritos > 0 ? profile.gorritos : 0;
-      const isGorritosVip = profile.gorritosVip === true || points >= 20;
+      const purchaseCount = Number.isInteger(profile.gorritosPurchaseCount) && profile.gorritosPurchaseCount > 0
+        ? profile.gorritosPurchaseCount
+        : 0;
+      const isGorritosVip = profile.gorritosVip === true || points >= 20 || purchaseCount >= 20;
       const memberName = profile.fullName?.trim() || profile.nickname?.trim() || 'Estudiante UPCH';
       const memberId = profile.gorritosMemberId || '0000000000';
       useEffect(() => {
@@ -5084,7 +5087,7 @@
         },
         vip: {
           name: 'VIP Gorritos',
-          badge: 'Al llegar a 20 Gorritos',
+          badge: '20 Gorritos o 20 compras',
           reward: '2 Gorritos por compra participante',
           description: 'por cada menú o bebida participante',
           benefits: [
@@ -5122,7 +5125,9 @@
             ...current,
             affiliated: true,
             gorritos: nextBalance,
-            gorritosVip: current.gorritosVip === true || nextBalance >= 20,
+            gorritosVip: current.gorritosVip === true
+              || nextBalance >= 20
+              || Number(current.gorritosPurchaseCount) >= 20,
             gorritosMemberId: createGorritosMemberId(),
             gorritosMemberIdVersion: 2,
             gorritosActivity: [
@@ -5228,7 +5233,7 @@
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#7d1025] text-lg text-[#f5d36e]" aria-hidden="true">★</span>
                   <span className="min-w-0">
                     <span className="block text-[10px] font-bold text-[#211716]">{isGorritosVip ? '¡VIP Gorritos desbloqueado!' : 'Desbloquea VIP Gorritos'}</span>
-                    <span className="block text-[9px] text-gray-500">{isGorritosVip ? 'Disfruta el doble de Gorritos por compra participante.' : 'Alcanza un saldo de 20 Gorritos para desbloquearlo.'}</span>
+                    <span className="block text-[9px] text-gray-500">{isGorritosVip ? 'Disfruta el doble de Gorritos por compra participante.' : 'Alcanza 20 Gorritos o completa 20 compras participantes para desbloquearlo.'}</span>
                   </span>
                 </span>
                 <span className="text-lg font-bold text-[#a90000]" aria-hidden="true">›</span>
@@ -5322,7 +5327,7 @@
                 <div className="rounded-2xl border border-[#eadfc8] bg-[#fffaf1] p-3 text-center">
                   <span className="text-xl" aria-hidden="true">⭐</span>
                   <p className="mt-1 text-[10px] font-bold text-[#211716]">Nivel VIP</p>
-                  <p className="text-[9px] text-gray-500">al alcanzar 20 Gorritos</p>
+                  <p className="text-[9px] text-gray-500">con 20 Gorritos o 20 compras</p>
                 </div>
               </div>
             </>
@@ -5366,7 +5371,7 @@
               <span className="min-w-0 flex-1">
                 <span className="flex flex-wrap items-center gap-1.5">
                   <span className="font-title text-lg font-extrabold text-[#f5d36e]">VIP Gorritos</span>
-                  <span className="rounded-full bg-[#f5d36e] px-2 py-0.5 text-[8px] font-extrabold text-[#4b1420]">{isGorritosVip ? 'Desbloqueado' : '20 Gorritos'}</span>
+                  <span className="rounded-full bg-[#f5d36e] px-2 py-0.5 text-[8px] font-extrabold text-[#4b1420]">{isGorritosVip ? 'Desbloqueado' : '20 Gorritos o 20 compras'}</span>
                 </span>
                 <span className="mt-1 block text-[10px] font-semibold">2 Gorritos por compra participante</span>
                 <span className="mt-1 block text-[9px] leading-relaxed text-white/80">Canjea pedidos del menú y suma el doble.</span>
@@ -5477,7 +5482,7 @@
                     <p className="rounded-xl bg-[#f5e8c9] px-3 py-2 text-[9px] leading-relaxed text-[#594432]">
                       {isGorritosVip
                         ? <><strong>¡Ya eres VIP Gorritos!</strong> Recibes el doble de Gorritos por cada compra participante.</>
-                        : <><strong>¿Cómo desbloquearlo?</strong> Alcanza un saldo de 20 Gorritos y obtén el nivel VIP.</>}
+                        : <><strong>¿Cómo desbloquearlo?</strong> Alcanza 20 Gorritos o completa 20 compras participantes para obtener el nivel VIP.</>}
                     </p>
                   )}
                   <button
@@ -5581,7 +5586,8 @@
               salesUpdates: savedProfile.salesUpdates === true && hasExplicitSalesConsent,
               salesUpdatesConsentAt: hasExplicitSalesConsent ? savedProfile.salesUpdatesConsentAt : null,
               gorritosVip: savedProfile.gorritosVip === true
-                || (Number.isInteger(savedProfile.gorritos) && savedProfile.gorritos >= 20),
+                || (Number.isInteger(savedProfile.gorritos) && savedProfile.gorritos >= 20)
+                || (Number.isInteger(savedProfile.gorritosPurchaseCount) && savedProfile.gorritosPurchaseCount >= 20),
               useOrderHistoryForRecommendations: true
             };
           }
@@ -5844,9 +5850,11 @@
             const activity = Array.isArray(current.gorritosActivity) ? current.gorritosActivity : [];
             if (activity.some((movement) => movement.orderId === order.id)) return current;
             const currentPoints = Math.max(0, Number(current.gorritos) || 0);
-            const alreadyVip = current.gorritosVip === true || currentPoints >= 20;
+            const completedPurchases = Math.max(0, Number(current.gorritosPurchaseCount) || 0);
+            const alreadyVip = current.gorritosVip === true || currentPoints >= 20 || completedPurchases >= 20;
             const pointsForPurchase = alreadyVip ? 2 : 1;
             const nextBalance = Math.max(0, currentPoints - pointsSpent) + (pointsEarned > 0 ? pointsForPurchase : 0);
+            const nextPurchaseCount = completedPurchases + (pointsEarned > 0 ? 1 : 0);
             const movement = pointsSpent > 0
               ? {
                 id: `redeem-${order.id}`,
@@ -5867,7 +5875,8 @@
             return {
               ...current,
               gorritos: nextBalance,
-              gorritosVip: alreadyVip || nextBalance >= 20,
+              gorritosPurchaseCount: nextPurchaseCount,
+              gorritosVip: alreadyVip || nextBalance >= 20 || nextPurchaseCount >= 20,
               gorritosActivity: [...activity, movement]
             };
           });
@@ -10331,7 +10340,9 @@
           return {
             ...current,
             gorritos: nextBalance,
-            gorritosVip: current.gorritosVip === true || nextBalance >= 20,
+            gorritosVip: current.gorritosVip === true
+              || nextBalance >= 20
+              || Number(current.gorritosPurchaseCount) >= 20,
             gorritosActivity: [...activity, {
               id: rewardMovementId,
               orderId: liveOrderId,
