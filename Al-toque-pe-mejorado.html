@@ -9855,25 +9855,25 @@
     const DELIVERY_ROUTE_END = [-12.1341675, -77.0260721];
     // Google Maps is cross-origin, so these points trace the visible route in the fixed map viewport.
     const WALKING_ROUTE_POINTS = [
-      { x: 61, y: 74 },
-      { x: 58, y: 70 },
-      { x: 54, y: 66 },
-      { x: 50, y: 62 },
-      { x: 47, y: 59 },
-      { x: 44, y: 56 },
-      { x: 41, y: 53 },
-      { x: 39, y: 52 },
-      { x: 41, y: 49 },
-      { x: 44, y: 45 },
-      { x: 47, y: 41 },
-      { x: 49, y: 37 },
-      { x: 51, y: 33 },
-      { x: 53, y: 29 },
-      { x: 55, y: 25 },
-      { x: 54, y: 21 },
-      { x: 51, y: 17 },
-      { x: 47, y: 13 },
-      { x: 44, y: 8 }
+      { x: 58, y: 72 },
+      { x: 54, y: 68 },
+      { x: 50, y: 64 },
+      { x: 46, y: 60 },
+      { x: 43, y: 56 },
+      { x: 40, y: 52 },
+      { x: 38, y: 56 },
+      { x: 40, y: 51 },
+      { x: 42, y: 47 },
+      { x: 44, y: 42 },
+      { x: 47, y: 37 },
+      { x: 49, y: 32 },
+      { x: 52, y: 28 },
+      { x: 51, y: 23 },
+      { x: 50, y: 19 },
+      { x: 48, y: 15 },
+      { x: 46, y: 11 },
+      { x: 45, y: 7 },
+      { x: 44, y: 3 }
     ];
     const RIDER_WALKING_ROUTE_POINTS = [
       { x: 59, y: 77 },
@@ -10036,7 +10036,7 @@
               className="walking-route-character"
               src="/caminante-ruta.png"
               alt="Repartidor caminando por la ruta hacia la entrega"
-              style={{ left: `${WALKING_ROUTE_POINTS[0].x}%`, top: `${WALKING_ROUTE_POINTS[0].y}%` }}
+              style={{ left: `${walkingRoutePoints[0].x}%`, top: `${walkingRoutePoints[0].y}%` }}
             />
           )}
           <span className="live-route-map-status" role="status">

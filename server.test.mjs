@@ -369,15 +369,20 @@ test('animates the walking rider from the first blue point through the route to 
     x: Number(match[1]),
     y: Number(match[2])
   }));
-  assert.deepEqual(routePoints[0], { x: 61, y: 74 }, 'the character should start at the first blue point near KOU-XIN');
-  assert.deepEqual(routePoints.at(-1), { x: 44, y: 8 }, 'the character should finish at the destination end of the blue route');
+  assert.deepEqual(routePoints[0], { x: 58, y: 72 }, 'the character should start at the first blue point near KOU-XIN');
+  assert.deepEqual(routePoints.at(-1), { x: 44, y: 3 }, 'the character should finish at the destination end of the blue route');
   assert.ok(routePoints.length >= 18, 'the character should follow the visible route waypoints');
-  assert.ok(routePoints.slice(1, 8).every((point, index) => (
+  assert.ok(routePoints.slice(1, 6).every((point, index) => (
     point.x < routePoints[index].x && point.y < routePoints[index].y
   )), 'the character should follow the first diagonal section of blue route points');
-  assert.ok(routePoints.slice(8).some((point, index) => point.x > routePoints[index + 7].x),
-    'the route should follow the visible bend instead of cutting diagonally across the map');
+  assert.deepEqual(routePoints[6], { x: 38, y: 56 }, 'the character should pass through the visible route bend');
+  assert.ok(routePoints.slice(7, 13).every((point, index) => (
+    point.x > routePoints[index + 6].x && point.y < routePoints[index + 6].y
+  )), 'the character should follow the blue route back up and to the right');
+  assert.ok(routePoints.slice(13).every((point, index) => point.x < routePoints[index + 12].x && point.y < routePoints[index + 12].y),
+    'the last route section should continue toward the destination marker');
   assert.match(html, /function getWalkingRoutePosition\(progress, routePoints = WALKING_ROUTE_POINTS\)/);
+  assert.match(html, /style=\{\{ left: `\$\{walkingRoutePoints\[0\]\.x\}%`, top: `\$\{walkingRoutePoints\[0\]\.y\}%` \}\}/);
   assert.match(html, /walkingStartedAt=\{deliveryPhase === 'tracking' && assignedRider\?\.vehicle === 'Caminando'\s*\? deliveryStartedAtRef\.current\s*: null\}/);
   assert.match(html, /walking-route-character/);
   assert.match(html, /window\.requestAnimationFrame\(updatePosition\)/);
