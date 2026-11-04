@@ -77,11 +77,17 @@ test('shows the Miraflores delivery schedule and updates its status using Lima t
     assert.ok(status.detail.includes(expectedDetail), `unexpected detail at ${timestamp}`);
   }
 
-  assert.match(html, /className=\{`campus-service-card \$\{serviceStatus\.state === 'online' \? 'campus-service-card--online' : 'campus-service-card--offline'\}`\}/);
+  assert.match(html, /className=\{`campus-service-card \$\{serviceStatus\.state === 'online' \? 'campus-service-card--online' : 'campus-service-card--offline'\} \$\{isServiceCardExpanded \? 'campus-service-card--expanded' : ''\}`\}/);
   assert.match(html, /Delivery de comida para estudiantes del campus de Miraflores/);
   assert.match(html, /10:00 a\. m\.–1:20 p\. m\. · 1:30–6:00 p\. m\. · 8:00–10:00 p\. m\./);
   assert.match(html, /setServiceStatus\(getCampusServiceStatus\(now\)\)/);
-  assert.match(html, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.campus-service-card::before,[\s\S]*?\.campus-service-status-dot\s*\{\s*animation: none !important;/);
+  assert.match(html, /aria-expanded=\{isServiceCardExpanded\}/);
+  assert.match(html, /aria-controls="campus-service-details"/);
+  assert.match(html, /data-lucide="chevron-down"/);
+  assert.match(html, /aria-hidden=\{!isServiceCardExpanded\}/);
+  assert.ok(html.indexOf('aria-label={`Servicio de delivery: ${serviceStatus.label}`}') < html.indexOf("timeString || 'LUNES, 12:38 P. M.'"),
+    'the collapsed service card should appear above the date and time');
+  assert.match(html, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.campus-service-card::before,[\s\S]*?\.campus-service-details\s*\{\s*animation: none !important;\s*transition: none !important;/);
 });
 
 test('serves the four Starbucks Panettone product photos as public PNG assets', async (t) => {

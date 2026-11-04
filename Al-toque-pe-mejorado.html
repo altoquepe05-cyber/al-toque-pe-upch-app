@@ -1347,8 +1347,12 @@
       .home-profile-avatar svg,
       .home-ai-sticker,
       .campus-service-card::before,
-      .campus-service-status-dot {
+      .campus-service-status-dot,
+      .campus-service-card,
+      .campus-service-card-toggle,
+      .campus-service-details {
         animation: none !important;
+        transition: none !important;
       }
     }
 
@@ -1370,13 +1374,17 @@
       position: relative;
       isolation: isolate;
       overflow: hidden;
-      min-height: 220px;
-      padding: 20px;
+      padding: 12px 14px;
       border: 1px solid rgba(255, 255, 255, 0.3);
-      border-radius: 26px;
+      border-radius: 20px;
       color: #fff;
+      box-shadow: 0 8px 18px rgba(43, 23, 24, 0.16);
+      transition: background 500ms ease, box-shadow 350ms ease, padding 250ms ease;
+    }
+
+    .campus-service-card--expanded {
+      padding: 15px;
       box-shadow: 0 14px 28px rgba(43, 23, 24, 0.2);
-      transition: background 500ms ease, box-shadow 350ms ease;
     }
 
     .campus-service-card--online {
@@ -1390,10 +1398,10 @@
     .campus-service-card::before {
       position: absolute;
       z-index: -1;
-      top: -68px;
-      right: -44px;
-      width: 176px;
-      height: 176px;
+      top: -88px;
+      right: -38px;
+      width: 140px;
+      height: 140px;
       border: 1px solid rgba(255, 255, 255, 0.18);
       border-radius: 50%;
       box-shadow: 0 0 0 18px rgba(255, 255, 255, 0.045), 0 0 0 38px rgba(255, 255, 255, 0.035);
@@ -1401,6 +1409,39 @@
       animation: campusServiceFloat 5s ease-in-out infinite;
       pointer-events: none;
     }
+
+    .campus-service-card-toggle {
+      display: flex;
+      min-width: 32px;
+      min-height: 32px;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      color: inherit;
+      transition: background 200ms ease, transform 250ms ease;
+    }
+
+    .campus-service-card-toggle:hover { background: rgba(255, 255, 255, 0.18); }
+    .campus-service-card--expanded .campus-service-card-toggle { transform: rotate(180deg); }
+
+    .campus-service-details {
+      display: grid;
+      grid-template-rows: 0fr;
+      opacity: 0;
+      visibility: hidden;
+      transition: grid-template-rows 300ms ease, opacity 220ms ease, margin-top 300ms ease, visibility 300ms;
+    }
+
+    .campus-service-card--expanded .campus-service-details {
+      grid-template-rows: 1fr;
+      margin-top: 12px;
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .campus-service-details-inner { min-height: 0; overflow: hidden; }
 
     .campus-service-status-dot {
       display: inline-block;
@@ -8676,6 +8717,7 @@
       const [timeString, setTimeString] = useState('');
       const [dayPart, setDayPart] = useState(() => getDayPart(new Date().getHours()));
       const [serviceStatus, setServiceStatus] = useState(() => getCampusServiceStatus());
+      const [isServiceCardExpanded, setIsServiceCardExpanded] = useState(false);
       const [headline, setHeadline] = useState('');
       const [homeCardStickerId, setHomeCardStickerId] = useState(9);
       const [cardMessageIndex, setCardMessageIndex] = useState(() => Math.floor(Math.random() * HOME_AI_CARD_MESSAGES.length));
@@ -8798,6 +8840,51 @@
             </div>
           </div>
 
+          <section
+            className={`campus-service-card ${serviceStatus.state === 'online' ? 'campus-service-card--online' : 'campus-service-card--offline'} ${isServiceCardExpanded ? 'campus-service-card--expanded' : ''}`}
+            aria-label={`Servicio de delivery: ${serviceStatus.label}`}
+          >
+            <div className="relative z-10 flex items-center gap-2.5">
+              <p className="min-w-0 flex-1 text-[12px] font-semibold leading-snug">
+                Delivery de comida para estudiantes del campus de Miraflores
+              </p>
+              <span className="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/25 bg-white/15 px-2.5 py-1.5 text-[10px] font-extrabold" aria-live="polite">
+                <span className="campus-service-status-dot" aria-hidden="true"></span>
+                {serviceStatus.label}
+              </span>
+              <button
+                type="button"
+                className="campus-service-card-toggle shrink-0"
+                aria-label={isServiceCardExpanded ? 'Ocultar horario de atención' : 'Mostrar horario de atención'}
+                aria-expanded={isServiceCardExpanded}
+                aria-controls="campus-service-details"
+                onClick={() => setIsServiceCardExpanded((expanded) => !expanded)}
+              >
+                <i data-lucide="chevron-down" className="h-4 w-4"></i>
+              </button>
+            </div>
+            <div id="campus-service-details" className="campus-service-details" aria-hidden={!isServiceCardExpanded}>
+              <div className="campus-service-details-inner relative z-10">
+                <h2 className="font-title text-lg font-extrabold leading-tight">{serviceStatus.title}</h2>
+                <p className="mt-1 text-[11px] font-bold text-white">{serviceStatus.detail}</p>
+                <div className="campus-service-schedule mt-3 flex items-center justify-between gap-3 px-3 py-2.5">
+                  <div className="min-w-0">
+                    <p className="text-[9px] font-extrabold uppercase tracking-wider text-white/75">Horario de pedidos</p>
+                    <p className="mt-0.5 text-[10px] font-bold leading-relaxed">10:00 a. m.–1:20 p. m. · 1:30–6:00 p. m. · 8:00–10:00 p. m.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onNavigate('menu')}
+                    aria-label="Ver menú de Al Toque"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-[#68162f] shadow-md transition hover:scale-105 active:scale-95"
+                  >
+                    <i data-lucide="arrow-right" className="h-4 w-4"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
           <div>
             <p className="text-[11px] font-bold text-brand tracking-wider uppercase mb-1">{timeString || 'LUNES, 12:38 P. M.'}</p>
             <h2 className="home-headline-message font-title font-semibold text-[21px] leading-tight mb-3">
@@ -8817,39 +8904,6 @@
               ))}
             </div>
           </div>
-
-          <section
-            className={`campus-service-card ${serviceStatus.state === 'online' ? 'campus-service-card--online' : 'campus-service-card--offline'}`}
-            aria-label={`Servicio de delivery: ${serviceStatus.label}`}
-            aria-live="polite"
-          >
-            <div className="relative z-10">
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <span className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-white/85">Al Toque · Miraflores</span>
-                <span className="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/25 bg-white/15 px-3 py-1.5 text-[10px] font-extrabold">
-                  <span className="campus-service-status-dot" aria-hidden="true"></span>
-                  {serviceStatus.label}
-                </span>
-              </div>
-              <h2 className="max-w-[280px] font-title text-[25px] font-extrabold leading-tight">{serviceStatus.title}</h2>
-              <p className="mt-2 max-w-[290px] text-[12px] font-medium leading-relaxed text-white/90">{serviceStatus.description}</p>
-              <p className="mt-1 text-[11px] font-bold text-white">{serviceStatus.detail}</p>
-              <div className="campus-service-schedule mt-4 flex items-center justify-between gap-3 px-3 py-2.5">
-                <div className="min-w-0">
-                  <p className="text-[9px] font-extrabold uppercase tracking-wider text-white/75">Horario de pedidos</p>
-                  <p className="mt-0.5 text-[10px] font-bold leading-relaxed">10:00 a. m.–1:20 p. m. · 1:30–6:00 p. m. · 8:00–10:00 p. m.</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onNavigate('menu')}
-                  aria-label="Ver menú de Al Toque"
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-[#68162f] shadow-md transition hover:scale-105 active:scale-95"
-                >
-                  <i data-lucide="arrow-right" className="h-4 w-4"></i>
-                </button>
-              </div>
-            </div>
-          </section>
 
           <section
             className="home-luxury-card"
