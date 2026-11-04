@@ -10974,9 +10974,13 @@
         }
         return (
           <div className="flex min-h-full flex-col items-center justify-center text-center space-y-4 py-8">
-            {deliveryPhase === 'tracking' && <>{renderDeliveryTracking()}{renderRiderProfileCard()}</>}
-            {deliveryPhase === 'arrived' && renderArrival()}
-            {deliveryPhase === 'idle' && (
+            {orderStatus === 'delivered'
+              ? renderArrival()
+              : deliveryPhase === 'tracking'
+                ? <>{renderDeliveryTracking()}{renderRiderProfileCard()}</>
+                : deliveryPhase === 'arrived'
+                  ? renderArrival()
+                  : deliveryPhase === 'idle' && (
               <>
                 <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-2">
                   <i data-lucide="check-circle" className="w-10 h-10"></i>
@@ -11010,7 +11014,7 @@
                   </button>
                 </div>
               </>
-            )}
+                  )}
           </div>
         );
       }
