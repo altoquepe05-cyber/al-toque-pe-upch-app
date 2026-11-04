@@ -67,8 +67,10 @@ test('shows the Miraflores delivery schedule and updates its status using Lima t
 
   assert.equal(response.status, 200);
   assert.ok(statusFunction, 'the home screen should calculate the campus service status');
-  assert.match(html, /<link rel="preload" href="\/vendor\/fonts\/coiny-400\.ttf" as="font" type="font\/ttf" crossorigin\s*\/?>/,
+  assert.match(html, /<link rel="preload" href="\/vendor\/fonts\/coiny-400\.ttf\?v=2" as="font" type="font\/ttf" crossorigin\s*\/?>/,
     'the rounded delivery font should preload before the first paint');
+  assert.match(html, /<link href="\/vendor\/fonts\.css\?v=2" rel="stylesheet"\s*\/?>/,
+    'the rounded font stylesheet should use a fresh cache key');
   const getCampusServiceStatus = vm.runInNewContext(`(${statusFunction[0]})`, { Intl });
   const cases = [
     ['2026-01-15T09:59:00-05:00', 'offline', '10:00 a. m.'],
@@ -1053,7 +1055,7 @@ test('serves the offline JavaScript and font assets from local paths', async (t)
   const fontStylesResponse = await fetch(`http://127.0.0.1:${server.address().port}/vendor/fonts.css`);
   const fontStyles = await fontStylesResponse.text();
   assert.match(fontStyles, /font-family: 'Fredoka';[^}]*font-weight: 700;[^}]*fredoka-700\.ttf/);
-  assert.match(fontStyles, /font-family: 'Coiny';[^}]*font-weight: 400;[^}]*coiny-400\.ttf/);
+  assert.match(fontStyles, /font-family: 'Coiny';[^}]*font-weight: 400;[^}]*coiny-400\.ttf\?v=2/);
 });
 
 test('compresses large text assets when the client accepts gzip', async (t) => {
