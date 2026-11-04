@@ -45,6 +45,49 @@ test('serves the Reel watermark image as a public PNG asset', async (t) => {
   assert.equal(image.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
 });
 
+test('ends a connected voice call after ten minutes', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  let currentTime = 1_700_000_000_000;
+  const server = createAlToqueServer({
+    ordersFile: join(testDataDir, 'orders.json'),
+    reelsFile: join(testDataDir, 'reels.json'),
+    reelsVideosDir: join(testDataDir, 'reels-videos'),
+    now: () => currentTime
+  });
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  t.after(async () => {
+    await new Promise((resolve, reject) => {
+      server.close((error) => error ? reject(error) : resolve());
+    });
+    await rm(testDataDir, { recursive: true, force: true });
+  });
+
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const callUrl = `${baseUrl}/api/orders/UPCH-CALL-TEST/call`;
+  const postCallAction = (role, action) => fetch(callUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: baseUrl },
+    body: JSON.stringify({ role, action })
+  });
+
+  assert.equal((await postCallAction('customer', 'start')).status, 201);
+  assert.equal((await postCallAction('rider', 'accept')).status, 200);
+  currentTime += 10 * 60_000 - 1;
+  let response = await fetch(`${callUrl}?role=customer&after=0`);
+  assert.equal((await response.json()).call.status, 'connecting');
+
+  currentTime += 1;
+  response = await fetch(`${callUrl}?role=customer&after=0`);
+  const expiredCall = await response.json();
+  assert.equal(expiredCall.call.status, 'ended');
+  assert.equal(expiredCall.call.endReason, 'timeout');
+  assert.ok(expiredCall.signals.some((signal) => signal.type === 'timeout'));
+  assert.equal((await postCallAction('customer', 'hangup')).status, 409);
+});
+
 test('sends an opt-in confirmation through Gmail OAuth without exposing provider credentials', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const requestedCalls = [];

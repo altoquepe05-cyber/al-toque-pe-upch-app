@@ -3521,9 +3521,13 @@
         } else if (signal.type === 'reject') {
           releaseMedia();
           setCall({ status: 'ended', caller: '', error: 'La otra persona rechazó la llamada.' });
-        } else if (signal.type === 'hangup' || signal.type === 'missed') {
+        } else if (signal.type === 'hangup' || signal.type === 'missed' || signal.type === 'timeout') {
           releaseMedia();
-          setCall({ status: 'ended', caller: '', error: signal.type === 'missed' ? 'La llamada no fue contestada.' : 'La otra persona finalizó la llamada.' });
+          setCall({ status: 'ended', caller: '', error: signal.type === 'missed'
+            ? 'La llamada no fue contestada.'
+            : signal.type === 'timeout'
+              ? 'La llamada finalizó al cumplir 10 minutos.'
+              : 'La otra persona finalizó la llamada.' });
         }
       };
 
@@ -3559,7 +3563,9 @@
               setCall((current) => current.status === 'connected' ? current : { ...current, status: 'connecting', error: '' });
             } else if (currentCall?.status === 'ended' && callRef.current.status !== 'idle' && callRef.current.status !== 'ended') {
               releaseMedia();
-              setCall({ status: 'ended', caller: '', error: 'La llamada finalizó.' });
+              setCall({ status: 'ended', caller: '', error: currentCall.endReason === 'timeout'
+                ? 'La llamada finalizó al cumplir 10 minutos.'
+                : 'La llamada finalizó.' });
             }
             for (const signal of payload.signals || []) {
               if (signal.from !== role && !peerRef.current && ['offer', 'answer', 'candidate'].includes(signal.type)) break;

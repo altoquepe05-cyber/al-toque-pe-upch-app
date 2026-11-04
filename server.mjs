@@ -37,6 +37,7 @@ const REELS_VIDEOS_DIR = join(DATA_DIR, 'reels-videos');
 const MAX_BODY_BYTES = 32_000;
 const MAX_CHAT_BODY_BYTES = 3_000_000;
 const MAX_CHAT_ATTACHMENT_BYTES = 2_000_000;
+const MAX_VOICE_CALL_DURATION_MS = 10 * 60_000;
 const MAX_REELS_VIDEO_BYTES = 100 * 1024 * 1024;
 const MAX_REELS_PHOTO_BYTES = 1024 * 1024;
 const REELS_DELETE_PASSWORD = process.env.REELS_DELETE_PASSWORD || '';
@@ -1120,7 +1121,7 @@ async function addHubSpotMarketingSubscriber(email, accessToken, listId, subscri
   await hubspotRequest(`/crm/v3/lists/${encodeURIComponent(listId)}/memberships/add`, 'PUT', [contact.id]);
 }
 
-async function handleRequest(request, response, orders, riderLocations, idempotencyKeys, callSessions, orderChats, persistOrders, notifyOrderChange, youtubeApiKey, openAIApiKey, gmailClientId, gmailClientSecret, gmailRefreshToken, gmailUser, marketingProvider, hubspotAccessToken, hubspotListId, hubspotSubscriptionId, fetchImpl, reels, persistReels, reelsVideosDir, reelsDeletePassword, videoStorage, maxVideoBytes) {
+async function handleRequest(request, response, orders, riderLocations, idempotencyKeys, callSessions, orderChats, persistOrders, notifyOrderChange, youtubeApiKey, openAIApiKey, gmailClientId, gmailClientSecret, gmailRefreshToken, gmailUser, marketingProvider, hubspotAccessToken, hubspotListId, hubspotSubscriptionId, fetchImpl, reels, persistReels, reelsVideosDir, reelsDeletePassword, videoStorage, maxVideoBytes, now = Date.now) {
   const requestUrl = new URL(request.url || '/', `http://${request.headers.host}`);
 
   if (requestUrl.pathname === '/api/reels' || requestUrl.pathname.startsWith('/api/reels/')) {
@@ -1806,17 +1807,23 @@ async function handleRequest(request, response, orders, riderLocations, idempote
       return json(response, 400, { error: 'La consulta de llamada no es válida.' });
     }
     const call = callSessions.get(orderCallMatch[1]);
-    if (!call || (call.status === 'ended' && Date.now() - call.updatedAt > 120_000)) {
+    if (!call || (call.status === 'ended' && now() - call.updatedAt > 120_000)) {
       if (call) callSessions.delete(orderCallMatch[1]);
       return json(response, 200, { call: null, signals: [] });
     }
-    if (call.status === 'ringing' && Date.now() - call.createdAt > 90_000) {
+    if (call.status === 'ringing' && now() - call.createdAt > 90_000) {
       call.status = 'ended';
-      call.updatedAt = Date.now();
+      call.endReason = 'missed';
+      call.updatedAt = now();
       call.signals.push({ id: ++call.lastSignalId, from: 'server', type: 'missed', data: null });
+    } else if (call.status !== 'ended' && call.connectedAt && now() - call.connectedAt >= MAX_VOICE_CALL_DURATION_MS) {
+      call.status = 'ended';
+      call.endReason = 'timeout';
+      call.updatedAt = now();
+      call.signals.push({ id: ++call.lastSignalId, from: 'server', type: 'timeout', data: null });
     }
     return json(response, 200, {
-      call: { status: call.status, caller: call.caller, createdAt: call.createdAt },
+      call: { status: call.status, caller: call.caller, createdAt: call.createdAt, endReason: call.endReason || '' },
       signals: call.signals.filter((signal) => signal.id > after && signal.from !== role)
     });
   }
@@ -1836,12 +1843,18 @@ async function handleRequest(request, response, orders, riderLocations, idempote
     const orderId = orderCallMatch[1];
     let call = callSessions.get(orderId);
     if (action === 'start') {
-      if (call && call.status !== 'ended' && Date.now() - call.updatedAt < 2 * 60 * 60 * 1000) {
+      if (call && call.status !== 'ended' && now() - call.updatedAt < 2 * 60 * 60 * 1000) {
         return json(response, 409, { error: 'Ya hay una llamada activa o sonando para este pedido.' });
       }
-      call = { status: 'ringing', caller: role, createdAt: Date.now(), updatedAt: Date.now(), lastSignalId: 0, signals: [] };
+      call = { status: 'ringing', caller: role, createdAt: now(), updatedAt: now(), lastSignalId: 0, signals: [] };
       callSessions.set(orderId, call);
       return json(response, 201, { call: { status: call.status, caller: call.caller, createdAt: call.createdAt } });
+    }
+    if (call && call.status !== 'ended' && call.connectedAt && now() - call.connectedAt >= MAX_VOICE_CALL_DURATION_MS) {
+      call.status = 'ended';
+      call.endReason = 'timeout';
+      call.updatedAt = now();
+      call.signals.push({ id: ++call.lastSignalId, from: 'server', type: 'timeout', data: null });
     }
     if (!call || call.status === 'ended') {
       return json(response, 409, { error: 'No hay una llamada activa para este pedido.' });
@@ -1851,6 +1864,7 @@ async function handleRequest(request, response, orders, riderLocations, idempote
         return json(response, 409, { error: 'La llamada ya no está esperando respuesta.' });
       }
       call.status = action === 'accept' ? 'connecting' : 'ended';
+      if (action === 'accept') call.connectedAt = now();
     } else if (action === 'hangup') {
       call.status = 'ended';
     } else if (action === 'offer') {
@@ -1863,7 +1877,7 @@ async function handleRequest(request, response, orders, riderLocations, idempote
         return json(response, 400, { error: 'La señal de llamada no es válida.' });
       }
     }
-    call.updatedAt = Date.now();
+    call.updatedAt = now();
     call.signals.push({
       id: ++call.lastSignalId,
       from: role,
@@ -2104,7 +2118,8 @@ export function createAlToqueServer({
   hubspotListId = HUBSPOT_LIST_ID,
   hubspotSubscriptionId = HUBSPOT_SUBSCRIPTION_ID,
   fetchImpl = fetch,
-  persistenceStore
+  persistenceStore,
+  now = Date.now
 } = {}) {
   const dataBackend = process.env.DATA_BACKEND || 'file';
   if (!['file', 'supabase'].includes(dataBackend)) {
@@ -2261,7 +2276,8 @@ export function createAlToqueServer({
       reelsVideosDir,
       reelsDeletePassword,
       supabaseStore,
-      supabaseStore?.maxVideoBytes || MAX_REELS_VIDEO_BYTES
+      supabaseStore?.maxVideoBytes || MAX_REELS_VIDEO_BYTES,
+      now
     )).catch((error) => {
       console.error('Error inesperado en el servidor Al Toque:', error.message);
       if (!response.headersSent) json(response, error.status || 500, { error: error.status ? error.message : 'Ocurrió un error inesperado al procesar la solicitud.' });
