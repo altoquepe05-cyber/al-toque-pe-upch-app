@@ -1655,7 +1655,12 @@ async function handleRequest(request, response, orders, riderLocations, idempote
     };
     if (body.action === 'decline') {
       if (order.status !== 'available') return json(response, 409, { error: 'El pedido ya no está disponible.' });
-      return json(response, 200, { order });
+      const declinedAt = Date.now();
+      const declinedOrder = { ...order, status: 'rejected', rejectedAt: declinedAt, updatedAt: declinedAt };
+      orders.set(order.id, declinedOrder);
+      await persistOrders();
+      notifyOrderChange('order.updated', declinedOrder);
+      return json(response, 200, { order: declinedOrder });
     }
     const transition = transitions[body.action];
     if (!transition) return json(response, 400, { error: 'La acción del pedido no es válida.' });

@@ -1435,7 +1435,7 @@ test('shares customer orders with the rider queue and enforces delivery transiti
   }
 });
 
-test('cancels available orders only within one minute and removes them from the rider queue', async (t) => {
+test('rejects rider-declined orders and cancels available orders only within one minute', async (t) => {
   const testDataDir = await mkdtemp(join(tmpdir(), 'altoque-cancel-test-'));
   const expiredOrder = {
     id: 'UPCH-EXPIRED-ORDER',
@@ -1480,6 +1480,23 @@ test('cancels available orders only within one minute and removes them from the 
   });
   assert.equal(createResponse.status, 201);
   const { order } = await createResponse.json();
+
+  const declineCreateResponse = await fetch(`${baseUrl}/api/orders`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: baseUrl },
+    body: JSON.stringify({
+      customer: 'Cliente UPCH',
+      items: [{ name: 'Pedido rechazable', quantity: 1, price: 8 }],
+      pickupPoint: 'Cafetería Central',
+      paymentMethod: 'yape'
+    })
+  });
+  assert.equal(declineCreateResponse.status, 201);
+  const { order: declinedOrder } = await declineCreateResponse.json();
+  const declineResponse = await postAction(declinedOrder.id, 'decline');
+  assert.equal(declineResponse.status, 200);
+  assert.equal((await declineResponse.json()).order.status, 'rejected');
+  assert.equal((await postAction(declinedOrder.id, 'accept', { driverId: 'rider-1', driverName: 'Repartidor' })).status, 409);
 
   const cancellationResponse = await postAction(order.id, 'cancel');
   assert.equal(cancellationResponse.status, 200);

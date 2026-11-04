@@ -10039,7 +10039,7 @@
       );
 
       useEffect(() => {
-        if (!orderConfirmed || !liveOrderId || ['cancelled', 'delivered', 'not_found'].includes(orderStatus)) {
+        if (!orderConfirmed || !liveOrderId || ['cancelled', 'delivered', 'not_found', 'rejected'].includes(orderStatus)) {
           setRiderChatMessages([]);
           setHasNewRiderMessage(false);
           riderChatCursorRef.current = 0;
@@ -10770,6 +10770,30 @@
       }
 
       if (orderConfirmed) {
+        if (orderStatus === 'rejected') {
+          return (
+            <div className="flex min-h-full flex-col items-center justify-center space-y-4 py-10 text-center">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-red-50 text-[#a90000]" aria-hidden="true">
+                <i data-lucide="circle-x" className="h-10 w-10"></i>
+              </div>
+              <h2 className="font-title text-2xl font-bold">Tu pedido fue rechazado</h2>
+              <p className="max-w-[280px] text-xs text-gray-500">El repartidor rechazó este pedido. Puedes volver al inicio y realizar otro.</p>
+              <button
+                type="button"
+                onClick={() => {
+                  clearDeliveryProgress();
+                  setDeliveryPhase('idle');
+                  setOrderConfirmed(false);
+                  setLiveOrderId('');
+                  onNavigate('home');
+                }}
+                className="rounded-2xl bg-dark px-6 py-3 text-xs font-bold text-white"
+              >
+                Volver al inicio
+              </button>
+            </div>
+          );
+        }
         if (orderStatus === 'not_found') {
           return (
             <div className="flex min-h-full flex-col items-center justify-center space-y-4 py-10 text-center">
