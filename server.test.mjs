@@ -46,6 +46,26 @@ test('serves the Reel watermark image as a public PNG asset', async (t) => {
   assert.equal(image.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
 });
 
+test('serves the four Starbucks Panettone product photos as public PNG assets', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  const server = await createReelsTestServer(t, testDataDir);
+  const images = [
+    'starbucks-panettone-latte.png',
+    'starbucks-panettone-frappuccino.png',
+    'starbucks-panettone-latte-frio.png',
+    'starbucks-panettone-matcha-frio.png'
+  ];
+
+  for (const imageName of images) {
+    const response = await fetch(`http://127.0.0.1:${server.address().port}/${imageName}`);
+    const image = Buffer.from(await response.arrayBuffer());
+
+    assert.equal(response.status, 200, `${imageName} should be publicly available`);
+    assert.equal(response.headers.get('content-type'), 'image/png');
+    assert.equal(image.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
+  }
+});
+
 test('ends a connected voice call after ten minutes', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   let currentTime = 1_700_000_000_000;
@@ -462,9 +482,20 @@ test('shows the Starbucks Panettone launch modal and upcoming items without pric
   ]) {
     assert.ok(upcomingPromotions.includes(product), `missing upcoming promotion: ${product}`);
   }
+  for (const image of [
+    '/starbucks-panettone-latte.png',
+    '/starbucks-panettone-frappuccino.png',
+    '/starbucks-panettone-latte-frio.png',
+    '/starbucks-panettone-matcha-frio.png'
+  ]) {
+    assert.ok(upcomingPromotions.includes(image), `missing Panettone product image: ${image}`);
+  }
   assert.match(productCards, /\{matchingUpcomingPromotions\.map\(\(product\) =>/);
   assert.match(productCards, /className="menu-pop-card menu-pop-card--compact starbucks-upcoming-card flex min-w-0 flex-col overflow-visible rounded-2xl/);
-  assert.match(productCards, /className="starbucks-upcoming-media aspect-\[4\/3\] w-full rounded-t-2xl/);
+  assert.match(productCards, /className="starbucks-upcoming-media mx-auto my-2 flex aspect-square w-\[88%\] items-center justify-center rounded-full border-2 border-\[#d6bb79\] bg-\[#075344\] p-1\.5 shadow-md"/);
+  assert.match(productCards, /src=\{product\.image\}/);
+  assert.match(productCards, /className="starbucks-upcoming-image"/);
+  assert.match(html, /\.starbucks-upcoming-image\s*\{\s*display:\s*block;\s*width:\s*100%;\s*height:\s*100%;\s*border-radius:\s*50%;\s*object-fit:\s*cover;/);
   assert.match(productCards, /<h4 className="text-xs font-bold leading-snug text-dark">\{product\.name\}<\/h4>/);
   assert.doesNotMatch(upcomingPromotions, /\bprice\s*:/, 'upcoming Starbucks products should not have prices');
   assert.match(productCards, /Próximamente/);
