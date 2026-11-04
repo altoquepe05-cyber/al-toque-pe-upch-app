@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import { randomUUID } from 'node:crypto';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { gunzipSync } from 'node:zlib';
@@ -1433,6 +1433,64 @@ test('shares customer orders with the rider queue and enforces delivery transiti
     assert.match(photoResponse.headers.get('content-type'), /image\/png/);
     assert.ok((await photoResponse.arrayBuffer()).byteLength > 10_000);
   }
+});
+
+test('cancels available orders only within one minute and removes them from the rider queue', async (t) => {
+  const testDataDir = await mkdtemp(join(tmpdir(), 'altoque-cancel-test-'));
+  const expiredOrder = {
+    id: 'UPCH-EXPIRED-ORDER',
+    customer: 'Cliente UPCH',
+    items: [{ name: 'Pedido vencido', quantity: 1, price: 10 }],
+    pickupPoint: 'Cafetería Central',
+    paymentMethod: 'yape',
+    subtotal: 10,
+    total: 11,
+    payout: 1,
+    status: 'available',
+    createdAt: Date.now() - 60_001
+  };
+  await writeFile(join(testDataDir, 'orders.json'), JSON.stringify({ orders: [expiredOrder] }));
+  const server = createAlToqueServer({ ordersFile: join(testDataDir, 'orders.json') });
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  t.after(async () => {
+    await new Promise((resolve, reject) => {
+      server.close((error) => error ? reject(error) : resolve());
+    });
+    await rm(testDataDir, { recursive: true, force: true });
+  });
+
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const postAction = (orderId, action, details = {}) => fetch(`${baseUrl}/api/orders/${orderId}/action`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: baseUrl },
+    body: JSON.stringify({ action, ...details })
+  });
+  const createResponse = await fetch(`${baseUrl}/api/orders`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: baseUrl },
+    body: JSON.stringify({
+      customer: 'Cliente UPCH',
+      items: [{ name: 'Pedido cancelable', quantity: 1, price: 10 }],
+      pickupPoint: 'Cafetería Central',
+      paymentMethod: 'yape'
+    })
+  });
+  assert.equal(createResponse.status, 201);
+  const { order } = await createResponse.json();
+
+  const cancellationResponse = await postAction(order.id, 'cancel');
+  assert.equal(cancellationResponse.status, 200);
+  assert.equal((await cancellationResponse.json()).order.status, 'cancelled');
+  assert.equal((await postAction(order.id, 'accept', { driverId: 'rider-1', driverName: 'Repartidor' })).status, 409);
+
+  const expiredCancellationResponse = await postAction(expiredOrder.id, 'cancel');
+  assert.equal(expiredCancellationResponse.status, 409);
+  assert.match((await expiredCancellationResponse.json()).error, /no puedes cancelarlo/i);
+  const queueResponse = await fetch(`${baseUrl}/api/orders`);
+  assert.deepEqual((await queueResponse.json()).orders.map(({ id }) => id), [expiredOrder.id]);
 });
 
 test('accepts Gorritos redemptions without a cash total or service fee', async (t) => {

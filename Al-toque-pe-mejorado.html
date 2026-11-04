@@ -5414,13 +5414,25 @@
 
     function App() {
       const [showSplash, setShowSplash] = useState(true);
-      const [activeTab, setActiveTab] = useState('home');
+      const [activeTab, setActiveTab] = useState(() => localStorage.getItem('altoque_current_order') ? 'cart' : 'home');
       const [deviceClockTime, setDeviceClockTime] = useState(() => {
         const now = new Date();
         const hours = now.getHours() % 12 || 12;
         return `${hours}:${now.getMinutes().toString().padStart(2, '0')}`;
       });
-      const [appMode, setAppMode] = useState('student');
+      const [appMode, setAppMode] = useState(() => {
+        try {
+          const savedRiderState = JSON.parse(localStorage.getItem('altoque_rider_demo') || 'null');
+          return savedRiderState?.schemaVersion === 2
+            && savedRiderState.activeOrder?.isLive === true
+            && typeof savedRiderState.activeOrder.id === 'string'
+            ? 'rider'
+            : 'student';
+        } catch (error) {
+          console.error('No se pudo recuperar el estado del repartidor:', error);
+          return 'student';
+        }
+      });
       const [isOctoberPromoDay, setIsOctoberPromoDay] = useState(() => isOctoberPromotionDay());
       const [isOctoberPromoOpen, setIsOctoberPromoOpen] = useState(false);
       const [homeMood, setHomeMood] = useState('steady');
@@ -5460,7 +5472,7 @@
       const [pickupPoint, setPickupPoint] = useState('Cafetería Central');
       const [notifications, setNotifications] = useState(true);
       const [toast, setToast] = useState(null);
-      const [orderConfirmed, setOrderConfirmed] = useState(false);
+      const [orderConfirmed, setOrderConfirmed] = useState(() => Boolean(localStorage.getItem('altoque_current_order')));
       const [liveOrderId, setLiveOrderId] = useState(() => localStorage.getItem('altoque_current_order') || '');
       const [isMusicPlayerOpen, setIsMusicPlayerOpen] = useState(false);
       const [isPlayerVisible, setIsPlayerVisible] = useState(true);
@@ -9843,6 +9855,10 @@
       const [assignedRider, setAssignedRider] = useState(null);
       const [riderLocation, setRiderLocation] = useState(null);
       const [orderStatus, setOrderStatus] = useState('available');
+      const [orderCreatedAt, setOrderCreatedAt] = useState(null);
+      const [cancellationClock, setCancellationClock] = useState(Date.now());
+      const [isCancellingOrder, setIsCancellingOrder] = useState(false);
+      const [cancelOrderError, setCancelOrderError] = useState('');
       const [orderPickedUpAt, setOrderPickedUpAt] = useState(null);
       const [orderDeliveredAt, setOrderDeliveredAt] = useState(null);
       const [lateDeliveryRewardOrderId, setLateDeliveryRewardOrderId] = useState('');
@@ -9887,6 +9903,9 @@
       const currentDeliveryStage = Math.min(Math.floor(deliveryElapsed / 60000), deliveryStages.length - 1);
       const remainingMinutes = Math.ceil((deliveryDuration - deliveryElapsed) / 60000);
       const stageProgress = ((deliveryElapsed % 60000) / 60000) * 100;
+      const canCancelOrder = orderStatus === 'available'
+        && Number.isFinite(orderCreatedAt)
+        && cancellationClock - orderCreatedAt < 60_000;
 
       useEffect(() => {
         if (!isRiderChatOpen) return undefined;
@@ -9907,6 +9926,14 @@
       }, [lateDeliveryRewardOrderId]);
 
       useEffect(() => {
+        if (!orderConfirmed || orderStatus !== 'available' || !Number.isFinite(orderCreatedAt)) return undefined;
+        const updateCancellationClock = () => setCancellationClock(Date.now());
+        updateCancellationClock();
+        const timer = window.setInterval(updateCancellationClock, 250);
+        return () => window.clearInterval(timer);
+      }, [orderConfirmed, orderStatus, orderCreatedAt]);
+
+      useEffect(() => {
         if (!orderConfirmed || !liveOrderId) return;
         let isMounted = true;
         let isRefreshing = false;
@@ -9916,10 +9943,21 @@
           try {
             const orderResponse = await fetch(`/api/orders/${encodeURIComponent(liveOrderId)}`, { cache: 'no-store' });
             const orderPayload = await orderResponse.json().catch(() => ({}));
-            if (!orderResponse.ok) throw new Error(orderPayload.error || `Error ${orderResponse.status}`);
+            if (!orderResponse.ok) {
+              if (orderResponse.status === 404 && isMounted) {
+                setOrderStatus('not_found');
+                setCancelOrderError('');
+                return;
+              }
+              throw new Error(orderPayload.error || `Error ${orderResponse.status}`);
+            }
             const assignedOrder = orderPayload.order;
             const status = assignedOrder?.status || 'available';
-            if (isMounted) setOrderStatus(status);
+            if (isMounted) {
+              setOrderStatus(status);
+              if (Number.isFinite(assignedOrder?.createdAt)) setOrderCreatedAt(assignedOrder.createdAt);
+              setCancellationClock(Date.now());
+            }
             if (isMounted) {
               const location = orderPayload.location;
               setRiderLocation(status === 'picked_up'
@@ -9941,6 +9979,15 @@
                 clearDeliveryProgress();
                 return;
               }
+            } else if (status === 'cancelled') {
+              deliveryStartedAtRef.current = 0;
+              if (isMounted) {
+                setAssignedRider(null);
+                setDeliveryPhase('idle');
+                setDeliveryElapsed(0);
+              }
+              clearDeliveryProgress();
+              return;
             } else if (status === 'picked_up') {
               const savedProgress = readSavedDeliveryProgress();
               const hadStartedTracking = Boolean(savedProgress?.startedAt || deliveryStartedAtRef.current);
@@ -9992,7 +10039,7 @@
       );
 
       useEffect(() => {
-        if (!orderConfirmed || !liveOrderId) {
+        if (!orderConfirmed || !liveOrderId || ['cancelled', 'delivered', 'not_found'].includes(orderStatus)) {
           setRiderChatMessages([]);
           setHasNewRiderMessage(false);
           riderChatCursorRef.current = 0;
@@ -10071,7 +10118,7 @@
           window.clearInterval(interval);
           window.removeEventListener('storage', refreshMessages);
         };
-      }, [orderConfirmed, liveOrderId, isRiderChatOpen]);
+      }, [orderConfirmed, liveOrderId, isRiderChatOpen, orderStatus]);
 
       const sendRiderChatMessage = async (message) => {
         if ((!message.text.trim() && !['sticker', 'audio', 'document'].includes(message.type)) || !liveOrderId) return;
@@ -10232,7 +10279,44 @@
         }
         setLiveOrderId(payload.order.id);
         setOrderStatus(payload.order.status || 'available');
+        setOrderCreatedAt(payload.order.createdAt);
+        setCancellationClock(Date.now());
+        setCancelOrderError('');
         return payload.order;
+      };
+
+      const cancelOrder = async () => {
+        if (!liveOrderId || !canCancelOrder || isCancellingOrder) return;
+        setIsCancellingOrder(true);
+        setCancelOrderError('');
+        try {
+          const response = await fetch(`/api/orders/${encodeURIComponent(liveOrderId)}/action`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'cancel' })
+          });
+          const payload = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            if (response.status === 409) {
+              const orderResponse = await fetch(`/api/orders/${encodeURIComponent(liveOrderId)}`, { cache: 'no-store' });
+              const orderPayload = await orderResponse.json().catch(() => ({}));
+              if (!orderResponse.ok) throw new Error(orderPayload.error || `Error ${orderResponse.status}`);
+              setOrderStatus(orderPayload.order.status);
+              if (Number.isFinite(orderPayload.order.createdAt)) setOrderCreatedAt(orderPayload.order.createdAt);
+              setCancellationClock(Date.now());
+            }
+            throw new Error(payload.error || `No se pudo cancelar el pedido (${response.status}).`);
+          }
+          if (payload.order?.status !== 'cancelled') throw new Error('El servidor no confirmó la cancelación del pedido.');
+          setOrderStatus('cancelled');
+          setAssignedRider(null);
+          setDeliveryPhase('idle');
+          clearDeliveryProgress();
+        } catch (error) {
+          setCancelOrderError(error.message || 'No se pudo cancelar el pedido. Inténtalo de nuevo.');
+        } finally {
+          setIsCancellingOrder(false);
+        }
       };
 
       const completeOrderConfirmation = async () => {
@@ -10633,6 +10717,7 @@
               clearDeliveryProgress();
               setDeliveryPhase('idle');
               setOrderConfirmed(false);
+              setLiveOrderId('');
               onNavigate('home');
             }}
             className="bg-dark text-white font-bold px-6 py-3 rounded-2xl text-xs z-10"
@@ -10685,6 +10770,50 @@
       }
 
       if (orderConfirmed) {
+        if (orderStatus === 'not_found') {
+          return (
+            <div className="flex min-h-full flex-col items-center justify-center space-y-4 py-10 text-center">
+              <h2 className="font-title text-2xl font-bold">No encontramos este pedido</h2>
+              <p className="max-w-[280px] text-xs text-gray-500">El pedido ya no está disponible en el servidor y no se puede continuar siguiendo su estado.</p>
+              <button
+                type="button"
+                onClick={() => {
+                  clearDeliveryProgress();
+                  setOrderConfirmed(false);
+                  setLiveOrderId('');
+                  onNavigate('home');
+                }}
+                className="rounded-2xl bg-dark px-6 py-3 text-xs font-bold text-white"
+              >
+                Volver al inicio
+              </button>
+            </div>
+          );
+        }
+        if (orderStatus === 'cancelled') {
+          return (
+            <div className="flex min-h-full flex-col items-center justify-center space-y-4 py-10 text-center">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-red-50 text-[#a90000]" aria-hidden="true">
+                <i data-lucide="circle-x" className="h-10 w-10"></i>
+              </div>
+              <h2 className="font-title text-2xl font-bold">Pedido cancelado</h2>
+              <p className="max-w-[280px] text-xs text-gray-500">El pedido se canceló y ya no aparece en la lista de repartidores.</p>
+              <button
+                type="button"
+                onClick={() => {
+                  clearDeliveryProgress();
+                  setDeliveryPhase('idle');
+                  setOrderConfirmed(false);
+                  setLiveOrderId('');
+                  onNavigate('home');
+                }}
+                className="rounded-2xl bg-dark px-6 py-3 text-xs font-bold text-white"
+              >
+                Volver al inicio
+              </button>
+            </div>
+          );
+        }
         if (orderStatus === 'available') {
           return (
             <div className="flex min-h-full flex-col items-center justify-center text-center space-y-4 py-10">
@@ -10715,6 +10844,25 @@
               >
                 Volver al inicio
               </button>
+              {canCancelOrder ? (
+                <div className="w-full space-y-2">
+                  <button
+                    type="button"
+                    onClick={cancelOrder}
+                    disabled={isCancellingOrder}
+                    className="w-full rounded-2xl bg-[#a90000] px-6 py-3 text-xs font-bold text-white disabled:cursor-wait disabled:opacity-70"
+                  >
+                    {isCancellingOrder ? 'Cancelando pedido…' : 'Cancelar el pedido 🥺'}
+                  </button>
+                  {cancelOrderError && <p className="text-[10px] text-red-600" role="alert">{cancelOrderError}</p>}
+                </div>
+              ) : !Number.isFinite(orderCreatedAt) ? (
+                <p className="text-center text-[10px] text-gray-500" role="status">Verificando el estado de tu pedido…</p>
+              ) : (
+                <div className="w-full rounded-2xl border border-[#f1dfb5] bg-[#fffaf0] p-4 text-xs text-gray-600" role="status">
+                  Tú pedido ya está listo, no puedes cancelarlo
+                </div>
+              )}
             </div>
           );
         }
@@ -10953,7 +11101,7 @@
           return {};
         }
       });
-      const [activeTab, setActiveTab] = useState('orders');
+      const [activeTab, setActiveTab] = useState(() => savedRiderState.activeOrder?.isLive === true ? 'routes' : 'orders');
       const [isOnline, setIsOnline] = useState(() => typeof savedRiderState.isOnline === 'boolean' ? savedRiderState.isOnline : true);
       const [riderDetails, setRiderDetails] = useState(() => {
         try {
@@ -10997,6 +11145,7 @@
       const [locationSharingStatus, setLocationSharingStatus] = useState('');
       const [liveOrders, setLiveOrders] = useState([]);
       const [orderSyncError, setOrderSyncError] = useState('');
+      const [unavailableDeliveryOrderId, setUnavailableDeliveryOrderId] = useState('');
       const [riderReviewProfile, setRiderReviewProfile] = useState({ ratingAverage: 0, reviewCount: 0, reviews: [] });
       const [localRiderReviews, setLocalRiderReviews] = useState(() => {
         try {
@@ -11062,14 +11211,25 @@
           try {
             const response = await fetch(`/api/orders/${encodeURIComponent(activeOrder.id)}`, { cache: 'no-store' });
             const payload = await response.json().catch(() => ({}));
-            if (!response.ok) throw new Error(payload.error || `Error ${response.status}`);
+            if (!response.ok) {
+              const error = new Error(payload.error || `Error ${response.status}`);
+              error.status = response.status;
+              throw error;
+            }
             if (isMounted) {
               setActiveOrder((current) => current?.id === activeOrder.id
                 ? { ...current, riderLocation: payload.location || null }
                 : current);
             }
           } catch (error) {
-            console.error('No se pudo actualizar la ubicación del pedido:', error);
+            if (isMounted && error.status === 404) {
+              setActiveOrder((current) => current?.id === activeOrder.id ? null : current);
+              setActiveTab('orders');
+              setOrderSyncError('');
+              showNotice(`El pedido ${activeOrder.id} ya no existe. Se quitó de tu ruta.`);
+            } else {
+              console.error('No se pudo actualizar la ubicación del pedido:', error);
+            }
           } finally {
             isRefreshing = false;
           }
@@ -11573,11 +11733,30 @@
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) {
           if (response.status === 404 || response.status === 405) {
-            throw new Error('El servidor activo no tiene la cola compartida. Reinicia server.mjs y vuelve a abrir ambas aplicaciones desde la misma dirección.');
+            const error = new Error('El servidor activo no tiene la cola compartida. Reinicia server.mjs y vuelve a abrir ambas aplicaciones desde la misma dirección.');
+            error.status = response.status;
+            throw error;
           }
-          throw new Error(payload.error || `Error ${response.status}`);
+          const error = new Error(payload.error || `Error ${response.status}`);
+          error.status = response.status;
+          throw error;
         }
         return payload.order;
+      };
+
+      const removeUnavailableActiveOrder = (orderId) => {
+        setActiveOrder((order) => order?.id === orderId ? null : order);
+        setLiveOrders((orders) => orders.filter((order) => order.id !== orderId));
+        setDismissedLiveOrderIds((ids) => ids.includes(orderId) ? ids : [...ids, orderId]);
+        setUnavailableDeliveryOrderId('');
+        setOrderSyncError('');
+        setActiveTab('orders');
+        showNotice(`El pedido ${orderId} ya no está disponible. Se quitó de tu ruta.`);
+      };
+
+      const discardUnavailableDeliveryOrder = () => {
+        if (!activeOrder || unavailableDeliveryOrderId !== activeOrder.id) return;
+        removeUnavailableActiveOrder(activeOrder.id);
       };
 
       const acceptOrder = async (order) => {
@@ -11593,6 +11772,7 @@
           try {
             const acceptedOrder = await sendLiveOrderAction(order.id, 'accept', { driverId: riderId, driverName: displayedRiderName });
             setLiveOrders((orders) => orders.filter((item) => item.id !== order.id));
+            setUnavailableDeliveryOrderId('');
             setActiveOrder({ ...order, ...acceptedOrder, status: acceptedOrder.status, step: 0, routeStartedAt: null });
             setActiveTab('routes');
             return;
@@ -11639,6 +11819,10 @@
             const updated = await sendLiveOrderAction(activeOrder.id, 'picked-up');
             setActiveOrder((order) => ({ ...order, status: updated.status, step: 1, routeStartedAt: updated.pickedUpAt }));
           } catch (error) {
+            if (error.status === 409) {
+              removeUnavailableActiveOrder(activeOrder.id);
+              return;
+            }
             const message = `No se pudo confirmar el recojo de ${activeOrder.id}: ${error.message}`;
             setOrderSyncError(message);
             showNotice(message);
@@ -11650,6 +11834,12 @@
           try {
             await sendLiveOrderAction(activeOrder.id, 'deliver');
           } catch (error) {
+            if (error.status === 409) {
+              setUnavailableDeliveryOrderId(activeOrder.id);
+              setOrderSyncError('');
+              showNotice(`El pedido ${activeOrder.id} cambió de estado. Puedes quitar solo este pedido para continuar.`);
+              return;
+            }
             const message = `No se pudo confirmar la entrega de ${activeOrder.id}: ${error.message}`;
             setOrderSyncError(message);
             showNotice(message);
@@ -11987,10 +12177,19 @@
             >
               <i data-lucide="navigation" className="h-4 w-4"></i> Abrir ruta en Google Maps
             </a>
-            <button type="button" onClick={confirmOrderStep} className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#a90000] py-3 text-xs font-bold text-white shadow-md">
-              <i data-lucide={activeOrder.step === 0 ? 'package-check' : 'check-circle-2'} className="h-4 w-4"></i>
-              {activeOrder.step === 0 ? 'Confirmar recojo' : 'Confirmar entrega'}
-            </button>
+            {unavailableDeliveryOrderId === activeOrder.id ? (
+              <div className="space-y-2 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                <p className="text-center text-[10px] text-amber-900" role="alert">El servidor ya cambió el estado de este pedido. No se marcará como completado ni afectará tus ganancias.</p>
+                <button type="button" onClick={discardUnavailableDeliveryOrder} className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#a90000] py-3 text-xs font-bold text-white shadow-md">
+                  Quitar solo este pedido y continuar
+                </button>
+              </div>
+            ) : (
+              <button type="button" onClick={confirmOrderStep} className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#a90000] py-3 text-xs font-bold text-white shadow-md">
+                <i data-lucide={activeOrder.step === 0 ? 'package-check' : 'check-circle-2'} className="h-4 w-4"></i>
+                {activeOrder.step === 0 ? 'Confirmar recojo' : 'Confirmar entrega'}
+              </button>
+            )}
             <p className="text-center text-[9px] text-gray-500">Al confirmar cada etapa, el estado se actualiza en el servidor de Al Toque.</p>
           </div>
           <div className="rider-card p-3">
