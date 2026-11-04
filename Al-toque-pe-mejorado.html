@@ -882,7 +882,7 @@
     .bembos-promo-media {
       height: auto;
       aspect-ratio: 1.15 / 1;
-      overflow: hidden;
+      overflow: visible;
       border-radius: 1.25rem;
     }
 
@@ -890,6 +890,26 @@
       border-radius: inherit;
       object-fit: cover;
       object-position: center;
+    }
+
+    .bembos-promo-hover-label {
+      position: absolute;
+      z-index: 4;
+      top: -12px;
+      left: 10px;
+      padding: 5px 10px;
+      border: 1px solid rgba(197, 164, 92, 0.45);
+      border-radius: 999px;
+      background: rgba(255, 252, 245, 0.97);
+      color: #351c1c;
+      box-shadow: 0 4px 12px rgba(43, 23, 24, 0.16);
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1.2;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 220ms ease, transform 220ms ease;
+      pointer-events: none;
     }
 
     .menu-popular-badge {
@@ -975,18 +995,33 @@
     }
 
     @media (hover: hover) and (pointer: fine) {
-      .menu-pop-card:has(> .menu-pop-media:hover) {
+      .bembos-promo-card:has(> .menu-pop-media:hover) {
+        z-index: 4;
+      }
+
+      .bembos-promo-card:has(> .menu-pop-media:hover) .bembos-promo-image {
+        z-index: 3;
+        transform: translateY(-5px) scale(1.08);
+        filter: drop-shadow(0 10px 12px rgba(43, 23, 24, 0.24));
+      }
+
+      .bembos-promo-card:has(> .menu-pop-media:hover) .bembos-promo-hover-label {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .menu-pop-card:not(.bembos-promo-card):has(> .menu-pop-media:hover) {
         z-index: 3;
         transform: translateY(-3px) scale(1.05);
         border-color: #d3ae55;
         box-shadow: 0 8px 18px rgba(43, 23, 24, 0.12), 0 0 0 1px rgba(197, 164, 92, 0.32);
       }
 
-      .menu-pop-card:has(> .menu-pop-media:hover) .menu-pop-media {
+      .menu-pop-card:not(.bembos-promo-card):has(> .menu-pop-media:hover) .menu-pop-media {
         transform: translateY(-8px) scale(1.04);
       }
 
-      .menu-pop-card:has(> .menu-pop-media:hover) .menu-pop-image {
+      .menu-pop-card:not(.bembos-promo-card):has(> .menu-pop-media:hover) .menu-pop-image {
         z-index: 3;
         transform: scale(1.1);
         filter: drop-shadow(0 8px 8px rgba(43, 23, 24, 0.2));
@@ -994,18 +1029,36 @@
     }
 
     @media (hover: none) and (pointer: coarse) {
-      .menu-pop-card:has(> .menu-pop-media:active) {
+      .bembos-promo-card:has(> .menu-pop-media:active) {
+        z-index: 4;
+        transform: none;
+        border-color: #d3ae55;
+        box-shadow: 0 8px 18px rgba(43, 23, 24, 0.12), 0 0 0 1px rgba(197, 164, 92, 0.32);
+      }
+
+      .bembos-promo-card:has(> .menu-pop-media:active) .bembos-promo-image {
+        z-index: 3;
+        transform: translateY(-3px) scale(1.035);
+        filter: drop-shadow(0 8px 10px rgba(43, 23, 24, 0.2));
+      }
+
+      .bembos-promo-card:has(> .menu-pop-media:active) .bembos-promo-hover-label {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .menu-pop-card:not(.bembos-promo-card):has(> .menu-pop-media:active) {
         z-index: 3;
         transform: translateY(-2px) scale(1.015);
         border-color: #d3ae55;
         box-shadow: 0 8px 18px rgba(43, 23, 24, 0.12), 0 0 0 1px rgba(197, 164, 92, 0.32);
       }
 
-      .menu-pop-card:has(> .menu-pop-media:active) .menu-pop-media {
+      .menu-pop-card:not(.bembos-promo-card):has(> .menu-pop-media:active) .menu-pop-media {
         transform: translateY(-4px) scale(1.01);
       }
 
-      .menu-pop-card:has(> .menu-pop-media:active) .menu-pop-image {
+      .menu-pop-card:not(.bembos-promo-card):has(> .menu-pop-media:active) .menu-pop-image {
         z-index: 3;
         transform: scale(1.03);
         filter: drop-shadow(0 8px 8px rgba(43, 23, 24, 0.2));
@@ -8492,7 +8545,7 @@
                   <div key={group.id} className="space-y-3">
                     <h3 id={group.id === 'pareja' ? 'bembos-promotions-title' : undefined} className="font-title text-lg font-bold">{group.title}</h3>
                     {promotions.map((promo) => (
-                      <article key={promo.id} className="menu-pop-card rounded-3xl border border-gray-100 bg-white p-3 shadow-sm">
+                      <article key={promo.id} className="menu-pop-card bembos-promo-card rounded-3xl border border-gray-100 bg-white p-3 shadow-sm">
                         <div className="menu-pop-media bembos-promo-media relative rounded-2xl bg-white">
                           <img
                             src={promo.image}
@@ -8509,7 +8562,7 @@
                               className="absolute right-2 top-2 h-9 w-9 rounded-full object-cover shadow-sm"
                             />
                           ) : (
-                          <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-bold text-dark">Bembos · promoción</span>
+                          <span className="bembos-promo-hover-label">Bembos · promoción</span>
                           )}
                         </div>
                         <div className="pt-2">
