@@ -370,12 +370,13 @@ test('animates the home menu cards with a glowing outline and honors reduced mot
   assert.match(html, /\.home-menu-card \.combo-card-image\s*\{[^}]*animation:\s*homeMenuImageEnter 520ms ease-out both;/);
   assert.match(html, /@keyframes homeMenuImageEnter\s*\{\s*from \{ opacity: 0\.7; \}\s*to \{ opacity: 1; \}\s*\}/);
   assert.equal((html.match(/overflow-x-auto no-scrollbar py-6 -mx-4 px-4/g) || []).length, 2);
-  assert.match(html, /@media \(hover: hover\) and \(pointer: fine\)\s*\{\s*\.home-menu-card:hover\s*\{[^}]*transform: translateY\(-3px\) scale\(1\.05\);/);
-  assert.match(html, /\.home-menu-card:hover \.home-menu-card-media\s*\{\s*transform: translateY\(-8px\) scale\(1\.04\);/);
-  assert.match(html, /\.home-menu-card:hover \.home-menu-card-image,\s*\.home-menu-card:hover \.combo-card-image\s*\{\s*transform: translateY\(0\) scale\(1\.1\);/);
-  assert.match(html, /@media \(hover: none\) and \(pointer: coarse\)\s*\{[\s\S]*?\.home-menu-card:hover \.home-menu-card-image,[\s\S]*?\.home-menu-card:active\s*\{[^}]*transform: translateY\(-3px\) scale\(1\.05\);/);
-  assert.match(html, /\.home-menu-card:active \.home-menu-card-media\s*\{\s*transform: translateY\(-8px\) scale\(1\.04\);/);
-  assert.match(html, /\.home-menu-card:active \.home-menu-card-image,\s*\.home-menu-card:active \.combo-card-image\s*\{\s*transform: translateY\(0\) scale\(1\.1\);/);
+  assert.match(html, /\.combo-card:not\(\.home-menu-card\):hover \.combo-card-image/);
+  assert.match(html, /@media \(hover: hover\) and \(pointer: fine\)\s*\{\s*\.home-menu-card:has\(> \.home-menu-card-media:hover\)\s*\{[^}]*transform: translateY\(-3px\) scale\(1\.05\);/);
+  assert.match(html, /\.home-menu-card:has\(> \.home-menu-card-media:hover\) \.home-menu-card-media\s*\{\s*transform: translateY\(-8px\) scale\(1\.04\);/);
+  assert.match(html, /\.home-menu-card:has\(> \.home-menu-card-media:hover\) \.home-menu-card-image,\s*\.home-menu-card:has\(> \.home-menu-card-media:hover\) \.combo-card-image\s*\{\s*transform: translateY\(0\) scale\(1\.1\);/);
+  assert.match(html, /@media \(hover: none\) and \(pointer: coarse\)\s*\{[\s\S]*?\.home-menu-card:hover \.home-menu-card-image,[\s\S]*?\.home-menu-card:has\(> \.home-menu-card-media:active\)\s*\{[^}]*transform: translateY\(-3px\) scale\(1\.05\);/);
+  assert.match(html, /\.home-menu-card:has\(> \.home-menu-card-media:active\) \.home-menu-card-media\s*\{\s*transform: translateY\(-8px\) scale\(1\.04\);/);
+  assert.match(html, /\.home-menu-card:has\(> \.home-menu-card-media:active\) \.home-menu-card-image,\s*\.home-menu-card:has\(> \.home-menu-card-media:active\) \.combo-card-image\s*\{\s*transform: translateY\(0\) scale\(1\.1\);/);
   assert.ok(html.indexOf('.home-menu-card:hover .combo-card-image') > html.indexOf('.combo-card:hover .combo-card-image'),
     'home card hover styles should override the generic combo hover effects');
   assert.match(html, /className="home-menu-card min-w-\[220px\] bg-white/);
