@@ -595,7 +595,7 @@ test('shows official Starbucks food items with prices, circular photos and inter
   assert.equal(imageEntries.length, products.length, 'every Starbucks food product should have an official image');
   assert.deepEqual(imageEntries.map((entry) => entry[1]).sort(), products.map((product) => product.name).sort());
   assert.ok(imageEntries.every((entry) => entry[2].startsWith('https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/')));
-  assert.match(html, /STARBUCKS_PRODUCTS\.length \+ STARBUCKS_FOOD_PRODUCTS\.length \+ STARBUCKS_UPCOMING_PROMOTIONS\.length/);
+  assert.match(html, /STARBUCKS_PRODUCTS\.length \+ STARBUCKS_FOOD_PRODUCTS\.length \+ STARBUCKS_MERCH_PRODUCTS\.length \+ STARBUCKS_UPCOMING_PROMOTIONS\.length/);
   assert.ok(products.some((product) => product.name === 'Galleta Rellena de Crema de Avellanas' && product.price === 11));
   assert.ok(products.some((product) => product.name === 'Cheesecake de Arándanos' && product.price === 16));
   assert.ok(products.some((product) => product.name === 'Sándwich Chicken Ciabatta' && product.price === 14.5));
@@ -607,6 +607,46 @@ test('shows official Starbucks food items with prices, circular photos and inter
   assert.match(foodPanel, /onClick=\{\(\) => onAddStarbucks\(product\)\}/);
   assert.match(html, /\.menu-pop-card:not\(\.bembos-promo-card\):has\(> \.menu-pop-media:hover\) \.menu-pop-image\s*\{\s*z-index:\s*3;\s*transform:\s*scale\(1\.1\);/);
   assert.match(html, /\.menu-pop-card:not\(\.bembos-promo-card\):has\(> \.menu-pop-media:active\) \.menu-pop-image\s*\{\s*z-index:\s*3;\s*transform:\s*scale\(1\.03\);/);
+});
+
+test('shows Starbucks coffee and merch with official prices, photos and add-to-order buttons', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  const server = await createReelsTestServer(t, testDataDir);
+  const response = await fetch(`http://127.0.0.1:${server.address().port}/`);
+  const html = await response.text();
+  const sourceStart = html.indexOf('const STARBUCKS_MERCH_SOURCE = [');
+  const sourceEnd = html.indexOf('\n    ];', sourceStart);
+  const productSource = html.slice(sourceStart, sourceEnd);
+  const imageMapStart = html.indexOf('const STARBUCKS_MERCH_IMAGE_URLS = {');
+  const imageMapEnd = html.indexOf('\n    };', imageMapStart);
+  const imageMap = html.slice(imageMapStart, imageMapEnd);
+  const products = Array.from(productSource.matchAll(/\['([^']+)', '([^']+)', ([0-9.]+)\]/g), (match) => ({
+    category: match[1],
+    name: match[2],
+    price: Number(match[3])
+  }));
+  const imageEntries = Array.from(imageMap.matchAll(/^\s+'([^']+)': '(https:\/\/[^']+\.png)'[,]?$/gm));
+  const merchPanelStart = html.indexOf("starbucksSection === 'merch' ?");
+  const merchPanelEnd = html.indexOf('Estamos preparando esta categoría de Starbucks.', merchPanelStart);
+  const merchPanel = html.slice(merchPanelStart, merchPanelEnd);
+
+  assert.equal(response.status, 200);
+  assert.ok(sourceStart >= 0 && sourceEnd > sourceStart, 'Starbucks coffee and merch products should be defined');
+  assert.deepEqual(products, [
+    { category: 'Café en Grano', name: 'Espresso 250 gr.', price: 40 },
+    { category: 'Café en Grano', name: 'Verona 250 gr.', price: 40 },
+    { category: 'Café en Grano', name: 'Sumatra 250 gr.', price: 40 },
+    { category: 'Café en Grano', name: 'Colombia 250 gr.', price: 40 },
+    { category: 'Merch', name: 'Bearista Bear Llama', price: 45 }
+  ]);
+  assert.equal(imageEntries.length, products.length, 'every Starbucks merch product should have an official image');
+  assert.deepEqual(imageEntries.map((entry) => entry[1]).sort(), products.map((product) => product.name).sort());
+  assert.ok(imageEntries.every((entry) => entry[2].startsWith('https://stb-content-pe-prd-bucket.s3.us-east-1.amazonaws.com/images/products/')));
+  assert.match(html, /const STARBUCKS_MERCH_CATEGORIES = \['Café en Grano', 'Merch'\]/);
+  assert.match(html, /const STARBUCKS_MERCH_PRODUCTS = STARBUCKS_MERCH_SOURCE\.map\(\(\[menuCategory, name, price\], index\) => \(\{\s*id: `starbucks-merch-\$\{index \+ 1\}`,\s*name,\s*category: 'merch'/);
+  assert.match(merchPanel, /STARBUCKS_MERCH_CATEGORIES\.map\(\(category\) =>/);
+  assert.match(merchPanel, /alt=\{`Producto Starbucks: \$\{product\.name\}`\}/);
+  assert.match(merchPanel, /onClick=\{\(\) => onAddStarbucks\(product\)\}/);
 });
 
 test('animates the walking rider from the first blue point through the route to the destination', async (t) => {
