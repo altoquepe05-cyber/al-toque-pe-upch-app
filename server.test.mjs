@@ -326,6 +326,22 @@ test('serves the walking order received animation as a public video asset', asyn
   assert.deepEqual(Buffer.from(await response.arrayBuffer()), video.subarray(0, 32));
 });
 
+test('serves the transparent looping walking route character as an APNG image', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  const server = await createReelsTestServer(t, testDataDir);
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const response = await fetch(`${baseUrl}/caminante-ruta.png`);
+  const image = Buffer.from(await response.arrayBuffer());
+
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('content-type'), 'image/png');
+  assert.deepEqual(image.subarray(0, 8), Buffer.from('89504e470d0a1a0a', 'hex'));
+  const animationControlOffset = image.indexOf(Buffer.from('acTL'));
+  assert.ok(animationControlOffset > 0, 'the image should contain APNG animation control data');
+  assert.equal(image.readUInt32BE(animationControlOffset + 8), 0, 'the animation should loop forever');
+  assert.ok(image.length < 3_000_000, 'the preloaded character animation should stay compact');
+});
+
 test('preloads the order received animation when serving the application page', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);
@@ -336,6 +352,23 @@ test('preloads the order received animation when serving the application page', 
   assert.match(html, /<link rel="preload" href="\/pedido-recibido\.mp4" as="video" type="video\/mp4"\s*\/?>/);
   assert.match(html, /<link rel="preload" href="\/pedido-recibido-bicicleta\.mp4" as="video" type="video\/mp4"\s*\/?>/);
   assert.match(html, /<link rel="preload" href="\/pedido-recibido-caminando\.mp4" as="video" type="video\/mp4"\s*\/?>/);
+  assert.match(html, /<link rel="preload" href="\/caminante-ruta\.png" as="image" type="image\/png"\s*\/?>/);
+});
+
+test('animates the walking rider along the fixed five-minute customer route after pickup', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  const server = await createReelsTestServer(t, testDataDir);
+  const response = await fetch(`http://127.0.0.1:${server.address().port}/`);
+  const html = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(html, /const DELIVERY_DURATION_MS = 300000;/);
+  assert.match(html, /const WALKING_ROUTE_POINTS = \[/);
+  assert.match(html, /function getWalkingRoutePosition\(progress\)/);
+  assert.match(html, /walkingStartedAt=\{deliveryPhase === 'tracking' && assignedRider\?\.vehicle === 'Caminando'\s*\? deliveryStartedAtRef\.current\s*: null\}/);
+  assert.match(html, /walking-route-character/);
+  assert.match(html, /Date\.now\(\) - walkingStartedAt\) \/ DELIVERY_DURATION_MS/);
+  assert.match(html, /isWalkingAnimationActive\s*\?\s*'Ruta a pie · 5 min'/);
 });
 
 test('shows the matching order received animation for each assigned rider transport', async (t) => {

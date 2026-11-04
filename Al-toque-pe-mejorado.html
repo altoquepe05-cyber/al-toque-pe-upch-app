@@ -7,6 +7,7 @@
   <link rel="preload" href="/pedido-recibido.mp4" as="video" type="video/mp4" />
   <link rel="preload" href="/pedido-recibido-bicicleta.mp4" as="video" type="video/mp4" />
   <link rel="preload" href="/pedido-recibido-caminando.mp4" as="video" type="video/mp4" />
+  <link rel="preload" href="/caminante-ruta.png" as="image" type="image/png" />
   <script src="https://cdn.botpress.cloud/webchat/v5.0/inject.js" defer></script>
   <script src="https://files.bpcontent.cloud/2026/10/11/22/20261011222049-IGT6DVHC.js" defer></script>
   <script>
@@ -1776,6 +1777,14 @@
       width: 100%;
       height: 100%;
       border: 0;
+    }
+    .walking-route-character {
+      position: absolute;
+      z-index: 3;
+      width: clamp(34px, 12%, 48px);
+      height: auto;
+      pointer-events: none;
+      transform: translate(-50%, -88%);
     }
     .live-route-map-status {
       position: absolute;
@@ -9832,8 +9841,46 @@
       );
     }
 
+    const DELIVERY_DURATION_MS = 300000;
     const DELIVERY_ROUTE_START = [-12.1348222, -77.0260012];
     const DELIVERY_ROUTE_END = [-12.1341675, -77.0260721];
+    // Google Maps is cross-origin, so the character follows this visual route approximation.
+    const WALKING_ROUTE_POINTS = [
+      { x: 10, y: 20 },
+      { x: 16, y: 29 },
+      { x: 22, y: 37 },
+      { x: 29, y: 45 },
+      { x: 36, y: 53 },
+      { x: 43, y: 61 },
+      { x: 50, y: 69 },
+      { x: 57, y: 77 }
+    ];
+
+    function getWalkingRoutePosition(progress) {
+      const safeProgress = Math.max(0, Math.min(1, progress));
+      const segmentLengths = WALKING_ROUTE_POINTS.slice(1).map((point, index) => {
+        const previousPoint = WALKING_ROUTE_POINTS[index];
+        return Math.hypot((point.x - previousPoint.x) * (4 / 3), point.y - previousPoint.y);
+      });
+      const totalLength = segmentLengths.reduce((sum, length) => sum + length, 0);
+      let remainingLength = totalLength * safeProgress;
+
+      for (let index = 0; index < segmentLengths.length; index += 1) {
+        const segmentLength = segmentLengths[index];
+        const start = WALKING_ROUTE_POINTS[index];
+        const end = WALKING_ROUTE_POINTS[index + 1];
+        if (remainingLength <= segmentLength || index === segmentLengths.length - 1) {
+          const ratio = segmentLength === 0 ? 0 : Math.min(1, remainingLength / segmentLength);
+          return {
+            x: start.x + (end.x - start.x) * ratio,
+            y: start.y + (end.y - start.y) * ratio
+          };
+        }
+        remainingLength -= segmentLength;
+      }
+
+      return WALKING_ROUTE_POINTS[WALKING_ROUTE_POINTS.length - 1];
+    }
 
     class LiveRouteMapErrorBoundary extends React.Component {
       state = { hasError: false };
@@ -9860,12 +9907,19 @@
       }
     }
 
-    function LiveRouteMap({ location, className, label }) {
+    function LiveRouteMap({ location, className, label, walkingStartedAt = null }) {
       const lastMapOriginRef = useRef(null);
       const [mapOrigin, setMapOrigin] = useState(DELIVERY_ROUTE_START);
       const [mapError, setMapError] = useState(false);
+      const [walkingProgress, setWalkingProgress] = useState(0);
+      const isWalkingAnimationActive = Number.isFinite(walkingStartedAt) && walkingStartedAt > 0;
 
       useEffect(() => {
+        if (isWalkingAnimationActive) {
+          lastMapOriginRef.current = null;
+          setMapOrigin(DELIVERY_ROUTE_START);
+          return;
+        }
         if (!location || !Number.isFinite(location.latitude) || !Number.isFinite(location.longitude)) return;
 
         const nextOrigin = { latitude: location.latitude, longitude: location.longitude, updatedAt: location.updatedAt || Date.now() };
@@ -9883,7 +9937,21 @@
           lastMapOriginRef.current = nextOrigin;
           setMapOrigin([nextOrigin.latitude, nextOrigin.longitude]);
         }
-      }, [location]);
+      }, [isWalkingAnimationActive, location]);
+
+      useEffect(() => {
+        if (!isWalkingAnimationActive) {
+          setWalkingProgress(0);
+          return undefined;
+        }
+
+        const updateProgress = () => setWalkingProgress(
+          Math.max(0, Math.min(1, (Date.now() - walkingStartedAt) / DELIVERY_DURATION_MS))
+        );
+        updateProgress();
+        const timer = window.setInterval(updateProgress, 1000);
+        return () => window.clearInterval(timer);
+      }, [isWalkingAnimationActive, walkingStartedAt]);
 
       const mapUrl = new URL('https://www.google.com/maps');
       mapUrl.searchParams.set('output', 'embed');
@@ -9898,6 +9966,9 @@
       directionsUrl.searchParams.set('origin', `${mapOrigin[0]},${mapOrigin[1]}`);
       directionsUrl.searchParams.set('destination', `${DELIVERY_ROUTE_END[0]},${DELIVERY_ROUTE_END[1]}`);
       directionsUrl.searchParams.set('travelmode', 'walking');
+      const walkingPosition = isWalkingAnimationActive
+        ? getWalkingRoutePosition(walkingProgress)
+        : null;
 
       return (
         <div className={`live-route-map ${className}`}>
@@ -9913,8 +9984,18 @@
               setMapError(true);
             }}
           />
+          {walkingPosition && (
+            <img
+              className="walking-route-character"
+              src="/caminante-ruta.png"
+              alt="Repartidor caminando por la ruta hacia la entrega"
+              style={{ left: `${walkingPosition.x}%`, top: `${walkingPosition.y}%` }}
+            />
+          )}
           <span className="live-route-map-status" role="status">
-            {location ? `GPS en vivo · ±${Math.round(location.accuracy || 0)} m` : 'Ruta de Google Maps · Esperando GPS'}
+            {isWalkingAnimationActive
+              ? 'Ruta a pie · 5 min'
+              : location ? `GPS en vivo · ±${Math.round(location.accuracy || 0)} m` : 'Ruta de Google Maps · Esperando GPS'}
           </span>
           {mapError && (
             <a className="live-route-map-error" href={directionsUrl.toString()} target="_blank" rel="noopener noreferrer">
@@ -9926,7 +10007,7 @@
     }
 
     function CartScreen({ cart, updateQuantity, removeFromCart, onNavigate, orderConfirmed, setOrderConfirmed, liveOrderId, setLiveOrderId, clearCart, pickupPoint, profile, setProfile, onOrderRegistered }) {
-      const deliveryDuration = 300000;
+      const deliveryDuration = DELIVERY_DURATION_MS;
       const deliveryProgressKey = liveOrderId ? `altoque_delivery_progress_${liveOrderId}` : '';
       const readSavedDeliveryProgress = () => {
         if (!orderConfirmed || !deliveryProgressKey) return null;
@@ -10608,7 +10689,10 @@
             label={`Ruta en vivo del repartidor para el pedido ${liveOrderId || ''}`}
           >
             <LiveRouteMap
-              location={riderLocation}
+              location={assignedRider?.vehicle === 'Caminando' ? null : riderLocation}
+              walkingStartedAt={deliveryPhase === 'tracking' && assignedRider?.vehicle === 'Caminando'
+                ? deliveryStartedAtRef.current
+                : null}
               className="delivery-map"
               label={`Ruta en vivo del repartidor para el pedido ${liveOrderId || ''}`}
             />
