@@ -294,6 +294,69 @@ test('serves the looping order received animation as a public video asset', asyn
   assert.deepEqual(Buffer.from(await response.arrayBuffer()), video.subarray(0, 32));
 });
 
+test('shares only public rider profile fields with customers and persists updates', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  const server = await createReelsTestServer(t, testDataDir);
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const driverId = 'rider-profile-sync-test';
+  const profileUrl = `${baseUrl}/api/rider/profile?driverId=${encodeURIComponent(driverId)}`;
+  const updateResponse = await fetch(profileUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: baseUrl },
+    body: JSON.stringify({
+      driverId,
+      name: 'Armando actualizado',
+      vehicle: 'Bicicleta',
+      photo: 'data:image/jpeg;base64,dGVzdA==',
+      dni: '12345678',
+      identityPhoto: 'private-document'
+    })
+  });
+
+  assert.equal(updateResponse.status, 200);
+  const { profile: updatedProfile } = await updateResponse.json();
+  assert.equal(updatedProfile.name, 'Armando actualizado');
+  assert.equal(updatedProfile.vehicle, 'Bicicleta');
+  assert.equal(updatedProfile.photo, 'data:image/jpeg;base64,dGVzdA==');
+  assert.equal(Object.hasOwn(updatedProfile, 'dni'), false);
+  assert.equal(Object.hasOwn(updatedProfile, 'identityPhoto'), false);
+
+  const customerResponse = await fetch(profileUrl, { cache: 'no-store' });
+  const { profile: customerProfile } = await customerResponse.json();
+  assert.equal(customerProfile.name, 'Armando actualizado');
+  assert.equal(customerProfile.vehicle, 'Bicicleta');
+  assert.equal(customerProfile.photo, 'data:image/jpeg;base64,dGVzdA==');
+  assert.equal(customerProfile.hasPublicProfile, true);
+  const savedState = JSON.parse(await readFile(join(testDataDir, 'rider-profiles.json'), 'utf8'));
+  assert.equal(savedState.profiles[0].name, 'Armando actualizado');
+
+  await new Promise((resolve, reject) => {
+    server.close((error) => error ? reject(error) : resolve());
+  });
+  const restartedServer = await createReelsTestServer(t, testDataDir);
+  const restartedBaseUrl = `http://127.0.0.1:${restartedServer.address().port}`;
+  const restartedProfileUrl = `${restartedBaseUrl}/api/rider/profile?driverId=${encodeURIComponent(driverId)}`;
+  const restartedCustomerResponse = await fetch(restartedProfileUrl, { cache: 'no-store' });
+  const { profile: restartedCustomerProfile } = await restartedCustomerResponse.json();
+  assert.equal(restartedCustomerProfile.name, 'Armando actualizado');
+  assert.equal(restartedCustomerProfile.vehicle, 'Bicicleta');
+  assert.equal(restartedCustomerProfile.photo, 'data:image/jpeg;base64,dGVzdA==');
+
+  const crossOriginResponse = await fetch(restartedProfileUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: 'https://malicious.example' },
+    body: JSON.stringify({ driverId, name: 'Otro nombre', vehicle: '', photo: null })
+  });
+  assert.equal(crossOriginResponse.status, 403);
+
+  const invalidPhotoResponse = await fetch(restartedProfileUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: restartedBaseUrl },
+    body: JSON.stringify({ driverId, name: 'Armando', vehicle: 'Moto', photo: 'data:image/png;base64,AA==' })
+  });
+  assert.equal(invalidPhotoResponse.status, 400);
+});
+
 test('serves the offline JavaScript and font assets from local paths', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);

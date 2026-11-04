@@ -10099,7 +10099,11 @@
             const profilePayload = await profileResponse.json().catch(() => ({}));
             if (!profileResponse.ok) throw new Error(profilePayload.error || `Error ${profileResponse.status}`);
             if (isMounted) {
-              setAssignedRider({ ...profilePayload.profile, name: assignedOrder.driverName, driverId: assignedOrder.driverId });
+              setAssignedRider({
+                ...profilePayload.profile,
+                name: profilePayload.profile.name || assignedOrder.driverName,
+                driverId: assignedOrder.driverId
+              });
             }
           } catch (error) {
             console.error('No se pudo sincronizar el perfil del repartidor:', error);
@@ -10660,7 +10664,11 @@
       const renderRiderProfileCard = () => (
         <section className="w-full rounded-2xl border border-green-100 bg-white p-4 text-left shadow-sm" aria-label="Perfil del motorizado">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#fff2df] text-lg">🛵</div>
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#fff2df] text-lg">
+              {assignedRider?.photo
+                ? <img src={assignedRider.photo} alt={`Foto de ${assignedRider.name}`} className="h-full w-full object-cover" />
+                : assignedRider?.vehicle === 'Bicicleta' ? '🚲' : assignedRider?.vehicle === 'Caminando' ? '🚶' : '🛵'}
+            </div>
             <div className="min-w-0 flex-1">
               <p className="text-[9px] font-bold uppercase tracking-wider text-gray-500">Tu motorizado</p>
               <h3 className="truncate text-sm font-bold text-dark">
@@ -10668,11 +10676,14 @@
               </h3>
               {!assignedRider && <p className="mt-0.5 text-[9px] text-gray-500">Repartidor general ha aceptado el pedido.</p>}
               {assignedRider && (
-                <p className="mt-0.5 text-[10px] text-gray-500">
-                  {assignedRider.reviewCount > 0
-                    ? `★ ${assignedRider.ratingAverage.toFixed(1)} · ${assignedRider.reviewCount} ${assignedRider.reviewCount === 1 ? 'opinión' : 'opiniones'}`
-                    : assignedRider.localOnly ? 'Opiniones pendientes de sincronizar' : 'Aún no tiene calificaciones'}
-                </p>
+                <>
+                  {assignedRider.vehicle && <p className="mt-0.5 text-[10px] text-gray-500">{assignedRider.vehicle}</p>}
+                  <p className="mt-0.5 text-[10px] text-gray-500">
+                    {assignedRider.reviewCount > 0
+                      ? `★ ${assignedRider.ratingAverage.toFixed(1)} · ${assignedRider.reviewCount} ${assignedRider.reviewCount === 1 ? 'opinión' : 'opiniones'}`
+                      : assignedRider.localOnly ? 'Opiniones pendientes de sincronizar' : 'Aún no tiene calificaciones'}
+                  </p>
+                </>
               )}
             </div>
           </div>
@@ -11296,6 +11307,24 @@
       const riderName = profile.nickname || profile.fullName || 'Repartidor Cayetano';
       const riderId = (profile.email || profile.nickname || profile.fullName || 'repartidor-cayetano').trim().toLowerCase().slice(0, 120);
       const displayedRiderName = riderDetails.fullName.trim() || riderName;
+      const savePublicRiderProfile = async (details) => {
+        const response = await fetch(`/api/rider/profile?driverId=${encodeURIComponent(riderId)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            driverId: riderId,
+            name: details.fullName.trim() || riderName,
+            vehicle: details.vehicle || '',
+            photo: details.profilePhoto || null
+          })
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || `No se pudo sincronizar el perfil (${response.status}).`);
+        if (!payload.profile || payload.profile.driverId !== riderId) {
+          throw new Error('El servidor no confirmó el perfil sincronizado.');
+        }
+        return payload.profile;
+      };
       const today = new Date();
       const weekDays = Array.from({ length: 7 }, (_, index) => {
         const date = new Date(today);
@@ -11678,6 +11707,16 @@
                 reviewCount: reviews.length,
                 ratingAverage: reviews.length ? Number((reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)) : 0
               });
+              if (payload.profile.hasPublicProfile && !profileModal) {
+                setRiderDetails((current) => {
+                  const profilePhoto = payload.profile.photo || '';
+                  const vehicle = payload.profile.vehicle || '';
+                  if (current.fullName === payload.profile.name
+                    && current.profilePhoto === profilePhoto
+                    && current.vehicle === vehicle) return current;
+                  return { ...current, fullName: payload.profile.name, profilePhoto, vehicle };
+                });
+              }
             }
           } catch (error) {
             if (isMounted) {
@@ -11698,7 +11737,7 @@
           isMounted = false;
           window.clearInterval(interval);
         };
-      }, [riderId]);
+      }, [profileModal, riderId]);
 
       useEffect(() => {
         localStorage.setItem('altoque_rider_demo', JSON.stringify({
@@ -12515,17 +12554,18 @@
                       return;
                     }
                     try {
+                      await savePublicRiderProfile(riderDetails);
                       localStorage.setItem('altoque_rider_profile', JSON.stringify(riderDetails));
                     } catch (error) {
                       console.error('No se pudo guardar el perfil local del repartidor:', error);
-                      setProfileFormError('No se pudo guardar en este dispositivo. Libera espacio e inténtalo de nuevo.');
+                      setProfileFormError(`No se pudo sincronizar el perfil con tus clientes: ${error.message}`);
                       return;
                     }
                     setProfileFormError('');
                     closeProfileModal();
-                    showNotice('Tus datos quedaron guardados solo en este dispositivo.');
+                    showNotice('Tu perfil actualizado ya aparece para tus clientes.');
                   }}>
-                    <p className="text-[10px] leading-relaxed text-gray-500">Completa tus datos; las fotos son opcionales.</p>
+                    <p className="text-[10px] leading-relaxed text-gray-500">El nombre y la foto de perfil se mostrarán al cliente asignado. El DNI y la foto del documento solo se guardan en este dispositivo.</p>
                     <div>
                       <label htmlFor="rider-full-name" className="mb-1 block text-[10px] font-bold text-gray-600">Nombre completo</label>
                       <input id="rider-full-name" value={riderDetails.fullName} onChange={(event) => setRiderDetails((current) => ({ ...current, fullName: event.target.value.slice(0, 80) }))} maxLength={80} autoComplete="name" className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-xs focus:border-[#a90000] focus:outline-none" required />
@@ -12552,7 +12592,7 @@
                         </button>
                       </div>
                     </div>
-                    <p className="rounded-xl bg-amber-50 p-3 text-[9px] leading-relaxed text-amber-900">Privacidad: el DNI y las imágenes se guardan únicamente en el almacenamiento de este navegador. No se envían al servidor y no verifican oficialmente tu identidad. No subas documentos si no aceptas este almacenamiento local.</p>
+                    <p className="rounded-xl bg-amber-50 p-3 text-[9px] leading-relaxed text-amber-900">Privacidad: el DNI y la foto del documento se guardan únicamente en este navegador y no se comparten. El nombre y la foto de perfil se sincronizan para mostrarse al cliente de tu pedido.</p>
                     {profileFormError && <p className="text-[10px] text-red-600" role="alert">{profileFormError}</p>}
                     <button type="submit" className="w-full rounded-xl bg-[#a90000] py-3 text-xs font-bold text-white">Guardar datos</button>
                   </form>
@@ -12560,16 +12600,24 @@
 
                 {profileModal === 'vehicle' && (
                   <div className="space-y-2">
-                    <p className="text-[10px] text-gray-500">Selecciona cómo realizarás las entregas. La elección se guarda en este dispositivo.</p>
+                    <p className="text-[10px] text-gray-500">Selecciona cómo realizarás las entregas. El cliente de tu pedido podrá ver el medio elegido.</p>
+                    {profileFormError && <p className="text-[10px] text-red-600" role="alert">{profileFormError}</p>}
                     {[
                       { name: 'Moto', icon: 'bike', detail: 'Entrega motorizada' },
                       { name: 'Bicicleta', icon: 'bike', detail: 'Entrega en bicicleta' },
                       { name: 'Caminando', icon: 'footprints', detail: 'Entrega a pie en el campus' }
                     ].map((vehicle) => (
-                      <button key={vehicle.name} type="button" onClick={() => {
-                        setRiderDetails((current) => ({ ...current, vehicle: vehicle.name }));
-                        closeProfileModal();
-                        showNotice(`Medio de transporte guardado: ${vehicle.name}.`);
+                      <button key={vehicle.name} type="button" onClick={async () => {
+                        const nextDetails = { ...riderDetails, vehicle: vehicle.name };
+                        try {
+                          await savePublicRiderProfile(nextDetails);
+                          setRiderDetails(nextDetails);
+                          closeProfileModal();
+                          showNotice(`Medio de transporte actualizado para tu cliente: ${vehicle.name}.`);
+                        } catch (error) {
+                          console.error('No se pudo sincronizar el medio de transporte del repartidor:', error);
+                          setProfileFormError(`No se pudo actualizar para el cliente: ${error.message}`);
+                        }
                       }} aria-pressed={riderDetails.vehicle === vehicle.name} className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left ${riderDetails.vehicle === vehicle.name ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-white'}`}>
                         <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff2df] text-xl" aria-hidden="true">{vehicle.name === 'Moto' ? '🛵' : vehicle.name === 'Bicicleta' ? '🚲' : '🚶'}</span>
                         <span className="flex-1"><span className="block text-xs font-bold">{vehicle.name}</span><span className="block text-[9px] text-gray-500">{vehicle.detail}</span></span>

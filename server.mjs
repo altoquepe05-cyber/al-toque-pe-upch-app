@@ -1122,7 +1122,7 @@ async function addHubSpotMarketingSubscriber(email, accessToken, listId, subscri
   await hubspotRequest(`/crm/v3/lists/${encodeURIComponent(listId)}/memberships/add`, 'PUT', [contact.id]);
 }
 
-async function handleRequest(request, response, orders, riderLocations, idempotencyKeys, callSessions, orderChats, persistOrders, notifyOrderChange, youtubeApiKey, openAIApiKey, gmailClientId, gmailClientSecret, gmailRefreshToken, gmailUser, marketingProvider, hubspotAccessToken, hubspotListId, hubspotSubscriptionId, fetchImpl, reels, persistReels, reelsVideosDir, reelsDeletePassword, videoStorage, maxVideoBytes, now = Date.now) {
+async function handleRequest(request, response, orders, riderLocations, idempotencyKeys, callSessions, orderChats, riderProfiles, persistRiderProfiles, persistOrders, notifyOrderChange, youtubeApiKey, openAIApiKey, gmailClientId, gmailClientSecret, gmailRefreshToken, gmailUser, marketingProvider, hubspotAccessToken, hubspotListId, hubspotSubscriptionId, fetchImpl, reels, persistReels, reelsVideosDir, reelsDeletePassword, videoStorage, maxVideoBytes, now = Date.now) {
   const requestUrl = new URL(request.url || '/', `http://${request.headers.host}`);
 
   if (requestUrl.pathname === '/api/reels' || requestUrl.pathname.startsWith('/api/reels/')) {
@@ -1428,9 +1428,40 @@ async function handleRequest(request, response, orders, riderLocations, idempote
     return json(response, 200, { orders: availableOrders });
   }
 
-  if (request.method === 'GET' && requestUrl.pathname === '/api/rider/profile') {
+  if (['GET', 'POST'].includes(request.method) && requestUrl.pathname === '/api/rider/profile') {
     const driverId = requestUrl.searchParams.get('driverId') || '';
-    if (!driverId || driverId.length > 120) return json(response, 400, { error: 'El perfil del repartidor no es válido.' });
+    if (!driverId || driverId.trim() !== driverId || driverId.length > 120 || /[\u0000-\u001f\u007f]/.test(driverId)) {
+      return json(response, 400, { error: 'El perfil del repartidor no es válido.' });
+    }
+    if (request.method === 'POST') {
+      if (!sameOrigin(request)) return json(response, 403, { error: 'Origen de solicitud no permitido.' });
+      let body;
+      try {
+        body = await readJson(request, 900_000);
+      } catch (error) {
+        return json(response, error.status || 400, { error: error.message });
+      }
+      if (body.driverId !== driverId
+        || typeof body.name !== 'string'
+        || body.name.trim().length < 2
+        || body.name.trim().length > 80
+        || /[\u0000-\u001f\u007f]/.test(body.name)
+        || !['', 'Moto', 'Bicicleta', 'Caminando'].includes(body.vehicle)
+        || !(body.photo === null || (typeof body.photo === 'string'
+          && body.photo.length <= 700_000
+          && /^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/.test(body.photo)))) {
+        return json(response, 400, { error: 'Los datos públicos del perfil no son válidos.' });
+      }
+      const riderProfile = {
+        driverId,
+        name: body.name.trim(),
+        vehicle: body.vehicle,
+        photo: body.photo,
+        updatedAt: now()
+      };
+      riderProfiles.set(driverId, riderProfile);
+      await persistRiderProfiles();
+    }
     const riderOrders = Array.from(orders.values()).filter((order) => order.driverId === driverId);
     const reviews = riderOrders
       .filter((order) => order.review)
@@ -1442,7 +1473,11 @@ async function handleRequest(request, response, orders, riderLocations, idempote
     return json(response, 200, {
       profile: {
         driverId,
-        name: riderOrders.find((order) => order.driverName)?.driverName || 'Repartidor Cayetano',
+        name: riderProfiles.get(driverId)?.name || riderOrders.find((order) => order.driverName)?.driverName || 'Repartidor Cayetano',
+        vehicle: riderProfiles.get(driverId)?.vehicle || '',
+        photo: riderProfiles.get(driverId)?.photo || null,
+        hasPublicProfile: riderProfiles.has(driverId),
+        updatedAt: riderProfiles.get(driverId)?.updatedAt || null,
         ratingAverage,
         reviewCount: reviews.length,
         reviews,
@@ -2133,6 +2168,7 @@ export function createAlToqueServer({
     })
     : null);
   const orders = new Map();
+  const riderProfiles = new Map();
   const riderLocations = new Map();
   const idempotencyKeys = new Map();
   const callSessions = new Map();
@@ -2155,6 +2191,21 @@ export function createAlToqueServer({
       if (!order || typeof order.id !== 'string') throw new Error('Se encontró un pedido inválido en el estado persistido.');
       orders.set(order.id, order);
       if (typeof order.idempotencyKey === 'string') idempotencyKeys.set(order.idempotencyKey, order.id);
+    }
+  });
+  const riderProfilesFile = join(dirname(ordersFile), 'rider-profiles.json');
+  const riderProfilesReady = (supabaseStore
+    ? supabaseStore.loadState('rider-profiles')
+    : loadFileState(riderProfilesFile)).then((parsed) => {
+    if (parsed === null) return;
+    if (!parsed || !Array.isArray(parsed.profiles)) throw new Error('El estado persistido de perfiles de repartidores no tiene un formato válido.');
+    for (const profile of parsed.profiles) {
+      if (!profile || typeof profile.driverId !== 'string' || typeof profile.name !== 'string'
+        || !['', 'Moto', 'Bicicleta', 'Caminando'].includes(profile.vehicle)
+        || !(profile.photo === null || typeof profile.photo === 'string')) {
+        throw new Error('Se encontró un perfil de repartidor inválido en el estado persistido.');
+      }
+      riderProfiles.set(profile.driverId, profile);
     }
   });
   const reelsReady = (supabaseStore ? supabaseStore.loadState('reels') : loadFileState(reelsFile)).then((parsed) => {
@@ -2209,6 +2260,27 @@ export function createAlToqueServer({
     persistence = next.catch(() => {});
     return next;
   };
+  let riderProfilesPersistence = Promise.resolve();
+  const persistRiderProfiles = () => {
+    const snapshot = { profiles: [...riderProfiles.values()] };
+    const save = async () => {
+      if (supabaseStore) {
+        await supabaseStore.saveState('rider-profiles', snapshot);
+        return;
+      }
+      await mkdir(dirname(riderProfilesFile), { recursive: true });
+      const temporaryFile = `${riderProfilesFile}.${process.pid}.${randomUUID()}.tmp`;
+      try {
+        await writeFile(temporaryFile, JSON.stringify(snapshot, null, 2), 'utf8');
+        await rename(temporaryFile, riderProfilesFile);
+      } finally {
+        await unlink(temporaryFile).catch(() => {});
+      }
+    };
+    const next = riderProfilesPersistence.then(save, save);
+    riderProfilesPersistence = next.catch(() => {});
+    return next;
+  };
   let reelsPersistence = Promise.resolve();
   const persistReels = () => {
     const snapshot = {
@@ -2251,7 +2323,7 @@ export function createAlToqueServer({
     }
   };
   const handler = (request, response) => {
-    Promise.all([ready, reelsReady]).then(() => handleRequest(
+    Promise.all([ready, reelsReady, riderProfilesReady]).then(() => handleRequest(
       request,
       response,
       orders,
@@ -2259,6 +2331,8 @@ export function createAlToqueServer({
       idempotencyKeys,
       callSessions,
       orderChats,
+      riderProfiles,
+      persistRiderProfiles,
       persistOrders,
       notifyOrderChange,
       youtubeApiKey,
