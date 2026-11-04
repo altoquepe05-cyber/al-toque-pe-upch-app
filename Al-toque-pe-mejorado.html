@@ -1953,9 +1953,10 @@
     }
 
     .arrival-mascot {
-      width: 150px;
+      width: 220px;
       height: 150px;
       object-fit: contain;
+      mix-blend-mode: multiply;
       animation: mascotFloat 2.8s ease-in-out infinite;
     }
 
@@ -10723,7 +10724,16 @@
             <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
           </div>
 
-          <img src="sticker_1.webp" alt="Mascota celebrando la entrega" className="arrival-mascot z-10" />
+          <video
+            src="/pedido-recibido.mp4"
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="metadata"
+            aria-label="Animación de la mascota celebrando la entrega"
+            className="arrival-mascot z-10"
+          />
 
           <div className="space-y-2 z-10">
             <h2 className="font-title text-3xl font-bold text-dark">

@@ -278,6 +278,22 @@ test('streams the order guide video with byte-range support', async (t) => {
   assert.equal(invalidRangeResponse.headers.get('content-range'), `bytes */${video.length}`);
 });
 
+test('serves the looping order received animation as a public video asset', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  const server = await createReelsTestServer(t, testDataDir);
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const video = await readFile(new URL('./pedido-recibido.mp4', import.meta.url));
+  const response = await fetch(`${baseUrl}/pedido-recibido.mp4`, {
+    headers: { Range: 'bytes=0-31' }
+  });
+
+  assert.equal(response.status, 206);
+  assert.equal(response.headers.get('content-type'), 'video/mp4');
+  assert.equal(response.headers.get('accept-ranges'), 'bytes');
+  assert.equal(response.headers.get('content-range'), `bytes 0-31/${video.length}`);
+  assert.deepEqual(Buffer.from(await response.arrayBuffer()), video.subarray(0, 32));
+});
+
 test('serves the offline JavaScript and font assets from local paths', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);

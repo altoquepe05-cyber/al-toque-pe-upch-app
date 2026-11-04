@@ -86,6 +86,7 @@ const PUBLIC_ASSETS = new Set([
   AUDIOMACK_TERMS_FILE,
   COIN_FILE,
   'pedido-instrucciones.mp4',
+  'pedido-recibido.mp4',
   'coin-front-red.png',
   'al-toque-pe-logo.png',
   'al-toque-pe-emblema.png',
