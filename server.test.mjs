@@ -294,6 +294,16 @@ test('serves the looping order received animation as a public video asset', asyn
   assert.deepEqual(Buffer.from(await response.arrayBuffer()), video.subarray(0, 32));
 });
 
+test('preloads the order received animation when serving the application page', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  const server = await createReelsTestServer(t, testDataDir);
+  const response = await fetch(`http://127.0.0.1:${server.address().port}/`);
+  const html = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(html, /<link rel="preload" href="\/pedido-recibido\.mp4" as="video" type="video\/mp4"\s*\/?>/);
+});
+
 test('shares only public rider profile fields with customers and persists updates', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);
