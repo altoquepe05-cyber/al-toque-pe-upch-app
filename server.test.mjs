@@ -381,6 +381,12 @@ test('animates the home menu cards with a glowing outline and honors reduced mot
     'home card hover styles should override the generic combo hover effects');
   assert.match(html, /className="home-menu-card min-w-\[220px\] bg-white/);
   assert.match(html, /className="home-menu-card combo-card min-w-\[220px\] bg-white/);
+  assert.match(html, /\.menu-pop-card:has\(> \.menu-pop-media:hover\)\s*\{[^}]*transform: translateY\(-3px\) scale\(1\.05\);/);
+  assert.match(html, /\.menu-pop-card:has\(> \.menu-pop-media:hover\) \.menu-pop-image\s*\{[^}]*transform: scale\(1\.1\);/);
+  assert.match(html, /\.menu-pop-card:has\(> \.menu-pop-media:active\)\s*\{[^}]*transform: translateY\(-3px\) scale\(1\.05\);/);
+  assert.match(html, /className="menu-pop-card rounded-3xl border border-gray-100 bg-white p-3 shadow-sm"/);
+  assert.match(html, /className="menu-pop-card flex min-w-0 flex-col rounded-2xl border border-gray-200 bg-white p-2\.5 shadow-sm"/);
+  assert.match(html, /className="menu-pop-card bg-white border border-gray-100 rounded-3xl p-3 shadow-sm space-y-2"/);
   assert.match(html, /prefers-reduced-motion: reduce\)\s*\{\s*\.home-menu-card,\s*\.home-menu-card::after,\s*\.home-menu-card-media,\s*\.home-menu-card-image\s*\{\s*animation: none !important;\s*transition: none !important;/);
 });
 
