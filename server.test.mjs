@@ -491,6 +491,7 @@ test('shows the Starbucks Panettone launch modal and upcoming items without pric
   assert.match(html, /setFilter\('starbucks'\);\s*setStarbucksSection\('bebidas'\);\s*setCampaignClock\(Date\.now\(\)\);\s*setShowStarbucksCampaign\(true\);/);
   assert.match(html, /role="dialog"\s*aria-modal="true"\s*aria-labelledby="starbucks-campaign-title"/);
   assert.match(html, /\.starbucks-campaign-overlay\s*\{[^}]*box-sizing:\s*border-box;[^}]*margin:\s*0;[^}]*overflow-y:\s*auto;[^}]*padding:\s*calc\(env\(safe-area-inset-top,\s*0px\) \+ 24px\)\s+calc\(env\(safe-area-inset-right,\s*0px\) \+ 24px\)\s+calc\(env\(safe-area-inset-bottom,\s*0px\) \+ 24px\)\s+calc\(env\(safe-area-inset-left,\s*0px\) \+ 24px\);/);
+  assert.match(html, /\.space-y-4 > \.starbucks-campaign-overlay\s*\{\s*margin-top:\s*0 !important;\s*\}/);
   assert.match(html, /\.starbucks-campaign-dialog\s*\{[^}]*box-sizing:\s*border-box;[^}]*width:\s*min\(100%,\s*680px\);[^}]*max-height:\s*100%;[^}]*overscroll-behavior:\s*contain;[^}]*margin:\s*auto;/);
   assert.match(html, /className="starbucks-campaign-overlay absolute inset-0/);
   assert.match(html, /id="root" class="[^"]*overflow-hidden[^"]*relative"/);
