@@ -9948,6 +9948,7 @@
       const [lateDeliveryRewardOrderId, setLateDeliveryRewardOrderId] = useState('');
       const lateDeliveryRewardProcessedRef = useRef(new Set());
       const deliveryStartedAtRef = useRef(0);
+      const arrivalVideoRef = useRef(null);
       const assignedRiderRefreshRef = useRef(null);
       const [isRiderChatOpen, setIsRiderChatOpen] = useState(false);
       const [hasNewRiderMessage, setHasNewRiderMessage] = useState(false);
@@ -10268,6 +10269,32 @@
 
         return () => clearInterval(timer);
       }, [deliveryPhase]);
+
+      const isArrivalVisible = orderStatus === 'delivered' || deliveryPhase === 'arrived';
+      useEffect(() => {
+        const video = arrivalVideoRef.current;
+        if (!isArrivalVisible || !video) return undefined;
+        let lastPlayAttemptAt = 0;
+        const ensurePlayback = () => {
+          if (document.hidden || !video.isConnected || (!video.paused && !video.ended)) return;
+          if (Date.now() - lastPlayAttemptAt < 1000) return;
+          lastPlayAttemptAt = Date.now();
+          if (video.ended) video.currentTime = 0;
+          video.play().catch((error) => {
+            console.error('No se pudo mantener en reproducción la animación de entrega:', error);
+          });
+        };
+        const handleVisibilityChange = () => {
+          if (!document.hidden) ensurePlayback();
+        };
+        const playbackTimer = window.setInterval(ensurePlayback, 1000);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        ensurePlayback();
+        return () => {
+          window.clearInterval(playbackTimer);
+          document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+      }, [isArrivalVisible]);
 
       useEffect(() => {
         if (
@@ -10737,14 +10764,21 @@
           </div>
 
           <video
+            ref={arrivalVideoRef}
             src="/pedido-recibido.mp4"
             autoPlay
-            loop
             muted
             playsInline
-            preload="metadata"
+            preload="auto"
             aria-label="Animación de la mascota celebrando la entrega"
             className="arrival-mascot z-10"
+            onEnded={(event) => {
+              const video = event.currentTarget;
+              video.currentTime = 0;
+              video.play().catch((error) => {
+                console.error('No se pudo reiniciar la animación de entrega:', error);
+              });
+            }}
           />
 
           <div className="space-y-2 z-10">
