@@ -381,8 +381,12 @@ test('animates the walking rider from the first blue point through the route to 
   assert.match(html, /window\.requestAnimationFrame\(updatePosition\)/);
   assert.match(html, /window\.cancelAnimationFrame\(animationFrame\)/);
   assert.doesNotMatch(html, /setInterval\(updateProgress,\s*1000\)/);
+  assert.match(html, /\.walking-route-locked\s+\.live-route-map-frame\s*\{\s*pointer-events:\s*none;/);
+  assert.match(html, /isWalkingAnimationActive\s*\?\s*' walking-route-locked'/);
+  assert.match(html, /tabIndex=\{isWalkingAnimationActive \? -1 : undefined\}/);
+  assert.match(html, /Ruta fija a pie · 5 min/);
   assert.match(html, /Date\.now\(\) - walkingStartedAt\) \/ DELIVERY_DURATION_MS/);
-  assert.match(html, /isWalkingAnimationActive\s*\?\s*'Ruta a pie · 5 min'/);
+  assert.match(html, /isWalkingAnimationActive\s*\?\s*'Ruta fija a pie · 5 min'/);
 });
 
 test('shows the matching order received animation for each assigned rider transport', async (t) => {

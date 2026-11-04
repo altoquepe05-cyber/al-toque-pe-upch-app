@@ -1778,6 +1778,9 @@
       height: 100%;
       border: 0;
     }
+    .walking-route-locked .live-route-map-frame {
+      pointer-events: none;
+    }
     .walking-route-character {
       position: absolute;
       z-index: 3;
@@ -9978,13 +9981,14 @@
       directionsUrl.searchParams.set('destination', `${DELIVERY_ROUTE_END[0]},${DELIVERY_ROUTE_END[1]}`);
       directionsUrl.searchParams.set('travelmode', 'walking');
       return (
-        <div className={`live-route-map ${className}`}>
+        <div className={`live-route-map ${className}${isWalkingAnimationActive ? ' walking-route-locked' : ''}`}>
           <iframe
             className="live-route-map-frame"
             src={mapUrl.toString()}
             title={label}
             loading="eager"
             referrerPolicy="strict-origin-when-cross-origin"
+            tabIndex={isWalkingAnimationActive ? -1 : undefined}
             allowFullScreen
             onError={() => {
               console.error('Google Maps no pudo cargar el mapa de seguimiento.');
@@ -10002,7 +10006,7 @@
           )}
           <span className="live-route-map-status" role="status">
             {isWalkingAnimationActive
-              ? 'Ruta a pie · 5 min'
+              ? 'Ruta fija a pie · 5 min'
               : location ? `GPS en vivo · ±${Math.round(location.accuracy || 0)} m` : 'Ruta de Google Maps · Esperando GPS'}
           </span>
           {mapError && (
