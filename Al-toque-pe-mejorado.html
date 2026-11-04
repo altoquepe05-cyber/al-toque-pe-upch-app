@@ -1419,6 +1419,24 @@
       backdrop-filter: blur(8px);
     }
 
+    .pickup-point-emoji {
+      display: inline-block;
+      transform-origin: center;
+      animation: pickupPointEmojiBounce 1.8s ease-in-out infinite;
+    }
+
+    .pickup-point-option:nth-child(2) .pickup-point-emoji { animation-delay: 180ms; }
+    .pickup-point-option:nth-child(3) .pickup-point-emoji { animation-delay: 360ms; }
+
+    @keyframes pickupPointEmojiBounce {
+      0%, 100% { transform: translateY(0) rotate(0); }
+      50% { transform: translateY(-4px) rotate(-7deg); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .pickup-point-emoji { animation: none; }
+    }
+
     @keyframes campusServiceFloat {
       0%, 100% { transform: translateY(0) rotate(0); }
       50% { transform: translateY(8px) rotate(8deg); }
@@ -6738,6 +6756,7 @@
                 setLiveOrderId={setLiveOrderId}
                 clearCart={clearCart}
                 pickupPoint={pickupPoint}
+                setPickupPoint={setPickupPoint}
                 profile={profile}
                 setProfile={setProfile}
                 onOrderRegistered={registerCompletedOrder}
@@ -6746,8 +6765,6 @@
             {activeTab === 'profile' && (
               <ProfileScreen
                 onNavigate={setActiveTab}
-                pickupPoint={pickupPoint}
-                setPickupPoint={setPickupPoint}
                 notifications={notifications}
                 setNotifications={setNotifications}
                 profile={profile}
@@ -11280,7 +11297,7 @@
       );
     }
 
-    function CartScreen({ cart, updateQuantity, removeFromCart, onNavigate, orderConfirmed, setOrderConfirmed, liveOrderId, setLiveOrderId, clearCart, pickupPoint, profile, setProfile, onOrderRegistered }) {
+    function CartScreen({ cart, updateQuantity, removeFromCart, onNavigate, orderConfirmed, setOrderConfirmed, liveOrderId, setLiveOrderId, clearCart, pickupPoint, setPickupPoint, profile, setProfile, onOrderRegistered }) {
       const deliveryDuration = DELIVERY_DURATION_MS;
       const deliveryProgressKey = liveOrderId ? `altoque_delivery_progress_${liveOrderId}` : '';
       const readSavedDeliveryProgress = () => {
@@ -12606,6 +12623,38 @@
                   <p className="mt-1 text-[10px] text-gray-600">Este pedido no requiere pago en soles ni comisión.</p>
                 </div>
               )}
+
+              <section className="space-y-2" aria-label="Elige un punto de recojo">
+                <div>
+                  <h4 className="font-bold text-xs text-dark">Punto de recojo</h4>
+                  <p className="mt-0.5 text-[10px] text-gray-500">¿Dónde nos encontramos en el campus?</p>
+                </div>
+                <div className="space-y-2">
+                  {[
+                    { name: 'En la puerta principal', emoji: '🚪' },
+                    { name: 'En el patio', emoji: '🌿' },
+                    { name: 'Área de tutoría', emoji: '📚' }
+                  ].map((option) => (
+                    <button
+                      key={option.name}
+                      type="button"
+                      aria-pressed={pickupPoint === option.name}
+                      onClick={() => setPickupPoint(option.name)}
+                      className={`pickup-point-option flex min-h-14 w-full items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition ${
+                        pickupPoint === option.name ? 'border-brand bg-brand/5 text-brand shadow-sm' : 'border-gray-200 bg-white text-gray-700 hover:border-brand/40'
+                      }`}
+                    >
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-cream text-xl" aria-hidden="true">
+                        <span className="pickup-point-emoji">{option.emoji}</span>
+                      </span>
+                      <span className="min-w-0 flex-1 text-xs font-semibold">{option.name}</span>
+                      <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${pickupPoint === option.name ? 'border-brand bg-brand text-white' : 'border-gray-300 text-transparent'}`} aria-hidden="true">
+                        <i data-lucide="check" className="h-3 w-3"></i>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </section>
 
               <div className="bg-cream/40 border border-cream p-4 rounded-2xl space-y-2">
                 {isGorritosOrder ? (
@@ -14155,7 +14204,7 @@
       );
     }
 
-    function ProfileScreen({ onNavigate, onBecomeRider, onRestoreClassicHome, pickupPoint, setPickupPoint, notifications, setNotifications, profile, setProfile, orderHistory, orderHistoryStorageError, onClearOrderHistory }) {
+    function ProfileScreen({ onNavigate, onBecomeRider, onRestoreClassicHome, notifications, setNotifications, profile, setProfile, orderHistory, orderHistoryStorageError, onClearOrderHistory }) {
       const [showQuestionnaire, setShowQuestionnaire] = useState(!profile.privacyAccepted);
       const [showThankYou, setShowThankYou] = useState(false);
       const [isSendingMarketingConfirmation, setIsSendingMarketingConfirmation] = useState(false);
@@ -14629,25 +14678,6 @@
                 </span>
                 <i data-lucide="chevron-right" className="w-4 h-4 text-gray-500"></i>
               </button>
-
-              <div className="border-t border-gray-100"></div>
-
-              <div className="p-2.5 flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-9 h-9 bg-cream rounded-xl flex items-center justify-center text-dark">
-                    <i data-lucide="map-pin" className="w-4 h-4"></i>
-                  </div>
-                  <div>
-                    <h5 className="font-bold text-xs">Punto de recojo</h5>
-                    <select value={pickupPoint} onChange={(e) => setPickupPoint(e.target.value)} className="text-[10px] text-gray-500 bg-transparent focus:outline-none font-medium cursor-pointer">
-                      <option value="En la puerta principal">En la puerta principal</option>
-                      <option value="En el patio">En el patio</option>
-                      <option value="Área de tutoría">Área de tutoría</option>
-                    </select>
-                  </div>
-                </div>
-                <i data-lucide="chevron-right" className="w-4 h-4 text-gray-500"></i>
-              </div>
 
               <div className="border-t border-gray-100"></div>
 

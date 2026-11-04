@@ -587,23 +587,28 @@ test('offers animated WhatsApp support for the Al Toque help phone number', asyn
   assert.match(html, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.help-whatsapp-button\s*\{\s*animation:\s*none;\s*\}\s*\}/);
 });
 
-test('offers the three new pickup points and accepts them for customer orders', async (t) => {
+test('offers animated pickup-point choices at checkout and accepts them for customer orders', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);
   const baseUrl = `http://127.0.0.1:${server.address().port}`;
   const htmlResponse = await fetch(baseUrl);
   const html = await htmlResponse.text();
-  const pickupSelectorStart = html.indexOf('<select value={pickupPoint}');
-  const pickupSelectorEnd = html.indexOf('</select>', pickupSelectorStart);
-  const pickupSelector = html.slice(pickupSelectorStart, pickupSelectorEnd);
+  const cartScreenStart = html.indexOf('function CartScreen(');
+  const pickupSectionStart = html.indexOf('aria-label="Elige un punto de recojo"', cartScreenStart);
+  const pickupSectionEnd = html.indexOf('Subtotal', pickupSectionStart);
+  const pickupSection = html.slice(pickupSectionStart, pickupSectionEnd);
   const pickupPoints = ['En la puerta principal', 'En el patio', 'Área de tutoría'];
 
   assert.equal(htmlResponse.status, 200);
-  assert.ok(pickupSelectorStart >= 0 && pickupSelectorEnd > pickupSelectorStart);
-  assert.match(pickupSelector, /<option value="En la puerta principal">En la puerta principal<\/option>/);
-  assert.match(pickupSelector, /<option value="En el patio">En el patio<\/option>/);
-  assert.match(pickupSelector, /<option value="Área de tutoría">Área de tutoría<\/option>/);
-  assert.doesNotMatch(pickupSelector, /Cafetería Central|Facultad de Medicina|Pabellón de Aulas/);
+  assert.ok(cartScreenStart >= 0 && pickupSectionStart > cartScreenStart && pickupSectionEnd > pickupSectionStart);
+  assert.match(pickupSection, /\{ name: 'En la puerta principal', emoji: '🚪' \}/);
+  assert.match(pickupSection, /\{ name: 'En el patio', emoji: '🌿' \}/);
+  assert.match(pickupSection, /\{ name: 'Área de tutoría', emoji: '📚' \}/);
+  assert.match(pickupSection, /aria-pressed=\{pickupPoint === option\.name\}/);
+  assert.match(pickupSection, /onClick=\{\(\) => setPickupPoint\(option\.name\)\}/);
+  assert.match(html, /pickup-point-emoji[\s\S]*?animation: pickupPointEmojiBounce 1\.8s ease-in-out infinite;/);
+  assert.match(html, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.pickup-point-emoji \{ animation: none; \}\s*\}/);
+  assert.doesNotMatch(html, /<select value=\{pickupPoint\}/);
 
   for (const [index, pickupPoint] of pickupPoints.entries()) {
     const response = await fetch(`${baseUrl}/api/orders`, {
