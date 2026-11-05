@@ -543,7 +543,7 @@ test('preloads the order received animation when serving the application page', 
   assert.match(html, /<link rel="preload" href="\/caminante-ruta\.png" as="image" type="image\/png"\s*\/?>/);
 });
 
-test('restores the previous splash designs with enlarged responsive logos', async (t) => {
+test('uses the single supplied splash emblem with the matching brand lettering', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);
   const baseUrl = `http://127.0.0.1:${server.address().port}`;
@@ -551,17 +551,12 @@ test('restores the previous splash designs with enlarged responsive logos', asyn
   const html = await response.text();
 
   assert.equal(response.status, 200);
-  assert.match(html, /\.splash-screen \.brand-splash-reference\s*\{\s*width:\s*min\(220px,\s*72vw\);\s*height:\s*min\(220px,\s*72vw\);\s*\}/);
-  assert.match(html, /object-fit:\s*contain;/);
-  assert.match(html, /theme === 'clean' \|\| theme === 'warm'[\s\S]*?splash-clean-reference\.png[\s\S]*?splash-warm-reference\.png/);
-  assert.match(html, /<svg viewBox="0 0 32 32">[\s\S]*?brand-splash-chef[\s\S]*?brand-splash-utensil/);
-  for (const asset of ['splash-clean-reference.png', 'splash-warm-reference.png']) {
-    const assetResponse = await fetch(`${baseUrl}/${asset}`);
-    assert.equal(assetResponse.status, 200);
-    assert.match(assetResponse.headers.get('content-type'), /image\/png/);
-    const image = Buffer.from(await assetResponse.arrayBuffer());
-    assert.equal(image.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
-  }
+  assert.match(html, /\.brand-splash-mark\s*\{[^}]*width:\s*clamp\(112px,\s*30vw,\s*150px\);/);
+  assert.match(html, /<svg viewBox="0 0 100 100">[\s\S]*?fill="#f3b900" stroke="#633b24"[\s\S]*?stroke="#d52c32"/);
+  assert.match(html, /<div className="brand-splash-wordmark">al toque<\/div>/);
+  assert.match(html, /<span className="brand-splash-tagline">Tu antojo, al toque<\/span>/);
+  assert.match(html, /<span className="brand-splash-campus">UPCH CAMPUS<\/span>/);
+  assert.doesNotMatch(html, /splash-(?:clean|warm)-reference\.png/);
 });
 
 test('collapses the open music player to a floating launcher while scrolling down', async (t) => {
@@ -2380,10 +2375,6 @@ test('shares customer orders with the rider queue and enforces delivery transiti
   assert.equal(orderDetails.order.review.rating, 5);
   assert.equal((await postAction('accept')).status, 409);
   assert.deepEqual((await (await fetch(`${baseUrl}/api/orders`)).json()).orders, []);
-
-  for (const asset of ['splash-clean-reference.png', 'splash-warm-reference.png']) {
-    assert.equal((await fetch(`${baseUrl}/${asset}`)).status, 200);
-  }
 
   const audioTermsResponse = await fetch(`${baseUrl}/audiomack-player-terms.html`);
   assert.equal(audioTermsResponse.status, 200);

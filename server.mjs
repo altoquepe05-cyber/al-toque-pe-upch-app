@@ -101,8 +101,6 @@ const PUBLIC_ASSETS = new Set([
   'promo-profesor-martin-referencia.png',
   'promo-al-toque-banner.png',
   'gorritos-welcome-hat.png',
-  'splash-clean-reference.png',
-  'splash-warm-reference.png',
   'starbucks-panettone-latte.png',
   'starbucks-panettone-frappuccino.png',
   'starbucks-panettone-latte-frio.png',

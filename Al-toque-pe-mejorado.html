@@ -2864,92 +2864,49 @@
       text-align: center;
     }
 
-    .brand-splash-reference {
-      display: block;
-      width: 160px;
-      height: 160px;
-    }
-
-    .splash-screen .brand-splash-reference {
-      width: min(220px, 72vw);
-      height: min(220px, 72vw);
-    }
-
-    .brand-splash-reference img {
-      display: block;
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-    }
-
     .splash-screen > .brand-splash-content {
       transform: none;
     }
 
     .brand-splash-mark {
       display: grid;
-      width: 52px;
-      height: 52px;
+      width: clamp(112px, 30vw, 150px);
+      height: clamp(112px, 30vw, 150px);
       place-items: center;
       border-radius: 50%;
     }
 
     .brand-splash-mark svg {
-      width: 38px;
-      height: 38px;
-      overflow: visible;
-      fill: currentColor;
-    }
-
-    .brand-splash-chef {
-      stroke: none;
-    }
-
-    .brand-splash-chest {
-      display: none;
-    }
-
-    .brand-splash-pin {
-      fill: #f5bd00;
-    }
-
-    .brand-splash-band {
-      fill: #a50f2d;
-    }
-
-    .brand-splash-utensil {
-      fill: none;
-      stroke: #f5bd00;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      stroke-width: 1.5;
-    }
-
-    .brand-splash-spoon-bowl {
-      fill: #f5bd00;
-      stroke: #f5bd00;
-      stroke-width: 0.8;
+      display: block;
+      width: 100%;
+      height: 100%;
     }
 
     .brand-splash-wordmark {
       color: #a50f2d;
       font-family: 'Outfit', sans-serif;
-      font-size: 35px;
+      font-size: clamp(38px, 11vw, 48px);
       font-weight: 700;
-      letter-spacing: -0.055em;
+      letter-spacing: -0.045em;
       line-height: 1;
     }
 
     .brand-splash-campus {
+      border-radius: 999px;
+      background: #633b24;
+      color: #fff;
+      padding: 7px 20px;
       font-size: 11px;
       font-weight: 700;
-      letter-spacing: 0.28em;
+      letter-spacing: 0.22em;
       text-transform: uppercase;
     }
 
     .brand-splash-tagline {
-      color: #746a67;
-      font-size: 10px;
+      color: #633b24;
+      font-size: clamp(13px, 4vw, 16px);
+      font-style: italic;
+      font-weight: 700;
     }
 
     .splash-screen--clean {
@@ -2962,124 +2919,9 @@
       color: #2b1718;
     }
 
-    .splash-screen--classic .brand-splash-content {
-      position: absolute;
-      top: 50%;
-      left: 0;
-      width: 100%;
-      height: auto;
-      gap: 14px;
-      padding: 0 24px;
-      transform: translateY(-50%);
-    }
-
-    .splash-screen--classic .brand-splash-mark {
-      display: none;
-    }
-
-    .splash-screen--classic .brand-splash-wordmark {
-      color: #a50f2d;
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: clamp(42px, 12vw, 48px);
-      font-weight: 600;
-      letter-spacing: 0;
-    }
-
-    .splash-screen--classic .brand-splash-wordmark span {
-      color: inherit;
-    }
-
-    .splash-screen--classic .brand-splash-campus {
-      color: #2b1718;
-      font-size: 13px;
-      letter-spacing: 0.2em;
-    }
-
-    .splash-screen--clean .brand-splash-mark {
-      background: #a50f2d;
-      color: #fff;
-    }
-
-    .splash-screen--clean .brand-splash-chest {
-      display: block;
-    }
-
-    .splash-screen--clean .brand-splash-chef {
-      fill: #fff;
-    }
-
-    .splash-screen--clean .brand-splash-utensil {
-      fill: none;
-      stroke: #f5bd00;
-    }
-
-    .splash-screen--clean .brand-splash-wordmark {
-      position: relative;
-      padding-bottom: 7px;
-    }
-
-    .splash-screen--clean .brand-splash-wordmark::after {
-      position: absolute;
-      right: -2px;
-      bottom: 0;
-      left: 21%;
-      height: 3px;
-      border-radius: 50% 50% 45% 45%;
-      background: #f5bd00;
-      content: "";
-      transform: rotate(-3deg);
-    }
-
     .splash-screen--warm {
       background: #fff7e8;
       color: #633b24;
-    }
-
-    .splash-screen--warm .brand-splash-mark {
-      border: 2px solid #633b24;
-      background: #f5bd00;
-      color: #fff;
-      box-shadow: 0 0 0 2px #f5bd00;
-    }
-
-    .splash-screen--warm .brand-splash-chef {
-      stroke: #633b24;
-      stroke-width: 1.2;
-    }
-
-    .splash-screen--warm .brand-splash-chest {
-      display: block;
-      stroke: #633b24;
-      stroke-width: 1;
-    }
-
-    .splash-screen--warm .brand-splash-band {
-      fill: #633b24;
-    }
-
-    .splash-screen--warm .brand-splash-utensil {
-      fill: none;
-      stroke: #633b24;
-    }
-
-    .splash-screen--warm .brand-splash-spoon-bowl {
-      fill: #f5bd00;
-      stroke: #633b24;
-    }
-
-    .splash-screen--warm .brand-splash-tagline {
-      color: #633b24;
-      font-size: 14px;
-      font-style: italic;
-      font-weight: 700;
-    }
-
-    .splash-screen--warm .brand-splash-campus {
-      border-radius: 999px;
-      background: #633b24;
-      color: #fff;
-      padding: 6px 18px;
-      font-size: 8px;
     }
 
     .splash-screen--impact {
@@ -3087,22 +2929,12 @@
       color: #fff;
     }
 
-    .splash-screen--impact .brand-splash-mark {
-      width: 52px;
-      height: 52px;
-      color: #fff;
-    }
-
     .splash-screen--impact .brand-splash-wordmark {
       color: #fff;
     }
 
-    .splash-screen--impact .brand-splash-wordmark span {
-      color: #ffd21f;
-    }
-
-    .splash-screen--impact .brand-splash-campus {
-      color: #fff;
+    .splash-screen--impact .brand-splash-tagline {
+      color: #fff7e8;
     }
 
     .splash-sticker {
@@ -3146,11 +2978,6 @@
       transform: none;
     }
 
-    .brand-preview .brand-splash-reference {
-      width: 100%;
-      height: 100%;
-    }
-
     .brand-preview .brand-splash-mark {
       width: 40px;
       height: 40px;
@@ -3162,7 +2989,7 @@
     }
 
     .brand-preview .brand-splash-wordmark {
-      padding-bottom: 4px;
+      padding-bottom: 0;
       font-size: 28px;
     }
 
@@ -3175,15 +3002,6 @@
       font-size: 7px;
       line-height: 1.15;
       white-space: nowrap;
-    }
-
-    .brand-preview.splash-screen--warm .brand-splash-tagline {
-      font-size: 11px;
-    }
-
-    .brand-preview.splash-screen--warm .brand-splash-campus {
-      padding: 4px 12px;
-      font-size: 7px;
     }
 
     .brand-preview-strip {
@@ -3220,19 +3038,6 @@
 
     .brand-preview-strip .brand-preview .brand-splash-campus,
     .brand-preview-strip .brand-preview .brand-splash-tagline {
-      font-size: 4px;
-    }
-
-    .brand-preview-strip .brand-preview .brand-splash-wordmark::after {
-      height: 1px;
-    }
-
-    .brand-preview-strip .brand-preview.splash-screen--warm .brand-splash-tagline {
-      font-size: 5px;
-    }
-
-    .brand-preview-strip .brand-preview.splash-screen--warm .brand-splash-campus {
-      padding: 2px 5px;
       font-size: 4px;
     }
 
@@ -5715,59 +5520,29 @@
       return theme;
     }
 
-    function SplashArtwork({ theme }) {
-      if (theme === 'classic') {
-        return (
-          <div className="brand-splash-content">
-            <div className="brand-splash-wordmark">al toque</div>
-            <span className="brand-splash-campus">UPCH campus</span>
-          </div>
-        );
-      }
-
-      if (theme === 'clean' || theme === 'warm') {
-        const reference = theme === 'clean' ? 'splash-clean-reference.png' : 'splash-warm-reference.png';
-        const description = theme === 'clean'
-          ? 'Al toque, UPCH campus. Pedidos de comida en tu campus'
-          : 'Al toque, tu antojo al toque. UPCH campus';
-        return (
-          <div className="brand-splash-reference">
-            <img src={`./${reference}`} alt={description} />
-          </div>
-        );
-      }
-
+    function SplashArtwork() {
       return (
         <div className="brand-splash-content">
           <div className="brand-splash-mark" aria-hidden="true">
-            <svg viewBox="0 0 32 32">
+            <svg viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="46" fill="#f3b900" stroke="#633b24" strokeWidth="4" />
               <path
-                className="brand-splash-chef"
-                d="M6.6 15.1a4.5 4.5 0 0 1-.8-8.8 5.5 5.5 0 0 1 9.5-2.4 5.8 5.8 0 0 1 9.8 3.9 4.7 4.7 0 0 1-.4 9.3H7.9z"
+                d="M34 47c-6-2-9-7-7-13 2-5 7-8 13-7 1-7 6-12 13-12s12 5 13 12c6-2 12 0 15 6 3 6 0 12-5 15"
+                fill="#fff"
+                stroke="#633b24"
+                strokeWidth="3.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               />
-              <path className="brand-splash-chest" d="M6.4 14.2h19.3v5.2H6.4z" />
-              <path className="brand-splash-band" d="M7.2 15.1h17.7v1.1H7.2z" />
-              <path className="brand-splash-utensil" d="M10.2 19.5v3m2.2-3v3m2.2-3v3m-5.1-.1h5.8m-2.9 0v5.3" />
-              <ellipse className="brand-splash-spoon-bowl" cx="20.4" cy="21.1" rx="2" ry="2.5" />
-              <path className="brand-splash-utensil" d="M20.4 23.6v5.1" />
+              <rect x="31" y="44" width="39" height="15" rx="4" fill="#fff" stroke="#633b24" strokeWidth="3.5" />
+              <path d="M38 66v7m4-7v7m4-7v7m-8 0c0 3 2 5 6 5s6-2 6-5m-6 5v12" fill="none" stroke="#d52c32" strokeWidth="3.5" strokeLinecap="round" />
+              <ellipse cx="64" cy="70" rx="5" ry="7" fill="#d52c32" />
+              <path d="M64 77v14" fill="none" stroke="#d52c32" strokeWidth="3.5" strokeLinecap="round" />
             </svg>
           </div>
-          <div className="brand-splash-wordmark">
-            al <span>toque</span>
-          </div>
-          {theme === 'clean' && (
-            <>
-              <span className="brand-splash-campus">UPCH campus</span>
-              <span className="brand-splash-tagline">Pedidos de comida en tu campus</span>
-            </>
-          )}
-          {theme === 'warm' && (
-            <>
-              <span className="brand-splash-tagline">Tu antojo, al toque</span>
-              <span className="brand-splash-campus">UPCH campus</span>
-            </>
-          )}
-          {theme === 'impact' && <span className="brand-splash-campus">UPCH campus</span>}
+          <div className="brand-splash-wordmark">al toque</div>
+          <span className="brand-splash-tagline">Tu antojo, al toque</span>
+          <span className="brand-splash-campus">UPCH CAMPUS</span>
         </div>
       );
     }
@@ -5775,7 +5550,7 @@
     function SplashPreview({ theme }) {
       return (
         <div className={`brand-preview splash-screen--${theme}`} aria-hidden="true">
-          <SplashArtwork theme={theme} />
+          <SplashArtwork />
         </div>
       );
     }
@@ -5793,7 +5568,7 @@
               className="splash-sticker"
             />
           ))}
-          <SplashArtwork theme={theme} />
+          <SplashArtwork />
         </div>
       );
     }
