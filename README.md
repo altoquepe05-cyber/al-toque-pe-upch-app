@@ -61,6 +61,10 @@ Configura estas variables en el servidor:
 - `SUPABASE_URL`: URL del proyecto Supabase.
 - `SUPABASE_SERVICE_ROLE_KEY`: clave de servicio privada; no la incluyas en Git
   ni en el navegador.
+- El Libro de Reclamaciones guarda los envíos en el estado privado del servidor
+  (`complaints` en Supabase o `complaints.json` en desarrollo local). No hay una
+  ruta pública para consultar los registros; el formulario envía los datos a
+  `POST /api/complaints`.
 - `REELS_DELETE_PASSWORD`: contraseña privada para habilitar la eliminación
   de Reels.
 - `HUBSPOT_ACCESS_TOKEN`: token privado para la integración con HubSpot.

@@ -33,6 +33,7 @@ const KERAS_API_URL = process.env.KERAS_API_URL || 'http://127.0.0.1:5000/pregun
 const DATA_DIR = resolve(APP_DIR, process.env.DATA_DIR || 'data');
 const ORDERS_FILE = join(DATA_DIR, 'orders.json');
 const REELS_FILE = join(DATA_DIR, 'reels.json');
+const COMPLAINTS_FILE = join(DATA_DIR, 'complaints.json');
 const REELS_VIDEOS_DIR = join(DATA_DIR, 'reels-videos');
 const MAX_BODY_BYTES = 32_000;
 const MAX_CHAT_BODY_BYTES = 3_000_000;
@@ -102,9 +103,6 @@ const PUBLIC_ASSETS = new Set([
   'gorritos-welcome-hat.png',
   'splash-clean-reference.png',
   'splash-warm-reference.png',
-  'splash-logo-clean.png',
-  'splash-logo-impact.png',
-  'splash-logo-warm.png',
   'starbucks-panettone-latte.png',
   'starbucks-panettone-frappuccino.png',
   'starbucks-panettone-latte-frio.png',
@@ -143,6 +141,7 @@ const VENDOR_ASSETS = new Map([
 const rateLimits = new Map();
 const marketingEmailRateLimits = new Map();
 const youtubeSearchRateLimits = new Map();
+const complaintRateLimits = new Map();
 
 function normalize(value) {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -1137,12 +1136,99 @@ async function addHubSpotMarketingSubscriber(email, accessToken, listId, subscri
   await hubspotRequest(`/crm/v3/lists/${encodeURIComponent(listId)}/memberships/add`, 'PUT', [contact.id]);
 }
 
-async function handleRequest(request, response, orders, riderLocations, idempotencyKeys, callSessions, orderChats, riderProfiles, persistRiderProfiles, persistOrders, notifyOrderChange, youtubeApiKey, openAIApiKey, gmailClientId, gmailClientSecret, gmailRefreshToken, gmailUser, marketingProvider, hubspotAccessToken, hubspotListId, hubspotSubscriptionId, fetchImpl, reels, persistReels, reelsVideosDir, reelsDeletePassword, videoStorage, maxVideoBytes, now = Date.now) {
+async function handleRequest(request, response, orders, riderLocations, idempotencyKeys, callSessions, orderChats, riderProfiles, persistRiderProfiles, persistOrders, notifyOrderChange, youtubeApiKey, openAIApiKey, gmailClientId, gmailClientSecret, gmailRefreshToken, gmailUser, marketingProvider, hubspotAccessToken, hubspotListId, hubspotSubscriptionId, fetchImpl, reels, persistReels, reelsVideosDir, reelsDeletePassword, videoStorage, maxVideoBytes, complaints, persistComplaints, now = Date.now) {
   const requestUrl = new URL(request.url || '/', `http://${request.headers.host}`);
 
   if (requestUrl.pathname === '/api/reels' || requestUrl.pathname.startsWith('/api/reels/')) {
     await handleReelsRequest(request, response, requestUrl, reels, persistReels, reelsVideosDir, reelsDeletePassword, videoStorage, maxVideoBytes);
     return;
+  }
+
+  if (requestUrl.pathname === '/api/complaints') {
+    if (request.method !== 'POST') return json(response, 405, { error: 'Método no permitido.' });
+    if (!sameOrigin(request)) return json(response, 403, { error: 'Origen de solicitud no permitido.' });
+    if (!rateLimit(request, complaintRateLimits, 3, 10 * 60_000)) {
+      return json(response, 429, { error: 'Se enviaron varias solicitudes. Espera unos minutos antes de volver a intentarlo.' });
+    }
+
+    let body;
+    try {
+      body = await readJson(request, 8_000);
+    } catch (error) {
+      return json(response, error.status || 400, { error: error.message });
+    }
+
+    const text = (value, maximumLength) => (
+      typeof value === 'string' && value.trim().length <= maximumLength && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value)
+        ? value.trim()
+        : ''
+    );
+    const kind = body?.kind;
+    const consumerName = text(body?.consumerName, 120);
+    const documentType = body?.documentType;
+    const documentNumber = text(body?.documentNumber, 12).toUpperCase();
+    const address = text(body?.address, 200);
+    const email = text(body?.email, 254);
+    const phone = text(body?.phone, 24);
+    const product = text(body?.product, 160);
+    const description = text(body?.description, 2_000);
+    const requestForResolution = text(body?.request, 1_000);
+    const amountText = body?.amount === '' || body?.amount === null ? '' : body?.amount;
+    const amount = amountText === '' ? null : Number(amountText);
+    const phoneDigits = phone.replace(/\D/g, '');
+
+    if (!['reclamo', 'queja'].includes(kind)) {
+      return json(response, 400, { error: 'Selecciona si deseas registrar un reclamo o una queja.' });
+    }
+    if (consumerName.length < 2) return json(response, 400, { error: 'Ingresa tus nombres y apellidos.' });
+    if (!['DNI', 'CE'].includes(documentType)
+      || (documentType === 'DNI' && !/^\d{8}$/.test(documentNumber))
+      || (documentType === 'CE' && !/^[A-Z0-9]{6,12}$/.test(documentNumber))) {
+      return json(response, 400, { error: 'Ingresa un número de documento válido.' });
+    }
+    if (address.length < 5) return json(response, 400, { error: 'Ingresa tu domicilio.' });
+    if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return json(response, 400, { error: 'Ingresa un correo electrónico válido.' });
+    }
+    if (!/^[+0-9 ()-]{7,24}$/.test(phone) || phoneDigits.length < 7 || phoneDigits.length > 15) {
+      return json(response, 400, { error: 'Ingresa un teléfono válido con código de país si corresponde.' });
+    }
+    if (product.length < 2) return json(response, 400, { error: 'Indica el producto o servicio relacionado.' });
+    if (amount !== null && (!Number.isFinite(amount) || amount < 0 || amount > 1_000_000)) {
+      return json(response, 400, { error: 'El monto debe ser un número entre 0 y 1 000 000.' });
+    }
+    if (description.length < 20) return json(response, 400, { error: 'Describe lo ocurrido con al menos 20 caracteres.' });
+    if (requestForResolution.length < 5) return json(response, 400, { error: 'Indica qué solución solicitas.' });
+    if (body?.privacyConsent !== true) {
+      return json(response, 400, { error: 'Debes aceptar el uso de tus datos para gestionar y responder esta solicitud.' });
+    }
+
+    const submittedAt = new Date(now()).toISOString();
+    const record = {
+      id: `AT-${now().toString(36).toUpperCase()}-${randomUUID().slice(0, 8).toUpperCase()}`,
+      kind,
+      consumerName,
+      documentType,
+      documentNumber,
+      address,
+      email,
+      phone,
+      product,
+      amount,
+      description,
+      request: requestForResolution,
+      submittedAt,
+      privacyConsentAt: submittedAt
+    };
+    complaints.set(record.id, record);
+    try {
+      await persistComplaints();
+    } catch (error) {
+      complaints.delete(record.id);
+      console.error('No se pudo guardar una solicitud del Libro de Reclamaciones:', error.message);
+      return json(response, 500, { error: 'No se pudo guardar tu solicitud. Inténtalo nuevamente más tarde.' });
+    }
+    return json(response, 201, { complaint: { id: record.id, submittedAt: record.submittedAt } });
   }
 
   if (request.method === 'POST' && requestUrl.pathname === '/api/marketing/subscribe') {
@@ -2162,6 +2248,7 @@ async function handleRequest(request, response, orders, riderLocations, idempote
 export function createAlToqueServer({
   ordersFile = ORDERS_FILE,
   reelsFile = REELS_FILE,
+  complaintsFile = join(dirname(ordersFile), 'complaints.json'),
   reelsVideosDir = REELS_VIDEOS_DIR,
   reelsDeletePassword = REELS_DELETE_PASSWORD,
   youtubeApiKey = YOUTUBE_API_KEY,
@@ -2196,6 +2283,7 @@ export function createAlToqueServer({
   const orderChats = new Map();
   const clients = new Set();
   const reels = { profiles: new Map(), videos: new Map(), posts: new Map() };
+  const complaints = new Map();
   let persistence = Promise.resolve();
   const loadFileState = async (filePath) => {
     try {
@@ -2265,6 +2353,18 @@ export function createAlToqueServer({
       });
     }
   });
+  const complaintsReady = (supabaseStore ? supabaseStore.loadState('complaints') : loadFileState(complaintsFile)).then((parsed) => {
+    if (parsed === null) return;
+    if (!parsed || !Array.isArray(parsed.complaints)) {
+      throw new Error('El estado persistido del Libro de Reclamaciones no tiene un formato válido.');
+    }
+    for (const complaint of parsed.complaints) {
+      if (!complaint || typeof complaint.id !== 'string' || typeof complaint.submittedAt !== 'string') {
+        throw new Error('Se encontró un registro inválido en el Libro de Reclamaciones.');
+      }
+      complaints.set(complaint.id, complaint);
+    }
+  });
   const persistOrders = () => {
     const snapshot = { orders: [...orders.values()] };
     const save = async () => {
@@ -2327,6 +2427,27 @@ export function createAlToqueServer({
     reelsPersistence = next.catch(() => {});
     return next;
   };
+  let complaintsPersistence = Promise.resolve();
+  const persistComplaints = () => {
+    const save = async () => {
+      const snapshot = { complaints: [...complaints.values()] };
+      if (supabaseStore) {
+        await supabaseStore.saveState('complaints', snapshot);
+        return;
+      }
+      await mkdir(dirname(complaintsFile), { recursive: true });
+      const temporaryFile = `${complaintsFile}.${process.pid}.${randomUUID()}.tmp`;
+      try {
+        await writeFile(temporaryFile, JSON.stringify(snapshot, null, 2), 'utf8');
+        await rename(temporaryFile, complaintsFile);
+      } finally {
+        await unlink(temporaryFile).catch(() => {});
+      }
+    };
+    const next = complaintsPersistence.then(save, save);
+    complaintsPersistence = next.catch(() => {});
+    return next;
+  };
   const notifyOrderChange = (type, order) => {
     const frame = websocketFrame(JSON.stringify({ type, order }));
     for (const client of clients) {
@@ -2344,7 +2465,7 @@ export function createAlToqueServer({
     }
   };
   const handler = (request, response) => {
-    Promise.all([ready, reelsReady, riderProfilesReady]).then(() => handleRequest(
+    Promise.all([ready, reelsReady, riderProfilesReady, complaintsReady]).then(() => handleRequest(
       request,
       response,
       orders,
@@ -2373,6 +2494,8 @@ export function createAlToqueServer({
       reelsDeletePassword,
       supabaseStore,
       supabaseStore?.maxVideoBytes || MAX_REELS_VIDEO_BYTES,
+      complaints,
+      persistComplaints,
       now
     )).catch((error) => {
       console.error('Error inesperado en el servidor Al Toque:', error.message);

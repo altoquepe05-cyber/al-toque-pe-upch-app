@@ -509,15 +509,108 @@
       background: #0c783d;
     }
 
+    .complaint-book-card {
+      position: relative;
+      isolation: isolate;
+      display: flex;
+      min-height: 126px;
+      align-items: center;
+      gap: 14px;
+      overflow: hidden;
+      border: 1px solid #e8cf84;
+      border-radius: 20px;
+      background: linear-gradient(110deg, #fff8e9 0%, #fffdf8 55%, #fff 100%);
+      padding: 10px;
+      text-align: left;
+      box-shadow: 0 6px 16px rgba(80, 46, 25, 0.1);
+      animation: complaintBookCardFloat 3.8s ease-in-out infinite;
+    }
+
+    .complaint-book-card::after {
+      position: absolute;
+      top: -45%;
+      bottom: -45%;
+      left: -40%;
+      z-index: -1;
+      width: 28%;
+      content: '';
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+      transform: rotate(20deg);
+      animation: complaintBookCardShine 5s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    .complaint-book-card:focus-visible {
+      outline: 3px solid #a90000;
+      outline-offset: 3px;
+    }
+
+    .complaint-book-art {
+      position: relative;
+      display: grid;
+      width: 98px;
+      height: 108px;
+      flex: 0 0 98px;
+      place-items: center;
+      border-radius: 3px;
+      background: #b20d3c;
+      box-shadow: 4px 4px 0 #f0d98f, 6px 8px 12px rgba(75, 38, 29, 0.2);
+      transform: rotate(-1.5deg);
+      transition: transform 300ms ease;
+    }
+
+    .complaint-book-card:hover .complaint-book-art {
+      transform: rotate(0deg) scale(1.035);
+    }
+
+    .complaint-book-art svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .complaint-book-page {
+      transform-box: fill-box;
+      transform-origin: center bottom;
+      animation: complaintBookPageLift 3.8s ease-in-out infinite;
+    }
+
+    .complaint-book-page--right {
+      animation-delay: 180ms;
+    }
+
+    @keyframes complaintBookCardFloat {
+      0%, 100% { transform: translateY(0); box-shadow: 0 6px 16px rgba(80, 46, 25, 0.1); }
+      50% { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(80, 46, 25, 0.15); }
+    }
+
+    @keyframes complaintBookCardShine {
+      0%, 64% { left: -40%; opacity: 0; }
+      72% { opacity: 1; }
+      88%, 100% { left: 125%; opacity: 0; }
+    }
+
+    @keyframes complaintBookPageLift {
+      0%, 100% { transform: rotate(0deg); }
+      50% { transform: rotate(-2deg); }
+    }
+
     @keyframes helpWhatsappPulse {
       0%, 100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.42); }
       50% { box-shadow: 0 0 0 7px rgba(37, 211, 102, 0); }
     }
 
+    @media (max-width: 360px) {
+      .complaint-book-card { gap: 11px; }
+      .complaint-book-art { width: 86px; height: 100px; flex-basis: 86px; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
-      .help-whatsapp-button {
-        animation: none;
-      }
+      .help-whatsapp-button,
+      .complaint-book-card,
+      .complaint-book-card::after,
+      .complaint-book-page { animation: none !important; }
     }
 
     @keyframes musicLauncherPulse {
@@ -2775,29 +2868,18 @@
       display: block;
       width: 160px;
       height: 160px;
-      overflow: hidden;
     }
 
     .splash-screen .brand-splash-reference {
-      width: min(280px, 82vw);
-      height: min(280px, 82vw);
+      width: min(220px, 72vw);
+      height: min(220px, 72vw);
     }
 
     .brand-splash-reference img {
       display: block;
       width: 100%;
       height: 100%;
-      object-fit: cover;
-      object-position: center;
-    }
-
-    .brand-splash-logo--clean img,
-    .brand-splash-logo--warm img {
-      transform: scale(1.12);
-    }
-
-    .brand-splash-logo--impact img {
-      transform: scale(1.65);
+      object-fit: contain;
     }
 
     .splash-screen > .brand-splash-content {
@@ -5605,20 +5687,6 @@
     }));
 
     const SPLASH_THEME_VARIANTS = ['clean', 'warm', 'impact'];
-    const SPLASH_LOGOS = {
-      clean: {
-        file: 'splash-logo-clean.png',
-        description: 'Gorro de chef, tenedor y cuchara amarillos sobre un círculo guinda'
-      },
-      warm: {
-        file: 'splash-logo-warm.png',
-        description: 'Gorro de chef y cubiertos rojos dentro de un círculo dorado'
-      },
-      impact: {
-        file: 'splash-logo-impact.png',
-        description: 'Gorro blanco con tenedor y cuchara amarillos sobre fondo guinda'
-      }
-    };
     const SPLASH_THEME_OPTIONS = [
       { id: 'random', label: 'Predeterminada', description: 'Elige al azar y no repite el inicio anterior.' },
       { id: 'clean', label: 'Limpia y clara', description: 'Fondo blanco y acentos sencillos.' },
@@ -5657,16 +5725,51 @@
         );
       }
 
-      if (SPLASH_LOGOS[theme]) {
-        const logo = SPLASH_LOGOS[theme];
+      if (theme === 'clean' || theme === 'warm') {
+        const reference = theme === 'clean' ? 'splash-clean-reference.png' : 'splash-warm-reference.png';
+        const description = theme === 'clean'
+          ? 'Al toque, UPCH campus. Pedidos de comida en tu campus'
+          : 'Al toque, tu antojo al toque. UPCH campus';
         return (
-          <div className={`brand-splash-reference brand-splash-logo--${theme}`}>
-            <img src={`./${logo.file}`} alt={logo.description} />
+          <div className="brand-splash-reference">
+            <img src={`./${reference}`} alt={description} />
           </div>
         );
       }
 
-      return null;
+      return (
+        <div className="brand-splash-content">
+          <div className="brand-splash-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32">
+              <path
+                className="brand-splash-chef"
+                d="M6.6 15.1a4.5 4.5 0 0 1-.8-8.8 5.5 5.5 0 0 1 9.5-2.4 5.8 5.8 0 0 1 9.8 3.9 4.7 4.7 0 0 1-.4 9.3H7.9z"
+              />
+              <path className="brand-splash-chest" d="M6.4 14.2h19.3v5.2H6.4z" />
+              <path className="brand-splash-band" d="M7.2 15.1h17.7v1.1H7.2z" />
+              <path className="brand-splash-utensil" d="M10.2 19.5v3m2.2-3v3m2.2-3v3m-5.1-.1h5.8m-2.9 0v5.3" />
+              <ellipse className="brand-splash-spoon-bowl" cx="20.4" cy="21.1" rx="2" ry="2.5" />
+              <path className="brand-splash-utensil" d="M20.4 23.6v5.1" />
+            </svg>
+          </div>
+          <div className="brand-splash-wordmark">
+            al <span>toque</span>
+          </div>
+          {theme === 'clean' && (
+            <>
+              <span className="brand-splash-campus">UPCH campus</span>
+              <span className="brand-splash-tagline">Pedidos de comida en tu campus</span>
+            </>
+          )}
+          {theme === 'warm' && (
+            <>
+              <span className="brand-splash-tagline">Tu antojo, al toque</span>
+              <span className="brand-splash-campus">UPCH campus</span>
+            </>
+          )}
+          {theme === 'impact' && <span className="brand-splash-campus">UPCH campus</span>}
+        </div>
+      );
     }
 
     function SplashPreview({ theme }) {
@@ -14513,6 +14616,24 @@
       const [showHelp, setShowHelp] = useState(false);
       const [showOrderHistory, setShowOrderHistory] = useState(false);
       const [showThemePicker, setShowThemePicker] = useState(false);
+      const [showComplaintsBook, setShowComplaintsBook] = useState(false);
+      const [complaintForm, setComplaintForm] = useState(() => ({
+        kind: 'reclamo',
+        consumerName: profile.fullName || '',
+        documentType: 'DNI',
+        documentNumber: '',
+        address: '',
+        email: profile.email || '',
+        phone: profile.phone || '',
+        product: '',
+        amount: '',
+        description: '',
+        request: '',
+        privacyConsent: false
+      }));
+      const [isSubmittingComplaint, setIsSubmittingComplaint] = useState(false);
+      const [complaintError, setComplaintError] = useState('');
+      const [complaintReceipt, setComplaintReceipt] = useState(null);
       const [photoError, setPhotoError] = useState('');
       const [showRiderAccess, setShowRiderAccess] = useState(false);
       const riderPinInputRef = useRef(null);
@@ -14521,6 +14642,28 @@
       const [isCheckingRiderPin, setIsCheckingRiderPin] = useState(false);
       const photoInputRef = useRef(null);
       const updateProfile = (field, value) => setProfile((current) => ({ ...current, [field]: value }));
+      const submitComplaint = async (event) => {
+        event.preventDefault();
+        setIsSubmittingComplaint(true);
+        setComplaintError('');
+        try {
+          const response = await fetch('/api/complaints', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(complaintForm)
+          });
+          const payload = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(payload.error || `No se pudo enviar la solicitud (${response.status}).`);
+          if (!payload.complaint || typeof payload.complaint.id !== 'string' || typeof payload.complaint.submittedAt !== 'string') {
+            throw new Error('El servidor no devolvió la constancia de tu solicitud.');
+          }
+          setComplaintReceipt(payload.complaint);
+        } catch (error) {
+          setComplaintError(error.message || 'No se pudo enviar la solicitud. Inténtalo nuevamente.');
+        } finally {
+          setIsSubmittingComplaint(false);
+        }
+      };
       const handleSalesUpdatesChange = async (event) => {
         if (!event.target.checked) {
           setProfile((current) => ({ ...current, salesUpdates: false, salesUpdatesConsentAt: null }));
@@ -14644,6 +14787,15 @@
         window.addEventListener('keydown', closeOnEscape);
         return () => window.removeEventListener('keydown', closeOnEscape);
       }, [showThemePicker]);
+
+      useEffect(() => {
+        if (!showComplaintsBook) return;
+        const closeOnEscape = (event) => {
+          if (event.key === 'Escape' && !isSubmittingComplaint) setShowComplaintsBook(false);
+        };
+        window.addEventListener('keydown', closeOnEscape);
+        return () => window.removeEventListener('keydown', closeOnEscape);
+      }, [showComplaintsBook, isSubmittingComplaint]);
 
       useEffect(() => {
         if (!showRiderAccess) return;
@@ -15018,8 +15170,166 @@
                 </div>
                 <i data-lucide="chevron-right" className="w-4 h-4 text-gray-500"></i>
               </button>
+
+              <div className="border-t border-gray-100"></div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setComplaintError('');
+                  setComplaintReceipt(null);
+                  setShowComplaintsBook(true);
+                }}
+                aria-haspopup="dialog"
+                aria-label="Abrir el Libro de Reclamaciones virtual para registrar un reclamo o una queja"
+                className="complaint-book-card w-full cursor-pointer"
+              >
+                <span className="complaint-book-art" aria-hidden="true">
+                  <svg viewBox="0 0 100 112" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <text x="50" y="13" fill="#FFF8E9" fontFamily="Outfit, sans-serif" fontSize="7.5" fontWeight="800" textAnchor="middle">LIBRO DE</text>
+                    <text x="50" y="22" fill="#FFF8E9" fontFamily="Outfit, sans-serif" fontSize="7.5" fontWeight="800" textAnchor="middle">RECLAMACIONES</text>
+                    <g className="complaint-book-page">
+                      <path d="M12 48C21 42 34 41 49 47V73C34 67 22 68 12 74V48Z" fill="#FFFDF8" />
+                      <path d="M15 51C25 47 35 47 45 51M15 55C25 52 35 52 45 55M15 59C25 57 35 57 45 59" stroke="#D8D0C5" strokeWidth="1.2" strokeLinecap="round" />
+                    </g>
+                    <g className="complaint-book-page complaint-book-page--right">
+                      <path d="M51 47C66 41 79 42 88 48V74C78 68 66 67 51 73V47Z" fill="#FFFDF8" />
+                      <path d="M56 51C66 47 76 47 85 51M56 55C66 52 76 52 85 55M56 59C66 57 76 57 85 59" stroke="#D8D0C5" strokeWidth="1.2" strokeLinecap="round" />
+                    </g>
+                    <path d="M8 77C25 70 38 72 50 77C63 72 76 70 92 77L88 81C74 77 63 77 50 82C37 77 25 77 12 81L8 77Z" fill="#F4CF58" />
+                    <path d="M12 87H88M16 91H84M20 95H80" stroke="#FFF0D7" strokeWidth="1.6" strokeLinecap="round" opacity=".92" />
+                    <circle cx="50" cy="104" r="2" fill="#F4CF58" />
+                  </svg>
+                </span>
+                <span className="relative z-10 min-w-0 flex-1">
+                  <span className="mb-1 inline-flex rounded-full bg-[#a90000]/10 px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-[0.12em] text-[#a90000]">Atención al consumidor</span>
+                  <span className="block font-title text-[13px] font-extrabold leading-tight text-[#3d2522]">Libro de Reclamaciones virtual</span>
+                  <span className="mt-1 block text-[10px] leading-snug text-gray-600">Registra un reclamo o una queja sobre tu experiencia.</span>
+                  <span className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold text-[#a90000]">
+                    Registrar solicitud <i data-lucide="arrow-right" className="h-3 w-3"></i>
+                  </span>
+                </span>
+              </button>
             </div>
           </div>
+
+          {showComplaintsBook && (
+            <div
+              className="fixed inset-0 z-[80] flex items-end justify-center bg-black/55 p-0 sm:items-center sm:p-4"
+              onClick={(event) => {
+                if (event.target === event.currentTarget && !isSubmittingComplaint) setShowComplaintsBook(false);
+              }}
+            >
+              <section
+                className="max-h-[92dvh] w-full max-w-[520px] overflow-y-auto rounded-t-[28px] bg-[#fffdf8] p-5 shadow-2xl sm:rounded-[28px]"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="complaints-book-title"
+              >
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#a90000]">Al Toque Pe</p>
+                    <h2 id="complaints-book-title" className="mt-1 font-title text-xl font-extrabold">Libro de Reclamaciones virtual</h2>
+                    <p className="mt-1 text-[10px] leading-relaxed text-gray-500">Completa tus datos y cuéntanos cómo podemos atenderte.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowComplaintsBook(false)}
+                    disabled={isSubmittingComplaint}
+                    aria-label="Cerrar Libro de Reclamaciones"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f3e8ce] text-xl text-[#594432] disabled:opacity-50"
+                  >×</button>
+                </div>
+
+                <div className="mb-4 rounded-2xl border border-[#eee5d6] bg-white p-3 text-[10px] leading-relaxed text-gray-600">
+                  <p><strong>Razón social:</strong> Al toque pe · <strong>RUC:</strong> 20054389212</p>
+                  <p><strong>Domicilio:</strong> Av. Armendáriz 497, Miraflores 15074</p>
+                  <p><strong>Correo:</strong> <a className="text-[#a90000] underline" href="mailto:usertokep@gmail.com">usertokep@gmail.com</a></p>
+                </div>
+
+                {complaintReceipt ? (
+                  <div className="rounded-2xl border border-green-200 bg-green-50 p-5 text-center" role="status">
+                    <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-green-700">
+                      <i data-lucide="check" className="h-6 w-6"></i>
+                    </span>
+                    <h3 className="mt-3 font-title text-lg font-bold text-green-900">Solicitud registrada</h3>
+                    <p className="mt-1 text-xs text-green-800">Guarda este código como constancia de tu presentación:</p>
+                    <p className="mt-2 break-all rounded-lg bg-white px-3 py-2 font-mono text-sm font-bold text-green-900">{complaintReceipt.id}</p>
+                    <p className="mt-2 text-[10px] text-green-800">
+                      {new Intl.DateTimeFormat('es-PE', { dateStyle: 'long', timeStyle: 'short' }).format(new Date(complaintReceipt.submittedAt))}
+                    </p>
+                    <button type="button" onClick={() => setShowComplaintsBook(false)} className="mt-4 w-full rounded-xl bg-[#a90000] py-3 text-xs font-bold text-white">Cerrar</button>
+                  </div>
+                ) : (
+                  <form onSubmit={submitComplaint} className="space-y-3">
+                    <div>
+                      <label htmlFor="complaint-kind" className="mb-1 block text-[10px] font-bold text-gray-600">Tipo de solicitud</label>
+                      <select id="complaint-kind" required value={complaintForm.kind} onChange={(event) => setComplaintForm((current) => ({ ...current, kind: event.target.value }))} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-xs">
+                        <option value="reclamo">Reclamo: disconformidad con un producto o servicio</option>
+                        <option value="queja">Queja: disconformidad con la atención recibida</option>
+                      </select>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <label htmlFor="complaint-name" className="mb-1 block text-[10px] font-bold text-gray-600">Nombres y apellidos</label>
+                        <input id="complaint-name" required maxLength={120} autoComplete="name" value={complaintForm.consumerName} onChange={(event) => setComplaintForm((current) => ({ ...current, consumerName: event.target.value }))} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-xs" />
+                      </div>
+                      <div>
+                        <label htmlFor="complaint-document" className="mb-1 block text-[10px] font-bold text-gray-600">Documento</label>
+                        <div className="flex gap-2">
+                          <select aria-label="Tipo de documento" value={complaintForm.documentType} onChange={(event) => setComplaintForm((current) => ({ ...current, documentType: event.target.value, documentNumber: '' }))} className="w-20 rounded-xl border border-gray-200 bg-white px-2 py-2.5 text-xs">
+                            <option value="DNI">DNI</option>
+                            <option value="CE">CE</option>
+                          </select>
+                          <input id="complaint-document" required inputMode={complaintForm.documentType === 'DNI' ? 'numeric' : 'text'} maxLength={complaintForm.documentType === 'DNI' ? 8 : 12} pattern={complaintForm.documentType === 'DNI' ? '[0-9]{8}' : '[A-Za-z0-9]{6,12}'} value={complaintForm.documentNumber} onChange={(event) => setComplaintForm((current) => ({ ...current, documentNumber: event.target.value.replace(complaintForm.documentType === 'DNI' ? /\D/g : /[^a-z0-9]/gi, '').slice(0, complaintForm.documentType === 'DNI' ? 8 : 12) }))} className="min-w-0 flex-1 rounded-xl border border-gray-200 px-3 py-2.5 text-xs" />
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <label htmlFor="complaint-address" className="mb-1 block text-[10px] font-bold text-gray-600">Domicilio</label>
+                      <input id="complaint-address" required maxLength={200} autoComplete="street-address" value={complaintForm.address} onChange={(event) => setComplaintForm((current) => ({ ...current, address: event.target.value }))} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-xs" />
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <label htmlFor="complaint-email" className="mb-1 block text-[10px] font-bold text-gray-600">Correo electrónico</label>
+                        <input id="complaint-email" type="email" required maxLength={254} autoComplete="email" value={complaintForm.email} onChange={(event) => setComplaintForm((current) => ({ ...current, email: event.target.value }))} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-xs" />
+                      </div>
+                      <div>
+                        <label htmlFor="complaint-phone" className="mb-1 block text-[10px] font-bold text-gray-600">Teléfono</label>
+                        <input id="complaint-phone" type="tel" required maxLength={24} autoComplete="tel" value={complaintForm.phone} onChange={(event) => setComplaintForm((current) => ({ ...current, phone: event.target.value }))} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-xs" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_150px]">
+                      <div>
+                        <label htmlFor="complaint-product" className="mb-1 block text-[10px] font-bold text-gray-600">Producto o servicio</label>
+                        <input id="complaint-product" required maxLength={160} value={complaintForm.product} onChange={(event) => setComplaintForm((current) => ({ ...current, product: event.target.value }))} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-xs" />
+                      </div>
+                      <div>
+                        <label htmlFor="complaint-amount" className="mb-1 block text-[10px] font-bold text-gray-600">Monto (S/, opcional)</label>
+                        <input id="complaint-amount" type="number" min="0" max="1000000" step="0.01" value={complaintForm.amount} onChange={(event) => setComplaintForm((current) => ({ ...current, amount: event.target.value }))} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-xs" />
+                      </div>
+                    </div>
+                    <div>
+                      <label htmlFor="complaint-description" className="mb-1 block text-[10px] font-bold text-gray-600">Cuéntanos qué ocurrió</label>
+                      <textarea id="complaint-description" required minLength={20} maxLength={2000} rows={4} value={complaintForm.description} onChange={(event) => setComplaintForm((current) => ({ ...current, description: event.target.value }))} className="w-full resize-y rounded-xl border border-gray-200 px-3 py-2.5 text-xs" />
+                    </div>
+                    <div>
+                      <label htmlFor="complaint-request" className="mb-1 block text-[10px] font-bold text-gray-600">¿Qué solución solicitas?</label>
+                      <textarea id="complaint-request" required minLength={5} maxLength={1000} rows={3} value={complaintForm.request} onChange={(event) => setComplaintForm((current) => ({ ...current, request: event.target.value }))} className="w-full resize-y rounded-xl border border-gray-200 px-3 py-2.5 text-xs" />
+                    </div>
+                    <label className="flex items-start gap-2 rounded-xl bg-[#fff6e8] p-3 text-[10px] leading-relaxed text-gray-600">
+                      <input type="checkbox" required checked={complaintForm.privacyConsent} onChange={(event) => setComplaintForm((current) => ({ ...current, privacyConsent: event.target.checked }))} className="mt-0.5 accent-[#a90000]" />
+                      <span>Autorizo el uso de los datos personales proporcionados únicamente para registrar, gestionar y responder este reclamo o queja. Evita incluir datos de tarjetas o contraseñas.</span>
+                    </label>
+                    {complaintError && <p className="rounded-xl bg-red-50 px-3 py-2 text-[10px] text-red-700" role="alert">{complaintError}</p>}
+                    <button type="submit" disabled={isSubmittingComplaint} className="w-full rounded-xl bg-[#a90000] py-3 text-xs font-bold text-white disabled:opacity-60">
+                      {isSubmittingComplaint ? 'Enviando solicitud…' : 'Enviar al Libro de Reclamaciones'}
+                    </button>
+                  </form>
+                )}
+              </section>
+            </div>
+          )}
 
           {showThemePicker && (
             <div

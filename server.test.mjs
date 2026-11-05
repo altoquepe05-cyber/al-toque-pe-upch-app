@@ -13,6 +13,7 @@ async function createReelsTestServer(t, testDataDir, reelsDeletePassword = 'test
   const server = createAlToqueServer({
     ordersFile: join(testDataDir, 'orders.json'),
     reelsFile: join(testDataDir, 'reels.json'),
+    complaintsFile: join(testDataDir, 'complaints.json'),
     reelsVideosDir: join(testDataDir, 'reels-videos'),
     reelsDeletePassword
   });
@@ -30,6 +31,70 @@ async function createReelsTestServer(t, testDataDir, reelsDeletePassword = 'test
   });
   return server;
 }
+
+test('records Libro de Reclamaciones submissions privately and validates required details', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  const server = await createReelsTestServer(t, testDataDir);
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const pageResponse = await fetch(baseUrl);
+  const html = await pageResponse.text();
+  assert.equal(pageResponse.status, 200);
+  assert.match(html, /Libro de Reclamaciones virtual/);
+  assert.match(html, /20054389212/);
+  assert.match(html, /Av\. Armendáriz 497, Miraflores 15074/);
+  assert.ok(html.indexOf('Ayuda</h5>') < html.indexOf('Libro de Reclamaciones virtual'));
+  assert.match(html, /className="complaint-book-card w-full cursor-pointer"/);
+  assert.match(html, /viewBox="0 0 100 112"/);
+  assert.match(html, /@keyframes complaintBookCardShine/);
+  assert.match(html, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.complaint-book-card::after,[\s\S]*?\.complaint-book-page \{ animation: none !important; \}/);
+  const complaint = {
+    kind: 'reclamo',
+    consumerName: 'Ana Ejemplo',
+    documentType: 'DNI',
+    documentNumber: '12345678',
+    address: 'Av. Universitaria 123, Lima',
+    email: 'ana@example.com',
+    phone: '987654321',
+    product: 'Combo de almuerzo',
+    amount: '15.50',
+    description: 'El pedido llegó incompleto y faltaba una bebida que ya había pagado.',
+    request: 'Solicito la devolución del monto de la bebida faltante.',
+    privacyConsent: true
+  };
+
+  const invalidResponse = await fetch(`${baseUrl}/api/complaints`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: baseUrl },
+    body: JSON.stringify({ ...complaint, privacyConsent: false })
+  });
+  assert.equal(invalidResponse.status, 400);
+  assert.match((await invalidResponse.json()).error, /Debes aceptar/);
+
+  const response = await fetch(`${baseUrl}/api/complaints`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: baseUrl },
+    body: JSON.stringify(complaint)
+  });
+  assert.equal(response.status, 201);
+  const { complaint: receipt } = await response.json();
+  assert.match(receipt.id, /^AT-[A-Z0-9]+-[A-F0-9]{8}$/);
+  assert.ok(Number.isFinite(Date.parse(receipt.submittedAt)));
+
+  const persisted = JSON.parse(await readFile(join(testDataDir, 'complaints.json'), 'utf8'));
+  assert.equal(persisted.complaints.length, 1);
+  assert.equal(persisted.complaints[0].email, complaint.email);
+  assert.equal(persisted.complaints[0].amount, 15.5);
+  assert.equal(persisted.complaints[0].privacyConsentAt, receipt.submittedAt);
+
+  const publicReadResponse = await fetch(`${baseUrl}/api/complaints`);
+  assert.equal(publicReadResponse.status, 405);
+  const crossOriginResponse = await fetch(`${baseUrl}/api/complaints`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: 'https://other.example' },
+    body: JSON.stringify(complaint)
+  });
+  assert.equal(crossOriginResponse.status, 403);
+});
 
 async function createReelsTestDirectory() {
   return mkdtemp(join(process.cwd(), `.reels-test-${randomUUID()}-`));
@@ -478,22 +543,25 @@ test('preloads the order received animation when serving the application page', 
   assert.match(html, /<link rel="preload" href="\/caminante-ruta\.png" as="image" type="image\/png"\s*\/?>/);
 });
 
-test('uses all three supplied splash logos at a responsive, detailed size', async (t) => {
+test('restores the previous splash designs with enlarged responsive logos', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);
-  const response = await fetch(`http://127.0.0.1:${server.address().port}/`);
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const response = await fetch(baseUrl);
   const html = await response.text();
 
   assert.equal(response.status, 200);
-  assert.match(html, /\.splash-screen \.brand-splash-reference\s*\{\s*width:\s*min\(280px,\s*82vw\);\s*height:\s*min\(280px,\s*82vw\);\s*\}/);
-  for (const asset of ['splash-logo-clean.png', 'splash-logo-impact.png', 'splash-logo-warm.png']) {
-    const assetResponse = await fetch(`http://127.0.0.1:${server.address().port}/${asset}`);
+  assert.match(html, /\.splash-screen \.brand-splash-reference\s*\{\s*width:\s*min\(220px,\s*72vw\);\s*height:\s*min\(220px,\s*72vw\);\s*\}/);
+  assert.match(html, /object-fit:\s*contain;/);
+  assert.match(html, /theme === 'clean' \|\| theme === 'warm'[\s\S]*?splash-clean-reference\.png[\s\S]*?splash-warm-reference\.png/);
+  assert.match(html, /<svg viewBox="0 0 32 32">[\s\S]*?brand-splash-chef[\s\S]*?brand-splash-utensil/);
+  for (const asset of ['splash-clean-reference.png', 'splash-warm-reference.png']) {
+    const assetResponse = await fetch(`${baseUrl}/${asset}`);
     assert.equal(assetResponse.status, 200);
     assert.match(assetResponse.headers.get('content-type'), /image\/png/);
-    assert.ok((await assetResponse.arrayBuffer()).byteLength > 0);
-    assert.ok(html.includes(`file: '${asset}'`));
+    const image = Buffer.from(await assetResponse.arrayBuffer());
+    assert.equal(image.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
   }
-  assert.match(html, /\.brand-splash-logo--impact img\s*\{\s*transform:\s*scale\(1\.65\);\s*\}/);
 });
 
 test('collapses the open music player to a floating launcher while scrolling down', async (t) => {
@@ -696,7 +764,7 @@ test('offers animated WhatsApp support for the Al Toque help phone number', asyn
   assert.match(html, /className="help-whatsapp-button flex w-full items-center justify-center gap-2 rounded-2xl p-3 text-sm font-bold text-white transition"/);
   assert.match(html, /aria-label="Enviar mensaje por WhatsApp al 967 059 396"/);
   assert.match(html, /\.help-whatsapp-button\s*\{[^}]*animation:\s*helpWhatsappPulse 1\.8s ease-in-out infinite;[^}]*background:\s*#128c4a;/);
-  assert.match(html, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.help-whatsapp-button\s*\{\s*animation:\s*none;\s*\}\s*\}/);
+  assert.match(html, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.help-whatsapp-button,[\s\S]*?\.complaint-book-page \{ animation: none !important; \}\s*\}/);
 });
 
 test('offers animated pickup-point choices at checkout and accepts them for customer orders', async (t) => {
