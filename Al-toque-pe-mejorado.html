@@ -11541,6 +11541,8 @@
       const [isCancellingOrder, setIsCancellingOrder] = useState(false);
       const [cancelOrderError, setCancelOrderError] = useState('');
       const [isCancellationPolicyOpen, setIsCancellationPolicyOpen] = useState(false);
+      const [cancellationPolicyPdfStatus, setCancellationPolicyPdfStatus] = useState('idle');
+      const cancellationPolicyPagesRef = useRef(null);
       const [orderPickedUpAt, setOrderPickedUpAt] = useState(null);
       const [orderDeliveredAt, setOrderDeliveredAt] = useState(null);
       const [lateDeliveryRewardOrderId, setLateDeliveryRewardOrderId] = useState('');
@@ -11616,6 +11618,78 @@
         };
         window.addEventListener('keydown', closeOnEscape);
         return () => window.removeEventListener('keydown', closeOnEscape);
+      }, [isCancellationPolicyOpen]);
+
+      useEffect(() => {
+        if (!isCancellationPolicyOpen) {
+          setCancellationPolicyPdfStatus('idle');
+          return undefined;
+        }
+
+        let isDisposed = false;
+        let loadingTask;
+        let pdfDocument;
+        const renderTasks = [];
+        const pagesContainer = cancellationPolicyPagesRef.current;
+        pagesContainer?.replaceChildren();
+        setCancellationPolicyPdfStatus('loading');
+
+        const renderPolicyPages = async () => {
+          try {
+            const pdfjs = await import('/vendor/pdf.min.mjs');
+            if (isDisposed) return;
+            pdfjs.GlobalWorkerOptions.workerSrc = '/vendor/pdf.worker.min.mjs';
+            loadingTask = pdfjs.getDocument({
+              url: '/politica-cancelacion-reembolso.pdf',
+              standardFontDataUrl: '/vendor/pdfjs-standard-fonts/'
+            });
+            pdfDocument = await loadingTask.promise;
+            if (isDisposed) return;
+
+            if (!pagesContainer) throw new Error('No se encontró el área de lectura de la política.');
+            const outputScale = Math.min(window.devicePixelRatio || 1, 2);
+
+            for (let pageNumber = 1; pageNumber <= pdfDocument.numPages; pageNumber += 1) {
+              if (isDisposed) return;
+              const page = await pdfDocument.getPage(pageNumber);
+              const baseViewport = page.getViewport({ scale: 1 });
+              const pageWidth = Math.max(1, pagesContainer.clientWidth - 24);
+              const viewport = page.getViewport({ scale: pageWidth / baseViewport.width });
+              const canvas = document.createElement('canvas');
+              canvas.className = 'mb-3 block h-auto w-full bg-white shadow-sm last:mb-0';
+              canvas.setAttribute('role', 'img');
+              canvas.setAttribute('aria-label', `Página ${pageNumber} de ${pdfDocument.numPages}`);
+              canvas.width = Math.ceil(viewport.width * outputScale);
+              canvas.height = Math.ceil(viewport.height * outputScale);
+              pagesContainer.appendChild(canvas);
+              const renderTask = page.render({
+                canvas,
+                canvasContext: canvas.getContext('2d'),
+                viewport,
+                transform: outputScale === 1 ? null : [outputScale, 0, 0, outputScale, 0, 0]
+              });
+              renderTasks.push(renderTask);
+              await renderTask.promise;
+            }
+
+            if (!isDisposed) setCancellationPolicyPdfStatus('ready');
+          } catch (error) {
+            if (isDisposed) return;
+            console.error('No se pudo mostrar la política de cancelación y reembolso.', error);
+            setCancellationPolicyPdfStatus('error');
+          }
+        };
+
+        renderPolicyPages();
+        return () => {
+          isDisposed = true;
+          renderTasks.forEach((task) => task.cancel());
+          if (pdfDocument) {
+            pdfDocument.destroy().catch((error) => console.error('No se pudo liberar el visor de la política.', error));
+          } else if (loadingTask) {
+            loadingTask.destroy().catch((error) => console.error('No se pudo cancelar la carga de la política.', error));
+          }
+        };
       }, [isCancellationPolicyOpen]);
 
       useEffect(() => {
@@ -12340,11 +12414,29 @@
                   <i data-lucide="x" className="h-5 w-5"></i>
                 </button>
               </header>
-              <iframe
-                src="/politica-cancelacion-reembolso.pdf#view=FitH"
-                title="Documento: política de cancelación y reembolso"
-                className="min-h-0 w-full flex-1 border-0 bg-gray-100"
-              />
+              <div className="min-h-0 flex-1 overflow-y-auto bg-gray-100 p-3" aria-busy={cancellationPolicyPdfStatus === 'loading'}>
+                {cancellationPolicyPdfStatus === 'loading' && (
+                  <p className="py-6 text-center text-xs text-gray-500" role="status">Cargando la política…</p>
+                )}
+                {cancellationPolicyPdfStatus === 'error' && (
+                  <div className="space-y-3 py-6 text-center" role="alert">
+                    <p className="text-xs text-red-700">No se pudo mostrar el documento.</p>
+                    <a
+                      href="/politica-cancelacion-reembolso.pdf"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block text-xs font-semibold text-[#a90000] underline"
+                    >
+                      Abrir el PDF en otra ventana
+                    </a>
+                  </div>
+                )}
+                <div
+                  ref={cancellationPolicyPagesRef}
+                  className="mx-auto w-full max-w-[760px]"
+                  aria-label="Páginas de la política de cancelación y reembolso"
+                />
+              </div>
             </section>
           </div>,
           document.getElementById('root')

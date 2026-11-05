@@ -575,7 +575,12 @@ test('opens the cancellation policy in a phone-fitted in-app viewer', async (t) 
   assert.doesNotMatch(html, /href="\.\/politica-cancelacion-reembolso\.pdf"/);
   assert.match(html, /isCancellationPolicyOpen && ReactDOM\.createPortal\([\s\S]*?paddingTop:\s*'max\(12px, env\(safe-area-inset-top\)\)'[\s\S]*?paddingBottom:\s*'max\(12px, env\(safe-area-inset-bottom\)\)'/);
   assert.match(html, /max-w-\[430px\] flex-1 flex-col overflow-hidden rounded-2xl/);
-  assert.match(html, /src="\/politica-cancelacion-reembolso\.pdf#view=FitH"[\s\S]*?title="Documento: política de cancelación y reembolso"[\s\S]*?min-h-0 w-full flex-1/);
+  assert.match(html, /await import\('\/vendor\/pdf\.min\.mjs'\)/);
+  assert.match(html, /pdfjs\.GlobalWorkerOptions\.workerSrc = '\/vendor\/pdf\.worker\.min\.mjs'/);
+  assert.match(html, /url:\s*'\/politica-cancelacion-reembolso\.pdf'/);
+  assert.match(html, /setAttribute\('role', 'img'\)[\s\S]*?setAttribute\('aria-label', `Página \$\{pageNumber\} de \$\{pdfDocument\.numPages\}`\)/);
+  assert.match(html, /page\.render\(\{[\s\S]*?canvas,\s*canvasContext:\s*canvas\.getContext\('2d'\)/);
+  assert.doesNotMatch(html, /<iframe[^>]+politica-cancelacion-reembolso\.pdf/);
   const cancelledOrderView = html.slice(html.indexOf("if (orderStatus === 'cancelled')"), html.indexOf("if (orderStatus === 'available')"));
   assert.match(cancelledOrderView, /Volver al inicio\s*<\/button>[\s\S]*?onClick=\{\(\) => setIsCancellationPolicyOpen\(true\)\}[\s\S]*?Política de cancelación y reembolso/);
 
@@ -584,6 +589,15 @@ test('opens the cancellation policy in a phone-fitted in-app viewer', async (t) 
   assert.match(response.headers.get('content-type'), /application\/pdf/);
   const pdf = Buffer.from(await response.arrayBuffer());
   assert.equal(pdf.subarray(0, 5).toString('ascii'), '%PDF-');
+  for (const [asset, contentType] of [
+    ['/vendor/pdf.min.mjs', 'text/javascript; charset=utf-8'],
+    ['/vendor/pdf.worker.min.mjs', 'text/javascript; charset=utf-8'],
+    ['/vendor/pdfjs-standard-fonts/LiberationSans-Regular.ttf', 'application/octet-stream']
+  ]) {
+    const assetResponse = await fetch(`${baseUrl}${asset}`);
+    assert.equal(assetResponse.status, 200, `${asset} should load in the in-app PDF viewer`);
+    assert.equal(assetResponse.headers.get('content-type'), contentType);
+  }
 });
 
 test('collapses the open music player to a floating launcher while scrolling down', async (t) => {
@@ -1183,6 +1197,8 @@ test('serves the offline JavaScript and font assets from local paths', async (t)
     ['/vendor/react-dom.development.js', 'text/javascript; charset=utf-8'],
     ['/vendor/babel.min.js', 'text/javascript; charset=utf-8'],
     ['/vendor/lucide.js', 'text/javascript; charset=utf-8'],
+    ['/vendor/pdf.min.mjs', 'text/javascript; charset=utf-8'],
+    ['/vendor/pdf.worker.min.mjs', 'text/javascript; charset=utf-8'],
     ['/vendor/fonts.css', 'text/css; charset=utf-8'],
     ['/vendor/fonts/outfit-400.ttf', 'font/ttf'],
     ['/vendor/fonts/outfit-500.ttf', 'font/ttf'],
