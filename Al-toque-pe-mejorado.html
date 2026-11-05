@@ -2914,6 +2914,30 @@
       color: #211716;
     }
 
+    .splash-screen--brand {
+      background: #fff;
+      color: #211716;
+    }
+
+    .splash-screen--brand .brand-splash-mark {
+      width: clamp(72px, 20vw, 92px);
+      height: clamp(72px, 20vw, 92px);
+    }
+
+    .splash-screen--brand .brand-splash-wordmark {
+      font-size: clamp(46px, 13vw, 56px);
+      letter-spacing: -0.05em;
+    }
+
+    .splash-screen--brand .brand-splash-tagline {
+      font-size: clamp(13px, 3.8vw, 16px);
+    }
+
+    .splash-screen--brand .brand-splash-campus {
+      padding: 9px 28px;
+      font-size: 10px;
+    }
+
     .splash-screen--classic {
       background: #fff;
       color: #2b1718;
@@ -5491,9 +5515,10 @@
       components: []
     }));
 
-    const SPLASH_THEME_VARIANTS = ['clean', 'warm', 'impact'];
+    const SPLASH_THEME_VARIANTS = ['brand', 'clean', 'warm', 'impact'];
     const SPLASH_THEME_OPTIONS = [
       { id: 'random', label: 'Predeterminada', description: 'Elige al azar y no repite el inicio anterior.' },
+      { id: 'brand', label: 'Logo Al Toque', description: 'Emblema, nombre, eslogan y campus sobre fondo blanco.' },
       { id: 'clean', label: 'Limpia y clara', description: 'Fondo blanco y acentos sencillos.' },
       { id: 'warm', label: 'Cálida', description: 'Tonos crema y detalles dorados.' },
       { id: 'impact', label: 'Impacto', description: 'Rojo intenso y contraste llamativo.' }
@@ -5556,7 +5581,7 @@
     }
 
     function SplashScreen({ theme }) {
-      const stickers = [1, 2, 3, 4, 5, 6, 7, 8];
+      const stickers = theme === 'brand' ? [] : [1, 2, 3, 4, 5, 6, 7, 8];
 
       return (
         <div className={`splash-screen splash-screen--${theme}`} aria-label="Cargando Al Toque Pe">
@@ -6491,7 +6516,7 @@
           return { fullName: '', career: '', nickname: '', email: '', salesUpdates: false, salesUpdatesConsentAt: null, privacyAccepted: false, useOrderHistoryForRecommendations: true };
         }
       });
-      const [splashTheme, setSplashTheme] = useState(() => getStartupSplashTheme(profile.splashPreference || 'random'));
+      const [splashTheme, setSplashTheme] = useState(() => getStartupSplashTheme(profile.splashPreference || 'brand'));
 
       useEffect(() => {
         const updateDeviceClock = () => {
@@ -14971,7 +14996,7 @@
                     <span className="block text-[10px] text-gray-500">
                       {profile.splashPreference === 'classic'
                         ? 'Clásico'
-                        : SPLASH_THEME_OPTIONS.find((option) => option.id === (profile.splashPreference || 'random'))?.label || 'Predeterminada'}
+                        : SPLASH_THEME_OPTIONS.find((option) => option.id === (profile.splashPreference || 'brand'))?.label || 'Predeterminada'}
                     </span>
                   </span>
                 </span>
@@ -15207,7 +15232,7 @@
 
                 <div className="grid grid-cols-2 gap-2">
                   {SPLASH_THEME_OPTIONS.map((option) => {
-                    const selected = (profile.splashPreference || 'random') === option.id;
+                    const selected = (profile.splashPreference || 'brand') === option.id;
                     return (
                       <button
                         key={option.id}
