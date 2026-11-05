@@ -6468,9 +6468,45 @@
       );
     }
 
+    const CUSTOMER_PROFILE_ID_KEY = 'altoque_customer_profile_id';
+    const CUSTOMER_PROFILE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+    function generateCustomerProfileId() {
+      if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (character) => {
+        const random = Math.floor(Math.random() * 16);
+        return (character === 'x' ? random : (random & 0x3) | 0x8).toString(16);
+      });
+    }
+
+    function getCustomerProfileId() {
+      let profileId = localStorage.getItem(CUSTOMER_PROFILE_ID_KEY) || '';
+      if (!CUSTOMER_PROFILE_ID_PATTERN.test(profileId)) {
+        profileId = generateCustomerProfileId();
+        localStorage.setItem(CUSTOMER_PROFILE_ID_KEY, profileId);
+      }
+      return profileId;
+    }
+
+    function getCustomerStorageKey(key, profileId = getCustomerProfileId()) {
+      if (!CUSTOMER_PROFILE_ID_PATTERN.test(profileId)) {
+        throw new Error('El identificador del perfil de cliente no es válido.');
+      }
+      const scopedKey = `${key}_${profileId}`;
+      if (localStorage.getItem(scopedKey) === null) {
+        const savedValue = localStorage.getItem(key);
+        if (savedValue !== null) {
+          localStorage.setItem(scopedKey, savedValue);
+          localStorage.removeItem(key);
+        }
+      }
+      return scopedKey;
+    }
+
     function App() {
       const [showSplash, setShowSplash] = useState(true);
-      const [activeTab, setActiveTab] = useState(() => localStorage.getItem('altoque_current_order') ? 'cart' : 'home');
+      const [customerProfileId] = useState(getCustomerProfileId);
+      const [activeTab, setActiveTab] = useState(() => localStorage.getItem(getCustomerStorageKey('altoque_current_order', customerProfileId)) ? 'cart' : 'home');
       const [deviceClockTime, setDeviceClockTime] = useState(() => {
         const now = new Date();
         const hours = now.getHours() % 12 || 12;
@@ -6494,7 +6530,7 @@
       const [homeMood, setHomeMood] = useState('steady');
       const [cart, setCart] = useState(() => {
         try {
-          const saved = localStorage.getItem('altoque_cart');
+          const saved = localStorage.getItem(getCustomerStorageKey('altoque_cart', customerProfileId));
           return saved ? JSON.parse(saved) : [];
         } catch {
           return [];
@@ -6502,7 +6538,7 @@
       });
       const [orderHistory, setOrderHistory] = useState(() => {
         try {
-          const saved = localStorage.getItem('altoque_order_history');
+          const saved = localStorage.getItem(getCustomerStorageKey('altoque_order_history', customerProfileId));
           const parsed = saved ? JSON.parse(saved) : [];
           if (!Array.isArray(parsed) || parsed.some((order) => (
             !order || typeof order.id !== 'string' || !Number.isFinite(order.createdAt)
@@ -6528,8 +6564,8 @@
       const [pickupPoint, setPickupPoint] = useState('En la puerta principal');
       const [notifications, setNotifications] = useState(true);
       const [toast, setToast] = useState(null);
-      const [orderConfirmed, setOrderConfirmed] = useState(() => Boolean(localStorage.getItem('altoque_current_order')));
-      const [liveOrderId, setLiveOrderId] = useState(() => localStorage.getItem('altoque_current_order') || '');
+      const [orderConfirmed, setOrderConfirmed] = useState(() => Boolean(localStorage.getItem(getCustomerStorageKey('altoque_current_order', customerProfileId))));
+      const [liveOrderId, setLiveOrderId] = useState(() => localStorage.getItem(getCustomerStorageKey('altoque_current_order', customerProfileId)) || '');
       const [isMusicPlayerOpen, setIsMusicPlayerOpen] = useState(false);
       const [isPlayerVisible, setIsPlayerVisible] = useState(true);
       const [isPlayerHiddenOnScroll, setIsPlayerHiddenOnScroll] = useState(false);
@@ -6538,7 +6574,7 @@
       const octoberPromoDismissedRef = useRef(false);
       const [profile, setProfile] = useState(() => {
         try {
-          const savedProfile = JSON.parse(localStorage.getItem('altoque_profile'));
+          const savedProfile = JSON.parse(localStorage.getItem(getCustomerStorageKey('altoque_profile', customerProfileId)));
           if (savedProfile && typeof savedProfile === 'object' && !Array.isArray(savedProfile)) {
             const hasExplicitSalesConsent = Number.isFinite(savedProfile.salesUpdatesConsentAt);
             return {
@@ -6606,27 +6642,28 @@
       }, [showSplash, appMode, activeTab, isOctoberPromoDay]);
 
       useEffect(() => {
-        localStorage.setItem('altoque_cart', JSON.stringify(cart));
-      }, [cart]);
+        localStorage.setItem(getCustomerStorageKey('altoque_cart', customerProfileId), JSON.stringify(cart));
+      }, [cart, customerProfileId]);
 
       useEffect(() => {
         try {
-          localStorage.setItem('altoque_order_history', JSON.stringify(orderHistory));
+          localStorage.setItem(getCustomerStorageKey('altoque_order_history', customerProfileId), JSON.stringify(orderHistory));
           setOrderHistoryStorageError('');
         } catch (error) {
           console.error('No se pudo guardar el historial de pedidos:', error);
           setOrderHistoryStorageError('No se pudo guardar el historial en este dispositivo. Libera espacio del navegador e inténtalo de nuevo.');
         }
-      }, [orderHistory]);
+      }, [customerProfileId, orderHistory]);
 
       useEffect(() => {
-        localStorage.setItem('altoque_profile', JSON.stringify(profile));
-      }, [profile]);
+        localStorage.setItem(getCustomerStorageKey('altoque_profile', customerProfileId), JSON.stringify(profile));
+      }, [customerProfileId, profile]);
 
       useEffect(() => {
-        if (liveOrderId) localStorage.setItem('altoque_current_order', liveOrderId);
-        else localStorage.removeItem('altoque_current_order');
-      }, [liveOrderId]);
+        const storageKey = getCustomerStorageKey('altoque_current_order', customerProfileId);
+        if (liveOrderId) localStorage.setItem(storageKey, liveOrderId);
+        else localStorage.removeItem(storageKey);
+      }, [customerProfileId, liveOrderId]);
 
       useEffect(() => {
         const content = contentRef.current;
@@ -6898,7 +6935,7 @@
             {activeTab === 'menu' && (
               <MenuScreen onOpenCustomize={setCustomizingDish} onAddBembos={addBembosToCart} onAddStarbucks={addToCart} isPromoDay={isOctoberPromoDay} />
             )}
-            {activeTab === 'ai' && <AIScreen onOpenCustomize={setCustomizingDish} profile={profile} orderHistory={orderHistory} />}
+            {activeTab === 'ai' && <AIScreen onOpenCustomize={setCustomizingDish} profile={profile} orderHistory={orderHistory} customerProfileId={customerProfileId} />}
             {activeTab === 'affiliation' && <AffiliationScreen profile={profile} setProfile={setProfile} onRedeem={addGorritosRedemptionToCart} />}
             {activeTab === 'reels' && <ReelsScreen onNavigate={setActiveTab} />}
             {activeTab === 'cart' && (
@@ -6916,6 +6953,7 @@
                 setPickupPoint={setPickupPoint}
                 profile={profile}
                 setProfile={setProfile}
+                customerProfileId={customerProfileId}
                 onOrderRegistered={registerCompletedOrder}
               />
             )}
@@ -9910,7 +9948,7 @@
       };
     }
 
-    function AIScreen({ onOpenCustomize, profile, orderHistory }) {
+    function AIScreen({ onOpenCustomize, profile, orderHistory, customerProfileId }) {
       const [provider, setProvider] = useState('ChatGPT');
       const [botpressIsOpen, setBotpressIsOpen] = useState(false);
       const [botpressLiveConversationId, setBotpressLiveConversationId] = useState('');
@@ -9938,7 +9976,7 @@
       }, [orderHistory]);
       const [storedChats] = useState(() => {
         try {
-          const saved = window.localStorage.getItem(CHAT_STORAGE_KEY);
+          const saved = window.localStorage.getItem(getCustomerStorageKey(CHAT_STORAGE_KEY, customerProfileId));
           if (!saved) {
             const firstConversation = createConversation('ChatGPT');
             return { conversations: [firstConversation], activeByProvider: { ChatGPT: firstConversation.id }, error: '' };
@@ -10307,12 +10345,12 @@
       useEffect(() => {
         if (storageError) return;
         try {
-          window.localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify({ conversations, activeByProvider: activeConversationByProvider }));
+          window.localStorage.setItem(getCustomerStorageKey(CHAT_STORAGE_KEY, customerProfileId), JSON.stringify({ conversations, activeByProvider: activeConversationByProvider }));
           window.localStorage.removeItem('altoque-ai-memory-enabled-v1');
         } catch (error) {
           setStorageError(`No se pudo guardar el historial en este navegador: ${error.message}`);
         }
-      }, [conversations, activeConversationByProvider, storageError]);
+      }, [conversations, activeConversationByProvider, customerProfileId, storageError]);
 
       useEffect(() => {
         if (provider !== 'Botpress') return undefined;
@@ -11514,9 +11552,9 @@
       );
     }
 
-    function CartScreen({ cart, updateQuantity, removeFromCart, onNavigate, orderConfirmed, setOrderConfirmed, liveOrderId, setLiveOrderId, clearCart, pickupPoint, setPickupPoint, profile, setProfile, onOrderRegistered }) {
+    function CartScreen({ cart, updateQuantity, removeFromCart, onNavigate, orderConfirmed, setOrderConfirmed, liveOrderId, setLiveOrderId, clearCart, pickupPoint, setPickupPoint, profile, setProfile, customerProfileId, onOrderRegistered }) {
       const deliveryDuration = DELIVERY_DURATION_MS;
-      const deliveryProgressKey = liveOrderId ? `altoque_delivery_progress_${liveOrderId}` : '';
+      const deliveryProgressKey = liveOrderId ? getCustomerStorageKey(`altoque_delivery_progress_${liveOrderId}`, customerProfileId) : '';
       const readSavedDeliveryProgress = () => {
         if (!orderConfirmed || !deliveryProgressKey) return null;
         try {
@@ -11962,6 +12000,7 @@
 
       const publishOrderToRiderQueue = async (isDemo = false) => {
         const orderDetails = {
+          customerProfileId,
           customer: profile.nickname || 'Cliente UPCH',
           items: cart.map((item) => ({
             id: item.id,

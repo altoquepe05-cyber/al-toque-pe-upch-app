@@ -1189,6 +1189,66 @@ test('accepts requests from localhost aliases when using the same local server p
   assert.equal(response.status, 201);
 });
 
+test('shares orders from 100 browser customer profiles with the same rider queue', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  const server = await createReelsTestServer(t, testDataDir);
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const customerProfileIds = [];
+
+  for (let index = 0; index < 100; index += 1) {
+    const customerProfileId = randomUUID();
+    customerProfileIds.push(customerProfileId);
+    const response = await fetch(`${baseUrl}/api/orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: baseUrl },
+      body: JSON.stringify({
+        idempotencyKey: `customer-profile-${index}-${randomUUID()}`,
+        customerProfileId,
+        customer: `Cliente ${index + 1}`,
+        items: [{ name: 'Lomo saltado', quantity: 1, price: 12 }],
+        pickupPoint: 'En la puerta principal',
+        paymentMethod: 'yape'
+      })
+    });
+    assert.equal(response.status, 201);
+    assert.equal((await response.json()).order.customerProfileId, customerProfileId);
+  }
+
+  const riderQueueResponse = await fetch(`${baseUrl}/api/orders`);
+  assert.equal(riderQueueResponse.status, 200);
+  const { orders } = await riderQueueResponse.json();
+  assert.equal(orders.length, 100);
+  assert.deepEqual(new Set(orders.map((order) => order.customerProfileId)), new Set(customerProfileIds));
+
+  const invalidProfileResponse = await fetch(`${baseUrl}/api/orders`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: baseUrl },
+    body: JSON.stringify({
+      customerProfileId: 'not-a-uuid',
+      items: [{ name: 'Lomo saltado', quantity: 1, price: 12 }],
+      pickupPoint: 'En la puerta principal',
+      paymentMethod: 'yape'
+    })
+  });
+  assert.equal(invalidProfileResponse.status, 400);
+});
+
+test('keeps the existing browser profile and migrates customer data into its profile storage', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  const server = await createReelsTestServer(t, testDataDir);
+  const response = await fetch(`http://127.0.0.1:${server.address().port}/`);
+  const html = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(html, /const CUSTOMER_PROFILE_ID_KEY = 'altoque_customer_profile_id';/);
+  assert.match(html, /function getCustomerProfileId\(\)[\s\S]*?localStorage\.setItem\(CUSTOMER_PROFILE_ID_KEY, profileId\)/);
+  assert.match(html, /function getCustomerStorageKey\(key, profileId = getCustomerProfileId\(\)\)[\s\S]*?localStorage\.setItem\(scopedKey, savedValue\);[\s\S]*?localStorage\.removeItem\(key\)/);
+  assert.match(html, /getCustomerStorageKey\('altoque_profile', customerProfileId\)/);
+  assert.match(html, /getCustomerStorageKey\('altoque_order_history', customerProfileId\)/);
+  assert.match(html, /customerProfileId,\s*customer: profile\.nickname/);
+  assert.match(html, /JSON\.parse\(localStorage\.getItem\('altoque_rider_demo'\) \|\| 'null'\)/);
+});
+
 test('shares customer orders with riders when HTTPS terminates at the reverse proxy', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);

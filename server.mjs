@@ -1514,6 +1514,10 @@ async function handleRequest(request, response, orders, riderLocations, idempote
     if (idempotencyKey && !/^[A-Za-z0-9-]{12,80}$/.test(idempotencyKey)) {
       return json(response, 400, { error: 'La clave de envío del pedido no es válida.' });
     }
+    if (body.customerProfileId !== undefined
+      && (typeof body.customerProfileId !== 'string' || !REELS_PROFILE_ID_PATTERN.test(body.customerProfileId))) {
+      return json(response, 400, { error: 'El identificador del perfil de cliente no es válido.' });
+    }
     if (idempotencyKey && idempotencyKeys.has(idempotencyKey)) {
       return json(response, 200, { order: orders.get(idempotencyKeys.get(idempotencyKey)) });
     }
@@ -1566,6 +1570,7 @@ async function handleRequest(request, response, orders, riderLocations, idempote
     }
     const order = {
       id: `UPCH-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
+      ...(body.customerProfileId ? { customerProfileId: body.customerProfileId } : {}),
       customer: typeof body.customer === 'string' && body.customer.trim()
         ? body.customer.trim().slice(0, 80)
         : 'Cliente UPCH',
