@@ -11542,7 +11542,9 @@
       const [cancelOrderError, setCancelOrderError] = useState('');
       const [isCancellationPolicyOpen, setIsCancellationPolicyOpen] = useState(false);
       const [cancellationPolicyPdfStatus, setCancellationPolicyPdfStatus] = useState('idle');
+      const [cancellationPolicyZoom, setCancellationPolicyZoom] = useState(1);
       const cancellationPolicyPagesRef = useRef(null);
+      const cancellationPolicyScrollRef = useRef(null);
       const [orderPickedUpAt, setOrderPickedUpAt] = useState(null);
       const [orderDeliveredAt, setOrderDeliveredAt] = useState(null);
       const [lateDeliveryRewardOrderId, setLateDeliveryRewardOrderId] = useState('');
@@ -11621,6 +11623,19 @@
       }, [isCancellationPolicyOpen]);
 
       useEffect(() => {
+        if (!isCancellationPolicyOpen) return undefined;
+        const scrollContainer = cancellationPolicyScrollRef.current;
+        if (!scrollContainer) return undefined;
+        const zoomWithWheel = (event) => {
+          if (!event.ctrlKey) return;
+          event.preventDefault();
+          setCancellationPolicyZoom((zoom) => Math.max(1, Math.min(3, Math.round((zoom + (event.deltaY < 0 ? 0.25 : -0.25)) * 100) / 100)));
+        };
+        scrollContainer.addEventListener('wheel', zoomWithWheel, { passive: false });
+        return () => scrollContainer.removeEventListener('wheel', zoomWithWheel);
+      }, [isCancellationPolicyOpen]);
+
+      useEffect(() => {
         if (!isCancellationPolicyOpen) {
           setCancellationPolicyPdfStatus('idle');
           return undefined;
@@ -11647,13 +11662,13 @@
             if (isDisposed) return;
 
             if (!pagesContainer) throw new Error('No se encontró el área de lectura de la política.');
-            const outputScale = Math.min(window.devicePixelRatio || 1, 2);
+            const outputScale = Math.min(Math.max(window.devicePixelRatio || 1, 2.5), 3 / cancellationPolicyZoom);
 
             for (let pageNumber = 1; pageNumber <= pdfDocument.numPages; pageNumber += 1) {
               if (isDisposed) return;
               const page = await pdfDocument.getPage(pageNumber);
               const baseViewport = page.getViewport({ scale: 1 });
-              const pageWidth = Math.max(1, pagesContainer.clientWidth - 24);
+              const pageWidth = Math.max(1, pagesContainer.clientWidth);
               const viewport = page.getViewport({ scale: pageWidth / baseViewport.width });
               const canvas = document.createElement('canvas');
               canvas.className = 'mb-3 block h-auto w-full bg-white shadow-sm last:mb-0';
@@ -11690,7 +11705,7 @@
             loadingTask.destroy().catch((error) => console.error('No se pudo cancelar la carga de la política.', error));
           }
         };
-      }, [isCancellationPolicyOpen]);
+      }, [isCancellationPolicyOpen, cancellationPolicyZoom]);
 
       useEffect(() => {
         if (!orderConfirmed || orderStatus !== 'available' || !Number.isFinite(orderCreatedAt)) return undefined;
@@ -12387,7 +12402,7 @@
 
       const renderCancellationPolicyDialog = () => isCancellationPolicyOpen && ReactDOM.createPortal(
         <div
-          className="absolute inset-0 z-[160] flex items-center justify-center bg-black/55"
+          className="fixed inset-0 z-[160] flex items-center justify-center bg-black/55"
           style={{
             paddingTop: 'max(12px, env(safe-area-inset-top))',
             paddingRight: 'max(12px, env(safe-area-inset-right))',
@@ -12399,7 +12414,7 @@
           }}
         >
           <section
-            className="flex min-h-0 w-full max-w-[430px] flex-1 flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+            className="flex h-full max-h-full min-h-0 w-full max-w-[430px] flex-1 flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
             role="dialog"
             aria-modal="true"
             aria-labelledby="cancellation-policy-title"
@@ -12417,7 +12432,42 @@
                 <i data-lucide="x" className="h-5 w-5"></i>
               </button>
             </header>
-            <div className="min-h-0 flex-1 overflow-y-auto bg-gray-100 p-3" aria-busy={cancellationPolicyPdfStatus === 'loading'}>
+            <div className="flex shrink-0 items-center justify-center gap-3 border-b border-gray-100 bg-white px-3 py-2" aria-label="Controles de zoom del documento">
+              <button
+                type="button"
+                onClick={() => setCancellationPolicyZoom((zoom) => Math.max(1, Math.round((zoom - 0.25) * 100) / 100))}
+                disabled={cancellationPolicyZoom <= 1}
+                aria-label="Alejar el documento"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 text-lg font-bold text-dark disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                −
+              </button>
+              <span className="min-w-12 text-center text-xs font-semibold text-gray-600" aria-live="polite">
+                {Math.round(cancellationPolicyZoom * 100)}%
+              </span>
+              <button
+                type="button"
+                onClick={() => setCancellationPolicyZoom((zoom) => Math.min(3, Math.round((zoom + 0.25) * 100) / 100))}
+                disabled={cancellationPolicyZoom >= 3}
+                aria-label="Acercar el documento"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 text-lg font-bold text-dark disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                +
+              </button>
+              <button
+                type="button"
+                onClick={() => setCancellationPolicyZoom(1)}
+                disabled={cancellationPolicyZoom === 1}
+                className="rounded-full px-3 py-2 text-[10px] font-semibold text-[#a90000] underline disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Ajustar
+              </button>
+            </div>
+            <div
+              ref={cancellationPolicyScrollRef}
+              className="min-h-0 flex-1 overflow-auto overscroll-contain bg-gray-100 p-3"
+              aria-busy={cancellationPolicyPdfStatus === 'loading'}
+            >
               {cancellationPolicyPdfStatus === 'loading' && (
                 <p className="py-6 text-center text-xs text-gray-500" role="status">Cargando la política…</p>
               )}
@@ -12436,7 +12486,8 @@
               )}
               <div
                 ref={cancellationPolicyPagesRef}
-                className="mx-auto w-full max-w-[760px]"
+                className="mx-auto"
+                style={{ width: `${cancellationPolicyZoom * 100}%` }}
                 aria-label="Páginas de la política de cancelación y reembolso"
               />
             </div>
