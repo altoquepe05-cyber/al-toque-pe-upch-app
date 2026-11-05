@@ -3978,7 +3978,7 @@
   </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-0 sm:p-4">
-  <div id="root" class="w-full max-w-[390px] h-[100vh] sm:h-[844px] bg-white sm:rounded-[40px] shadow-2xl overflow-hidden flex flex-col border-0 sm:border-[8px] border-gray-800 relative"></div>
+  <div id="root" class="w-full max-w-[390px] h-[100vh] sm:h-[min(844px,calc(100vh-2rem))] bg-white sm:rounded-[40px] shadow-2xl overflow-hidden flex flex-col border-0 sm:border-[8px] border-gray-800 relative"></div>
   <video
     src="/pedido-instrucciones.mp4"
     preload="auto"
@@ -12402,7 +12402,7 @@
 
       const renderCancellationPolicyDialog = () => isCancellationPolicyOpen && ReactDOM.createPortal(
         <div
-          className="fixed inset-0 z-[160] flex items-center justify-center bg-black/55"
+          className="absolute inset-0 z-[160] flex items-center justify-center bg-black/55"
           style={{
             paddingTop: 'max(12px, env(safe-area-inset-top))',
             paddingRight: 'max(12px, env(safe-area-inset-right))',
