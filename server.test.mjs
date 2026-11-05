@@ -564,8 +564,10 @@ test('links the cancellation policy below each cancel button and serves its PDF'
   const server = await createReelsTestServer(t, testDataDir);
   const baseUrl = `http://127.0.0.1:${server.address().port}`;
   const html = await (await fetch(baseUrl)).text();
-  assert.equal(html.split('href="./politica-cancelacion-reembolso.pdf"').length - 1, 2);
-  assert.equal(html.split('Política de cancelación y reembolso').length - 1, 2);
+  assert.equal(html.split('href="./politica-cancelacion-reembolso.pdf"').length - 1, 3);
+  assert.equal(html.split('Política de cancelación y reembolso').length - 1, 3);
+  const cancelledOrderView = html.slice(html.indexOf("if (orderStatus === 'cancelled')"), html.indexOf("if (orderStatus === 'available')"));
+  assert.match(cancelledOrderView, /Volver al inicio\s*<\/button>[\s\S]*?href="\.\/politica-cancelacion-reembolso\.pdf"[\s\S]*?Política de cancelación y reembolso/);
 
   const response = await fetch(`${baseUrl}/politica-cancelacion-reembolso.pdf`);
   assert.equal(response.status, 200);
