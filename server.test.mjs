@@ -555,7 +555,9 @@ test('uses the single supplied splash emblem with the matching brand lettering',
   assert.match(html, /\.splash-screen--brand \.brand-splash-mark\s*\{\s*width:\s*clamp\(72px,\s*20vw,\s*92px\);\s*height:\s*clamp\(72px,\s*20vw,\s*92px\);\s*\}/);
   assert.match(html, /SPLASH_THEME_VARIANTS = \['brand', 'clean', 'warm', 'impact'\]/);
   assert.match(html, /profile\.splashPreference \|\| 'brand'/);
-  assert.match(html, /const stickers = theme === 'brand' \? \[\] :/);
+  assert.match(html, /const stickers = \[1, 2, 3, 4, 5, 6, 7, 8\]/);
+  assert.match(html, /\.splash-screen--brand \.splash-sticker\s*\{\s*width:\s*48px;\s*height:\s*48px;\s*\}/);
+  assert.match(html, /@keyframes splashSticker\s*\{\s*0%, 100% \{ transform: translateY\(0\) rotate\(-3deg\) scale\(0\.96\); \}\s*50% \{ transform: translateY\(-8px\) rotate\(3deg\) scale\(1\); \}\s*\}/);
   assert.match(html, /\{ id: 'brand', label: 'Logo Al Toque'/);
   assert.match(html, /<svg viewBox="0 0 100 100">[\s\S]*?fill="#f3b900" stroke="#633b24"[\s\S]*?stroke="#d52c32"/);
   assert.match(html, /<div className="brand-splash-wordmark">al toque<\/div>/);

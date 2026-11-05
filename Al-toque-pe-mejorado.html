@@ -2938,6 +2938,11 @@
       font-size: 10px;
     }
 
+    .splash-screen--brand .splash-sticker {
+      width: 48px;
+      height: 48px;
+    }
+
     .splash-screen--classic {
       background: #fff;
       color: #2b1718;
@@ -5581,7 +5586,7 @@
     }
 
     function SplashScreen({ theme }) {
-      const stickers = theme === 'brand' ? [] : [1, 2, 3, 4, 5, 6, 7, 8];
+      const stickers = [1, 2, 3, 4, 5, 6, 7, 8];
 
       return (
         <div className={`splash-screen splash-screen--${theme}`} aria-label="Cargando Al Toque Pe">
