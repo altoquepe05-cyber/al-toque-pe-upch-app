@@ -478,6 +478,29 @@ test('preloads the order received animation when serving the application page', 
   assert.match(html, /<link rel="preload" href="\/caminante-ruta\.png" as="image" type="image\/png"\s*\/?>/);
 });
 
+test('collapses the open music player to a floating launcher while scrolling down', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  const server = await createReelsTestServer(t, testDataDir);
+  const response = await fetch(`http://127.0.0.1:${server.address().port}/`);
+  const html = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(html, /\.music-scroll-launcher\s*\{\s*position:\s*absolute;\s*right:\s*1rem;\s*bottom:\s*calc\(5\.5rem \+ env\(safe-area-inset-bottom\)\);\s*z-index:\s*30;\s*\}/);
+  assert.match(html, /@keyframes musicScrollLauncherEnter\s*\{\s*from \{ opacity: 0; transform: translateY\(8px\) scale\(0\.94\); \}\s*to \{ opacity: 1; transform: translateY\(0\) scale\(1\); \}\s*\}/);
+  assert.match(html, /transition-\[max-height,margin,opacity,transform\] duration-1000 ease-in-out \$\{isOpen && isVisible \? 'mb-3 max-h-\[700px\] translate-y-0 opacity-100' : 'mb-0 max-h-0 -translate-y-full border-transparent opacity-0 pointer-events-none'\}/);
+  assert.match(html, /const duration = 3000;[\s\S]*?const easedProgress = 1 - Math\.pow\(1 - progress, 3\);[\s\S]*?content\.scrollTop = startTop \* \(1 - easedProgress\);[\s\S]*?window\.requestAnimationFrame\(scrollToTop\)/);
+  assert.match(html, /prefers-reduced-motion: reduce[\s\S]*?content\.scrollTop = 0;/);
+  assert.match(html, /hidden=\{!isOnHome\}/);
+  assert.match(html, /aria-hidden=\{!isOnHome \|\| !isOpen \|\| \(isCompact && isHiddenOnScroll\)\}/);
+  assert.match(html, /activeTab === 'home' && isMusicPlayerOpen && isPlayerHiddenOnScroll[\s\S]*?setIsPlayerVisible\(true\);[\s\S]*?setIsPlayerHiddenOnScroll\(false\);[\s\S]*?const duration = 3000;[\s\S]*?window\.requestAnimationFrame\(scrollToTop\);[\s\S]*?aria-label="Volver al reproductor de música"/);
+  const scrollHandlerStart = html.indexOf('const handleContentScroll = () => {');
+  const scrollHandlerEnd = html.indexOf('\n        };', scrollHandlerStart);
+  const scrollHandler = html.slice(scrollHandlerStart, scrollHandlerEnd);
+  assert.match(scrollHandler, /if \(scrollingDown\) \{\s*setIsPlayerVisible\(false\);\s*setIsPlayerHiddenOnScroll\(true\);/);
+  assert.doesNotMatch(scrollHandler, /setIsPlayerVisible\(true\)|setIsPlayerHiddenOnScroll\(false\)/,
+    'scrolling up should leave the floating player launcher visible until it is tapped');
+});
+
 test('animates the home menu cards with a glowing outline and honors reduced motion', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);

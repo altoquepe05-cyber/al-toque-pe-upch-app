@@ -426,6 +426,22 @@
       animation: musicLauncherGlow 2.4s ease-in-out infinite;
     }
 
+    .music-scroll-launcher {
+      position: absolute;
+      right: 1rem;
+      bottom: calc(5.5rem + env(safe-area-inset-bottom));
+      z-index: 30;
+    }
+
+    @keyframes musicScrollLauncherEnter {
+      from { opacity: 0; transform: translateY(8px) scale(0.94); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .music-scroll-launcher.music-launcher-button {
+      animation: musicLauncherGlow 2.4s ease-in-out infinite, musicScrollLauncherEnter 260ms ease-out both;
+    }
+
     .music-launcher-button::before {
       position: absolute;
       inset: -35% auto -35% -65%;
@@ -535,7 +551,8 @@
       .music-launcher-button::before,
       .music-launcher-icon,
       .music-launcher-note,
-      .music-launcher-star {
+      .music-launcher-star,
+      .music-scroll-launcher {
         animation: none !important;
       }
     }
@@ -6673,14 +6690,10 @@
           const currentScrollTop = content.scrollTop;
           const previousScrollTop = lastContentScrollTopRef.current;
           const scrollingDown = currentScrollTop > previousScrollTop + 2;
-          const scrollingUp = currentScrollTop < previousScrollTop - 2;
 
           if (scrollingDown) {
             setIsPlayerVisible(false);
             setIsPlayerHiddenOnScroll(true);
-          } else if (scrollingUp || currentScrollTop <= 2) {
-            setIsPlayerVisible(true);
-            setIsPlayerHiddenOnScroll(false);
           }
 
           lastContentScrollTopRef.current = currentScrollTop;
@@ -6978,6 +6991,42 @@
             )}
           </div>
 
+          {activeTab === 'home' && isMusicPlayerOpen && isPlayerHiddenOnScroll && (
+            <button
+              type="button"
+              onClick={() => {
+                setIsPlayerVisible(true);
+                setIsPlayerHiddenOnScroll(false);
+                const content = contentRef.current;
+                if (!content) return;
+                if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                  content.scrollTop = 0;
+                  return;
+                }
+
+                const startTop = content.scrollTop;
+                const startTime = performance.now();
+                const duration = 3000;
+                const scrollToTop = (time) => {
+                  const progress = Math.min((time - startTime) / duration, 1);
+                  const easedProgress = 1 - Math.pow(1 - progress, 3);
+                  content.scrollTop = startTop * (1 - easedProgress);
+                  if (progress < 1) window.requestAnimationFrame(scrollToTop);
+                };
+                window.requestAnimationFrame(scrollToTop);
+              }}
+              aria-label="Volver al reproductor de música"
+              title="Volver al reproductor de música"
+              className="music-scroll-launcher music-launcher-button flex h-11 w-11 items-center justify-center rounded-2xl transition-transform hover:scale-105 active:scale-95"
+            >
+              <span className="music-launcher-icon" aria-hidden="true">
+                <i data-lucide="music-2" className="music-launcher-note h-5 w-5"></i>
+                <span className="music-launcher-star music-launcher-star-one"></span>
+                <span className="music-launcher-star music-launcher-star-two"></span>
+              </span>
+            </button>
+          )}
+
           {toast && (
             <button
               type="button"
@@ -7177,10 +7226,10 @@
 
       return (
         <section
-          hidden={!isOnHome || !isOpen || (!isCompact && !isVisible)}
+          hidden={!isOnHome}
           className={isCompact
-            ? `relative z-10 mx-1 w-[calc(100%-0.5rem)] self-end shrink-0 overflow-hidden rounded-[24px] border border-white/10 bg-gradient-to-b from-[#49321f] via-[#35261b] to-[#201b17] shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition-[max-height,margin,opacity,transform] duration-700 ease-in-out ${isHiddenOnScroll ? 'mb-0 max-h-0 -translate-y-full border-transparent opacity-0 pointer-events-none' : 'mb-1 max-h-[260px] translate-y-0 opacity-100'}`
-            : 'relative z-10 mx-3 mb-3 shrink-0 overflow-hidden rounded-[26px] border border-[#eceef2] bg-white shadow-[0_10px_24px_rgba(15,23,42,0.06)]'}
+            ? `relative z-10 mx-1 w-[calc(100%-0.5rem)] self-end shrink-0 overflow-hidden rounded-[24px] border border-white/10 bg-gradient-to-b from-[#49321f] via-[#35261b] to-[#201b17] shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition-[max-height,margin,opacity,transform] duration-1000 ease-in-out ${isOpen && !isHiddenOnScroll ? 'mb-1 max-h-[260px] translate-y-0 opacity-100' : 'mb-0 max-h-0 -translate-y-full border-transparent opacity-0 pointer-events-none'}`
+            : `relative z-10 mx-3 shrink-0 overflow-hidden rounded-[26px] border border-[#eceef2] bg-white shadow-[0_10px_24px_rgba(15,23,42,0.06)] transition-[max-height,margin,opacity,transform] duration-1000 ease-in-out ${isOpen && isVisible ? 'mb-3 max-h-[700px] translate-y-0 opacity-100' : 'mb-0 max-h-0 -translate-y-full border-transparent opacity-0 pointer-events-none'}`}
           aria-hidden={!isOnHome || !isOpen || (isCompact && isHiddenOnScroll)}
           inert={!isOnHome || !isOpen || (isCompact && isHiddenOnScroll) ? '' : undefined}
           aria-label="Reproductor de música"
