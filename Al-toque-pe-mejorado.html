@@ -11510,6 +11510,7 @@
       const [cancellationClock, setCancellationClock] = useState(Date.now());
       const [isCancellingOrder, setIsCancellingOrder] = useState(false);
       const [cancelOrderError, setCancelOrderError] = useState('');
+      const [isCancellationPolicyOpen, setIsCancellationPolicyOpen] = useState(false);
       const [orderPickedUpAt, setOrderPickedUpAt] = useState(null);
       const [orderDeliveredAt, setOrderDeliveredAt] = useState(null);
       const [lateDeliveryRewardOrderId, setLateDeliveryRewardOrderId] = useState('');
@@ -11577,6 +11578,15 @@
         window.addEventListener('keydown', closeOnEscape);
         return () => window.removeEventListener('keydown', closeOnEscape);
       }, [lateDeliveryRewardOrderId]);
+
+      useEffect(() => {
+        if (!isCancellationPolicyOpen) return undefined;
+        const closeOnEscape = (event) => {
+          if (event.key === 'Escape') setIsCancellationPolicyOpen(false);
+        };
+        window.addEventListener('keydown', closeOnEscape);
+        return () => window.removeEventListener('keydown', closeOnEscape);
+      }, [isCancellationPolicyOpen]);
 
       useEffect(() => {
         if (!orderConfirmed || orderStatus !== 'available' || !Number.isFinite(orderCreatedAt)) return undefined;
@@ -12268,6 +12278,47 @@
           document.getElementById('root')
         )}
         <VoiceCallDialog controller={voiceCall} contactName={assignedRider?.name || 'el motorizado'} />
+        {isCancellationPolicyOpen && ReactDOM.createPortal(
+          <div
+            className="absolute inset-0 z-[160] flex items-center justify-center bg-black/55"
+            style={{
+              paddingTop: 'max(12px, env(safe-area-inset-top))',
+              paddingRight: 'max(12px, env(safe-area-inset-right))',
+              paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
+              paddingLeft: 'max(12px, env(safe-area-inset-left))'
+            }}
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) setIsCancellationPolicyOpen(false);
+            }}
+          >
+            <section
+              className="flex min-h-0 w-full max-w-[430px] flex-1 flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="cancellation-policy-title"
+            >
+              <header className="flex min-h-14 shrink-0 items-center justify-between gap-3 border-b border-gray-100 px-4">
+                <h2 id="cancellation-policy-title" className="text-xs font-bold text-dark">
+                  Política de cancelación y reembolso
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setIsCancellationPolicyOpen(false)}
+                  aria-label="Cerrar política de cancelación y reembolso"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-600 hover:bg-gray-100"
+                >
+                  <i data-lucide="x" className="h-5 w-5"></i>
+                </button>
+              </header>
+              <iframe
+                src="/politica-cancelacion-reembolso.pdf#view=FitH"
+                title="Documento: política de cancelación y reembolso"
+                className="min-h-0 w-full flex-1 border-0 bg-gray-100"
+              />
+            </section>
+          </div>,
+          document.getElementById('root')
+        )}
         </>
       );
 
@@ -12557,14 +12608,13 @@
               >
                 Volver al inicio
               </button>
-              <a
-                href="./politica-cancelacion-reembolso.pdf"
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
+                onClick={() => setIsCancellationPolicyOpen(true)}
                 className="text-[10px] font-semibold text-[#a90000] underline underline-offset-2"
               >
                 Política de cancelación y reembolso
-              </a>
+              </button>
             </div>
           );
         }
@@ -12608,14 +12658,13 @@
                   >
                     {isCancellingOrder ? 'Cancelando pedido…' : 'Cancelar el pedido 🥺'}
                   </button>
-                  <a
-                    href="./politica-cancelacion-reembolso.pdf"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block text-center text-[10px] font-semibold text-[#a90000] underline underline-offset-2"
+                  <button
+                    type="button"
+                    onClick={() => setIsCancellationPolicyOpen(true)}
+                    className="block w-full text-center text-[10px] font-semibold text-[#a90000] underline underline-offset-2"
                   >
                     Política de cancelación y reembolso
-                  </a>
+                  </button>
                   {cancelOrderError && <p className="text-[10px] text-red-600" role="alert">{cancelOrderError}</p>}
                 </div>
               ) : !Number.isFinite(orderCreatedAt) ? (
@@ -12679,14 +12728,13 @@
                       >
                         {isCancellingOrder ? 'Cancelando pedido…' : 'Cancelar pedido'}
                       </button>
-                      <a
-                        href="./politica-cancelacion-reembolso.pdf"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block text-center text-[10px] font-semibold text-[#a90000] underline underline-offset-2"
+                      <button
+                        type="button"
+                        onClick={() => setIsCancellationPolicyOpen(true)}
+                        className="block w-full text-center text-[10px] font-semibold text-[#a90000] underline underline-offset-2"
                       >
                         Política de cancelación y reembolso
-                      </a>
+                      </button>
                       {cancelOrderError && <p className="text-[10px] text-red-600" role="alert">{cancelOrderError}</p>}
                     </div>
                   )}

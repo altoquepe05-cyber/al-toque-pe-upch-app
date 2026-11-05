@@ -559,15 +559,18 @@ test('uses the single supplied splash emblem with the matching brand lettering',
   assert.doesNotMatch(html, /splash-(?:clean|warm)-reference\.png/);
 });
 
-test('links the cancellation policy below each cancel button and serves its PDF', async (t) => {
+test('opens the cancellation policy in a phone-fitted in-app viewer', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);
   const baseUrl = `http://127.0.0.1:${server.address().port}`;
   const html = await (await fetch(baseUrl)).text();
-  assert.equal(html.split('href="./politica-cancelacion-reembolso.pdf"').length - 1, 3);
-  assert.equal(html.split('Política de cancelación y reembolso').length - 1, 3);
+  assert.equal(html.split('onClick={() => setIsCancellationPolicyOpen(true)}').length - 1, 3);
+  assert.doesNotMatch(html, /href="\.\/politica-cancelacion-reembolso\.pdf"/);
+  assert.match(html, /isCancellationPolicyOpen && ReactDOM\.createPortal\([\s\S]*?paddingTop:\s*'max\(12px, env\(safe-area-inset-top\)\)'[\s\S]*?paddingBottom:\s*'max\(12px, env\(safe-area-inset-bottom\)\)'/);
+  assert.match(html, /max-w-\[430px\] flex-1 flex-col overflow-hidden rounded-2xl/);
+  assert.match(html, /src="\/politica-cancelacion-reembolso\.pdf#view=FitH"[\s\S]*?title="Documento: política de cancelación y reembolso"[\s\S]*?min-h-0 w-full flex-1/);
   const cancelledOrderView = html.slice(html.indexOf("if (orderStatus === 'cancelled')"), html.indexOf("if (orderStatus === 'available')"));
-  assert.match(cancelledOrderView, /Volver al inicio\s*<\/button>[\s\S]*?href="\.\/politica-cancelacion-reembolso\.pdf"[\s\S]*?Política de cancelación y reembolso/);
+  assert.match(cancelledOrderView, /Volver al inicio\s*<\/button>[\s\S]*?onClick=\{\(\) => setIsCancellationPolicyOpen\(true\)\}[\s\S]*?Política de cancelación y reembolso/);
 
   const response = await fetch(`${baseUrl}/politica-cancelacion-reembolso.pdf`);
   assert.equal(response.status, 200);
