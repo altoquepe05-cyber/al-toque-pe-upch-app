@@ -12382,66 +12382,67 @@
           document.getElementById('root')
         )}
         <VoiceCallDialog controller={voiceCall} contactName={assignedRider?.name || 'el motorizado'} />
-        {isCancellationPolicyOpen && ReactDOM.createPortal(
-          <div
-            className="absolute inset-0 z-[160] flex items-center justify-center bg-black/55"
-            style={{
-              paddingTop: 'max(12px, env(safe-area-inset-top))',
-              paddingRight: 'max(12px, env(safe-area-inset-right))',
-              paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
-              paddingLeft: 'max(12px, env(safe-area-inset-left))'
-            }}
-            onMouseDown={(event) => {
-              if (event.target === event.currentTarget) setIsCancellationPolicyOpen(false);
-            }}
-          >
-            <section
-              className="flex min-h-0 w-full max-w-[430px] flex-1 flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="cancellation-policy-title"
-            >
-              <header className="flex min-h-14 shrink-0 items-center justify-between gap-3 border-b border-gray-100 px-4">
-                <h2 id="cancellation-policy-title" className="text-xs font-bold text-dark">
-                  Política de cancelación y reembolso
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => setIsCancellationPolicyOpen(false)}
-                  aria-label="Cerrar política de cancelación y reembolso"
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-600 hover:bg-gray-100"
-                >
-                  <i data-lucide="x" className="h-5 w-5"></i>
-                </button>
-              </header>
-              <div className="min-h-0 flex-1 overflow-y-auto bg-gray-100 p-3" aria-busy={cancellationPolicyPdfStatus === 'loading'}>
-                {cancellationPolicyPdfStatus === 'loading' && (
-                  <p className="py-6 text-center text-xs text-gray-500" role="status">Cargando la política…</p>
-                )}
-                {cancellationPolicyPdfStatus === 'error' && (
-                  <div className="space-y-3 py-6 text-center" role="alert">
-                    <p className="text-xs text-red-700">No se pudo mostrar el documento.</p>
-                    <a
-                      href="/politica-cancelacion-reembolso.pdf"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-block text-xs font-semibold text-[#a90000] underline"
-                    >
-                      Abrir el PDF en otra ventana
-                    </a>
-                  </div>
-                )}
-                <div
-                  ref={cancellationPolicyPagesRef}
-                  className="mx-auto w-full max-w-[760px]"
-                  aria-label="Páginas de la política de cancelación y reembolso"
-                />
-              </div>
-            </section>
-          </div>,
-          document.getElementById('root')
-        )}
         </>
+      );
+
+      const renderCancellationPolicyDialog = () => isCancellationPolicyOpen && ReactDOM.createPortal(
+        <div
+          className="absolute inset-0 z-[160] flex items-center justify-center bg-black/55"
+          style={{
+            paddingTop: 'max(12px, env(safe-area-inset-top))',
+            paddingRight: 'max(12px, env(safe-area-inset-right))',
+            paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
+            paddingLeft: 'max(12px, env(safe-area-inset-left))'
+          }}
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setIsCancellationPolicyOpen(false);
+          }}
+        >
+          <section
+            className="flex min-h-0 w-full max-w-[430px] flex-1 flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cancellation-policy-title"
+          >
+            <header className="flex min-h-14 shrink-0 items-center justify-between gap-3 border-b border-gray-100 px-4">
+              <h2 id="cancellation-policy-title" className="text-xs font-bold text-dark">
+                Política de cancelación y reembolso
+              </h2>
+              <button
+                type="button"
+                onClick={() => setIsCancellationPolicyOpen(false)}
+                aria-label="Cerrar política de cancelación y reembolso"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-600 hover:bg-gray-100"
+              >
+                <i data-lucide="x" className="h-5 w-5"></i>
+              </button>
+            </header>
+            <div className="min-h-0 flex-1 overflow-y-auto bg-gray-100 p-3" aria-busy={cancellationPolicyPdfStatus === 'loading'}>
+              {cancellationPolicyPdfStatus === 'loading' && (
+                <p className="py-6 text-center text-xs text-gray-500" role="status">Cargando la política…</p>
+              )}
+              {cancellationPolicyPdfStatus === 'error' && (
+                <div className="space-y-3 py-6 text-center" role="alert">
+                  <p className="text-xs text-red-700">No se pudo mostrar el documento.</p>
+                  <a
+                    href="/politica-cancelacion-reembolso.pdf"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block text-xs font-semibold text-[#a90000] underline"
+                  >
+                    Abrir el PDF en otra ventana
+                  </a>
+                </div>
+              )}
+              <div
+                ref={cancellationPolicyPagesRef}
+                className="mx-auto w-full max-w-[760px]"
+                aria-label="Páginas de la política de cancelación y reembolso"
+              />
+            </div>
+          </section>
+        </div>,
+        document.getElementById('root')
       );
 
       const renderRiderProfileCard = () => (
@@ -12686,6 +12687,7 @@
               >
                 Volver al inicio
               </button>
+              {renderCancellationPolicyDialog()}
             </div>
           );
         }
@@ -12706,6 +12708,7 @@
               >
                 Volver al inicio
               </button>
+              {renderCancellationPolicyDialog()}
             </div>
           );
         }
@@ -12737,6 +12740,7 @@
               >
                 Política de cancelación y reembolso
               </button>
+              {renderCancellationPolicyDialog()}
             </div>
           );
         }
@@ -12796,6 +12800,7 @@
                   Tú pedido ya está listo, no puedes cancelarlo
                 </div>
               )}
+              {renderCancellationPolicyDialog()}
             </div>
           );
         }
@@ -12863,6 +12868,7 @@
                 </div>
               </>
                   )}
+          {renderCancellationPolicyDialog()}
           </div>
         );
       }

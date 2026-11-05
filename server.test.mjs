@@ -573,7 +573,7 @@ test('opens the cancellation policy in a phone-fitted in-app viewer', async (t) 
   const html = await (await fetch(baseUrl)).text();
   assert.equal(html.split('onClick={() => setIsCancellationPolicyOpen(true)}').length - 1, 3);
   assert.doesNotMatch(html, /href="\.\/politica-cancelacion-reembolso\.pdf"/);
-  assert.match(html, /isCancellationPolicyOpen && ReactDOM\.createPortal\([\s\S]*?paddingTop:\s*'max\(12px, env\(safe-area-inset-top\)\)'[\s\S]*?paddingBottom:\s*'max\(12px, env\(safe-area-inset-bottom\)\)'/);
+  assert.match(html, /const renderCancellationPolicyDialog = \(\) => isCancellationPolicyOpen && ReactDOM\.createPortal\([\s\S]*?paddingTop:\s*'max\(12px, env\(safe-area-inset-top\)\)'[\s\S]*?paddingBottom:\s*'max\(12px, env\(safe-area-inset-bottom\)\)'/);
   assert.match(html, /max-w-\[430px\] flex-1 flex-col overflow-hidden rounded-2xl/);
   assert.match(html, /await import\('\/vendor\/pdf\.min\.mjs'\)/);
   assert.match(html, /pdfjs\.GlobalWorkerOptions\.workerSrc = '\/vendor\/pdf\.worker\.min\.mjs'/);
@@ -583,6 +583,9 @@ test('opens the cancellation policy in a phone-fitted in-app viewer', async (t) 
   assert.doesNotMatch(html, /<iframe[^>]+politica-cancelacion-reembolso\.pdf/);
   const cancelledOrderView = html.slice(html.indexOf("if (orderStatus === 'cancelled')"), html.indexOf("if (orderStatus === 'available')"));
   assert.match(cancelledOrderView, /Volver al inicio\s*<\/button>[\s\S]*?onClick=\{\(\) => setIsCancellationPolicyOpen\(true\)\}[\s\S]*?Política de cancelación y reembolso/);
+  assert.match(cancelledOrderView, /renderCancellationPolicyDialog\(\)/);
+  const confirmedOrderViews = html.slice(html.indexOf('if (orderConfirmed)'), html.indexOf('\n      return (\n        <div className="space-y-4 pt-2">'));
+  assert.equal(confirmedOrderViews.match(/renderCancellationPolicyDialog\(\)/g)?.length, 5);
 
   const response = await fetch(`${baseUrl}/politica-cancelacion-reembolso.pdf`);
   assert.equal(response.status, 200);
