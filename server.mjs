@@ -101,6 +101,7 @@ const PUBLIC_ASSETS = new Set([
   'promo-profesor-martin-referencia.png',
   'promo-al-toque-banner.png',
   'gorritos-welcome-hat.png',
+  'politica-cancelacion-reembolso.pdf',
   'starbucks-panettone-latte.png',
   'starbucks-panettone-frappuccino.png',
   'starbucks-panettone-latte-frio.png',
@@ -2227,7 +2228,8 @@ async function handleRequest(request, response, orders, riderLocations, idempote
         '.png': 'image/png',
         '.webp': 'image/webp',
         '.svg': 'image/svg+xml',
-        '.mp3': 'audio/mpeg'
+        '.mp3': 'audio/mpeg',
+        '.pdf': 'application/pdf'
       };
       return sendStaticContent(request, response, content, {
         'Content-Type': types[extname(assetName)] || 'application/octet-stream',

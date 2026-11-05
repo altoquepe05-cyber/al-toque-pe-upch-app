@@ -12600,6 +12600,14 @@
                   >
                     {isCancellingOrder ? 'Cancelando pedido…' : 'Cancelar el pedido 🥺'}
                   </button>
+                  <a
+                    href="./politica-cancelacion-reembolso.pdf"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block text-center text-[10px] font-semibold text-[#a90000] underline underline-offset-2"
+                  >
+                    Política de cancelación y reembolso
+                  </a>
                   {cancelOrderError && <p className="text-[10px] text-red-600" role="alert">{cancelOrderError}</p>}
                 </div>
               ) : !Number.isFinite(orderCreatedAt) ? (
@@ -12663,6 +12671,14 @@
                       >
                         {isCancellingOrder ? 'Cancelando pedido…' : 'Cancelar pedido'}
                       </button>
+                      <a
+                        href="./politica-cancelacion-reembolso.pdf"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block text-center text-[10px] font-semibold text-[#a90000] underline underline-offset-2"
+                      >
+                        Política de cancelación y reembolso
+                      </a>
                       {cancelOrderError && <p className="text-[10px] text-red-600" role="alert">{cancelOrderError}</p>}
                     </div>
                   )}
