@@ -478,6 +478,16 @@ test('preloads the order received animation when serving the application page', 
   assert.match(html, /<link rel="preload" href="\/caminante-ruta\.png" as="image" type="image\/png"\s*\/?>/);
 });
 
+test('enlarges the splash logo while keeping it responsive on narrow screens', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  const server = await createReelsTestServer(t, testDataDir);
+  const response = await fetch(`http://127.0.0.1:${server.address().port}/`);
+  const html = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(html, /\.splash-screen \.brand-splash-reference\s*\{\s*width:\s*min\(220px,\s*72vw\);\s*height:\s*min\(220px,\s*72vw\);\s*\}/);
+});
+
 test('collapses the open music player to a floating launcher while scrolling down', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);
