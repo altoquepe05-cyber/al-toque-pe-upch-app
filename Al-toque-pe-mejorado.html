@@ -2775,18 +2775,29 @@
       display: block;
       width: 160px;
       height: 160px;
+      overflow: hidden;
     }
 
     .splash-screen .brand-splash-reference {
-      width: min(220px, 72vw);
-      height: min(220px, 72vw);
+      width: min(280px, 82vw);
+      height: min(280px, 82vw);
     }
 
     .brand-splash-reference img {
       display: block;
       width: 100%;
       height: 100%;
-      object-fit: contain;
+      object-fit: cover;
+      object-position: center;
+    }
+
+    .brand-splash-logo--clean img,
+    .brand-splash-logo--warm img {
+      transform: scale(1.12);
+    }
+
+    .brand-splash-logo--impact img {
+      transform: scale(1.65);
     }
 
     .splash-screen > .brand-splash-content {
@@ -5594,6 +5605,20 @@
     }));
 
     const SPLASH_THEME_VARIANTS = ['clean', 'warm', 'impact'];
+    const SPLASH_LOGOS = {
+      clean: {
+        file: 'splash-logo-clean.png',
+        description: 'Gorro de chef, tenedor y cuchara amarillos sobre un círculo guinda'
+      },
+      warm: {
+        file: 'splash-logo-warm.png',
+        description: 'Gorro de chef y cubiertos rojos dentro de un círculo dorado'
+      },
+      impact: {
+        file: 'splash-logo-impact.png',
+        description: 'Gorro blanco con tenedor y cuchara amarillos sobre fondo guinda'
+      }
+    };
     const SPLASH_THEME_OPTIONS = [
       { id: 'random', label: 'Predeterminada', description: 'Elige al azar y no repite el inicio anterior.' },
       { id: 'clean', label: 'Limpia y clara', description: 'Fondo blanco y acentos sencillos.' },
@@ -5632,51 +5657,16 @@
         );
       }
 
-      if (theme === 'clean' || theme === 'warm') {
-        const reference = theme === 'clean' ? 'splash-clean-reference.png' : 'splash-warm-reference.png';
-        const description = theme === 'clean'
-          ? 'Al toque, UPCH campus. Pedidos de comida en tu campus'
-          : 'Al toque, tu antojo al toque. UPCH campus';
+      if (SPLASH_LOGOS[theme]) {
+        const logo = SPLASH_LOGOS[theme];
         return (
-          <div className="brand-splash-reference">
-            <img src={`./${reference}`} alt={description} />
+          <div className={`brand-splash-reference brand-splash-logo--${theme}`}>
+            <img src={`./${logo.file}`} alt={logo.description} />
           </div>
         );
       }
 
-      return (
-        <div className="brand-splash-content">
-          <div className="brand-splash-mark" aria-hidden="true">
-            <svg viewBox="0 0 32 32">
-              <path
-                className="brand-splash-chef"
-                d="M6.6 15.1a4.5 4.5 0 0 1-.8-8.8 5.5 5.5 0 0 1 9.5-2.4 5.8 5.8 0 0 1 9.8 3.9 4.7 4.7 0 0 1-.4 9.3H7.9z"
-              />
-              <path className="brand-splash-chest" d="M6.4 14.2h19.3v5.2H6.4z" />
-              <path className="brand-splash-band" d="M7.2 15.1h17.7v1.1H7.2z" />
-              <path className="brand-splash-utensil" d="M10.2 19.5v3m2.2-3v3m2.2-3v3m-5.1-.1h5.8m-2.9 0v5.3" />
-              <ellipse className="brand-splash-spoon-bowl" cx="20.4" cy="21.1" rx="2" ry="2.5" />
-              <path className="brand-splash-utensil" d="M20.4 23.6v5.1" />
-            </svg>
-          </div>
-          <div className="brand-splash-wordmark">
-            al <span>toque</span>
-          </div>
-          {theme === 'clean' && (
-            <>
-              <span className="brand-splash-campus">UPCH campus</span>
-              <span className="brand-splash-tagline">Pedidos de comida en tu campus</span>
-            </>
-          )}
-          {theme === 'warm' && (
-            <>
-              <span className="brand-splash-tagline">Tu antojo, al toque</span>
-              <span className="brand-splash-campus">UPCH campus</span>
-            </>
-          )}
-          {theme === 'impact' && <span className="brand-splash-campus">UPCH campus</span>}
-        </div>
-      );
+      return null;
     }
 
     function SplashPreview({ theme }) {

@@ -478,14 +478,22 @@ test('preloads the order received animation when serving the application page', 
   assert.match(html, /<link rel="preload" href="\/caminante-ruta\.png" as="image" type="image\/png"\s*\/?>/);
 });
 
-test('enlarges the splash logo while keeping it responsive on narrow screens', async (t) => {
+test('uses all three supplied splash logos at a responsive, detailed size', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);
   const response = await fetch(`http://127.0.0.1:${server.address().port}/`);
   const html = await response.text();
 
   assert.equal(response.status, 200);
-  assert.match(html, /\.splash-screen \.brand-splash-reference\s*\{\s*width:\s*min\(220px,\s*72vw\);\s*height:\s*min\(220px,\s*72vw\);\s*\}/);
+  assert.match(html, /\.splash-screen \.brand-splash-reference\s*\{\s*width:\s*min\(280px,\s*82vw\);\s*height:\s*min\(280px,\s*82vw\);\s*\}/);
+  for (const asset of ['splash-logo-clean.png', 'splash-logo-impact.png', 'splash-logo-warm.png']) {
+    const assetResponse = await fetch(`http://127.0.0.1:${server.address().port}/${asset}`);
+    assert.equal(assetResponse.status, 200);
+    assert.match(assetResponse.headers.get('content-type'), /image\/png/);
+    assert.ok((await assetResponse.arrayBuffer()).byteLength > 0);
+    assert.ok(html.includes(`file: '${asset}'`));
+  }
+  assert.match(html, /\.brand-splash-logo--impact img\s*\{\s*transform:\s*scale\(1\.65\);\s*\}/);
 });
 
 test('collapses the open music player to a floating launcher while scrolling down', async (t) => {
