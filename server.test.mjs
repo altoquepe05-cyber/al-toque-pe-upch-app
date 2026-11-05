@@ -573,7 +573,7 @@ test('opens the cancellation policy in a phone-fitted in-app viewer', async (t) 
   const html = await (await fetch(baseUrl)).text();
   assert.equal(html.split('onClick={() => setIsCancellationPolicyOpen(true)}').length - 1, 3);
   assert.doesNotMatch(html, /href="\.\/politica-cancelacion-reembolso\.pdf"/);
-  assert.match(html, /id="root" class="[^"]*sm:h-\[min\(844px,calc\(100vh-2rem\)\)\][^"]*overflow-hidden[^"]*relative"/);
+  assert.match(html, /id="root" class="[^"]*h-\[100vh\] sm:h-\[844px\][^"]*overflow-hidden[^"]*relative"/);
   assert.match(html, /const renderCancellationPolicyDialog = \(\) => isCancellationPolicyOpen && ReactDOM\.createPortal\([\s\S]*?paddingTop:\s*'max\(12px, env\(safe-area-inset-top\)\)'[\s\S]*?paddingBottom:\s*'max\(12px, env\(safe-area-inset-bottom\)\)'/);
   assert.match(html, /className="absolute inset-0 z-\[160\] flex items-center justify-center bg-black\/55"/);
   assert.match(html, /h-full max-h-full min-h-0 w-full max-w-\[430px\] flex-1 flex-col overflow-hidden rounded-2xl/);
