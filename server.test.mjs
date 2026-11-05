@@ -625,6 +625,24 @@ test('shows the Starbucks Panettone launch modal and upcoming items without pric
   assert.match(html, /\.starbucks-upcoming-card,\s*\.starbucks-upcoming-media\s*\{\s*transition:\s*none !important;/);
 });
 
+test('shows the emoliente and cheese bread breakfast offer in Desayunos', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  const server = await createReelsTestServer(t, testDataDir);
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const response = await fetch(baseUrl);
+  const html = await response.text();
+  const imageResponse = await fetch(`${baseUrl}/desayuno-emoliente-pan-queso.png`);
+  const image = Buffer.from(await imageResponse.arrayBuffer());
+
+  assert.equal(response.status, 200);
+  assert.match(html, /id: '11',\s*name: 'Vaso de emoliente y Pan con Queso',\s*category: 'desayunos',\s*price: 5\.0,[\s\S]*?image: '\.\/desayuno-emoliente-pan-queso\.png'/);
+  assert.match(html, /filter === 'desayunos' && filteredItems\.length === 0 && !searchQuery\.trim\(\)[\s\S]*?Próximamente encontrarás aquí los desayunos\./);
+  assert.match(html, /className="menu-pop-card bg-white border border-gray-100 rounded-3xl p-3 shadow-sm space-y-2"/);
+  assert.equal(imageResponse.status, 200);
+  assert.equal(imageResponse.headers.get('content-type'), 'image/png');
+  assert.equal(image.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
+});
+
 test('offers animated WhatsApp support for the Al Toque help phone number', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);

@@ -5018,6 +5018,18 @@
 
     const INITIAL_MENU = [
       {
+        id: '11',
+        name: 'Vaso de emoliente y Pan con Queso',
+        category: 'desayunos',
+        price: 5.0,
+        description: 'Vaso de emoliente + pan con queso',
+        time: '5 min',
+        badge: 'Desayuno',
+        isPopular: false,
+        image: './desayuno-emoliente-pan-queso.png',
+        components: ['Vaso de emoliente', 'Pan con queso']
+      },
+      {
         id: '1',
         name: 'Lomo saltado',
         category: 'menús',
@@ -9194,6 +9206,7 @@
       });
       const filterChips = [
         { id: 'todos', label: 'Todos', count: INITIAL_MENU.length },
+        { id: 'desayunos', label: 'Desayunos', count: INITIAL_MENU.filter((item) => item.category === 'desayunos').length },
         { id: 'menús', label: 'Menús', count: INITIAL_MENU.filter((item) => item.category === 'menús').length },
         { id: 'combos', label: 'Combos', count: INITIAL_MENU.filter((item) => item.category === 'combos').length },
         { id: 'bebidas', label: 'Bebidas', count: INITIAL_MENU.filter((item) => item.category === 'bebidas').length }
@@ -9641,6 +9654,11 @@
             </section>
           ) : (
           <div className="space-y-6">
+            {filter === 'desayunos' && filteredItems.length === 0 && !searchQuery.trim() && (
+              <p className="rounded-2xl bg-gray-50 p-4 text-center text-xs text-gray-500" role="status">
+                Próximamente encontrarás aquí los desayunos.
+              </p>
+            )}
             {filteredItems.map((dish) => {
               const discountedPrice = getOctoberPromotionPrice(dish, isPromoDay);
               const hasDiscount = discountedPrice < dish.price;
