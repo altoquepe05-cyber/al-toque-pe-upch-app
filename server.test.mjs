@@ -111,6 +111,24 @@ test('serves the Reel watermark image as a public PNG asset', async (t) => {
   assert.equal(image.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
 });
 
+test('serves the PartyKub logo and includes its launcher on the home screen', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  const server = await createReelsTestServer(t, testDataDir);
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const imageResponse = await fetch(`${baseUrl}/partykub-logo.png`);
+  const image = Buffer.from(await imageResponse.arrayBuffer());
+  const pageResponse = await fetch(baseUrl);
+  const html = await pageResponse.text();
+
+  assert.equal(imageResponse.status, 200);
+  assert.equal(imageResponse.headers.get('content-type'), 'image/png');
+  assert.equal(image.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
+  assert.equal(pageResponse.status, 200);
+  assert.match(html, /aria-label="PartyKub, juego próximamente"/);
+  assert.match(html, /<img src="\/partykub-logo\.png" alt="" aria-hidden="true" \/>/);
+  assert.match(html, /\.partykub-launcher\s*\{\s*display:\s*grid;\s*width:\s*52px;\s*height:\s*52px;/);
+});
+
 test('serves the transparent Miraflores logo as a public PNG asset', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);

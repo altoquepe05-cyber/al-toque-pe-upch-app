@@ -100,6 +100,7 @@ const PUBLIC_ASSETS = new Set([
   'promo-profesor-martin-limpio.png',
   'promo-profesor-martin-referencia.png',
   'promo-al-toque-banner.png',
+  'partykub-logo.png',
   'gorritos-welcome-hat.png',
   'politica-cancelacion-reembolso.pdf',
   'starbucks-panettone-latte.png',

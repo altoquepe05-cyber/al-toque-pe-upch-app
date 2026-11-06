@@ -426,6 +426,41 @@
       animation: musicLauncherGlow 2.4s ease-in-out infinite;
     }
 
+    .partykub-launcher {
+      display: grid;
+      width: 52px;
+      height: 52px;
+      flex: 0 0 52px;
+      place-items: center;
+      border: 0;
+      border-radius: 50%;
+      background: transparent;
+      padding: 0;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .partykub-launcher img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      animation: partykub-logo-float 2.8s ease-in-out infinite;
+    }
+
+    .partykub-launcher:focus-visible {
+      outline: 3px solid rgba(24, 184, 223, 0.42);
+      outline-offset: 3px;
+    }
+
+    .partykub-launcher:active {
+      transform: scale(0.94);
+    }
+
+    @keyframes partykub-logo-float {
+      0%, 100% { transform: translateY(0) rotate(-3deg) scale(0.96); }
+      50% { transform: translateY(-2px) rotate(3deg) scale(1.02); }
+    }
+
     .music-scroll-launcher {
       position: absolute;
       right: 1rem;
@@ -645,7 +680,8 @@
       .music-launcher-icon,
       .music-launcher-note,
       .music-launcher-star,
-      .music-scroll-launcher {
+      .music-scroll-launcher,
+      .partykub-launcher img {
         animation: none !important;
       }
     }
@@ -8822,6 +8858,7 @@
 
     function HomeScreen({ onNavigate, onOpenCustomize, mood, setMood, isMusicPlayerOpen, onToggleMusicPlayer }) {
       const [timeString, setTimeString] = useState('');
+      const [partyKubNotice, setPartyKubNotice] = useState('');
       const [dayPart, setDayPart] = useState(() => getDayPart(new Date().getHours()));
       const [serviceStatus, setServiceStatus] = useState(() => getCampusServiceStatus());
       const [isServiceCardExpanded, setIsServiceCardExpanded] = useState(false);
@@ -8830,6 +8867,9 @@
       const [homeCardStickerId, setHomeCardStickerId] = useState(9);
       const [cardMessageIndex, setCardMessageIndex] = useState(() => Math.floor(Math.random() * HOME_AI_CARD_MESSAGES.length));
       const seenMessagesRef = useRef(HOME_SEEN_MESSAGES_BY_MOOD);
+      const partyKubNoticeTimerRef = useRef(null);
+
+      useEffect(() => () => clearTimeout(partyKubNoticeTimerRef.current), []);
 
       useEffect(() => {
         const updateTime = () => {
@@ -8934,6 +8974,19 @@
             <div className="flex items-center gap-2">
               <button
                 type="button"
+                onClick={() => {
+                  setPartyKubNotice('PartyKub estará disponible próximamente.');
+                  clearTimeout(partyKubNoticeTimerRef.current);
+                  partyKubNoticeTimerRef.current = setTimeout(() => setPartyKubNotice(''), 2800);
+                }}
+                aria-label="PartyKub, juego próximamente"
+                title="PartyKub: próximamente"
+                className="partykub-launcher"
+              >
+                <img src="/partykub-logo.png" alt="" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
                 onClick={() => onNavigate('reels')}
                 aria-label="Abrir Reels"
                 className="home-profile-avatar flex h-10 items-center gap-1.5 rounded-2xl bg-cream px-3 text-dark transition hover:opacity-80"
@@ -8965,6 +9018,12 @@
               </button>
             </div>
           </div>
+
+          {partyKubNotice && (
+            <p className="rounded-xl bg-[#fff3d1] px-3 py-2 text-center text-xs font-semibold text-[#2b1718]" role="status">
+              {partyKubNotice}
+            </p>
+          )}
 
           <p className="text-[11px] font-bold text-brand tracking-wider uppercase mb-1">{timeString || 'LUNES, 12:38 P. M.'}</p>
 
