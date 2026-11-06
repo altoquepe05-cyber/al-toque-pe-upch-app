@@ -728,9 +728,11 @@ test('shows the Starbucks Panettone launch modal and upcoming items without pric
   const upcomingHoverStyles = html.slice(upcomingHoverStylesStart, upcomingHoverStylesEnd);
 
   assert.equal(response.status, 200);
-  assert.match(html, /const STARBUCKS_SECTIONS = \[\s*\{ id: 'bebidas', label: 'Bebidas' \},\s*\{ id: 'alimentos', label: 'Alimentos' \},\s*\{ id: 'merch', label: 'Merch & Café en Grano' \},\s*\{ id: 'packs', label: 'Packs & Boxes' \}\s*\]/);
+  assert.match(html, /const STARBUCKS_SECTIONS = \[\s*\{ id: 'panettone', label: 'Navidad 🎄' \},\s*\{ id: 'bebidas', label: 'Bebidas' \},\s*\{ id: 'alimentos', label: 'Alimentos' \},\s*\{ id: 'merch', label: 'Merch & Café en Grano' \},\s*\{ id: 'packs', label: 'Packs & Boxes' \}\s*\]/);
   assert.match(html, /filter === 'starbucks' \? \(\s*<section className="space-y-5" aria-labelledby="starbucks-menu-title">\s*<h3 id="starbucks-menu-title" className="sr-only">Menú Starbucks<\/h3>\s*<div[^>]*role="tablist" aria-label="Categorías de Starbucks">/);
   assert.match(html, /role="tab"\s*id=\{`starbucks-tab-\$\{section\.id\}`\}\s*aria-selected=\{starbucksSection === section\.id\}\s*aria-controls="starbucks-category-panel"\s*onClick=\{\(\) => setStarbucksSection\(section\.id\)\}/);
+  assert.match(html, /starbucksSection === 'panettone' \? \([\s\S]*?<h3 id="starbucks-upcoming-title"[^>]*>Navidad 🎄<\/h3>/);
+  assert.match(html, /border-\[#e30613\] text-\[#e30613\]/);
   assert.match(html, /starbucksSection === 'bebidas' \? \(/);
   assert.match(html, /Estamos preparando esta categoría de Starbucks\. Próximamente encontrarás aquí sus productos\./);
   assert.match(html, /const STARBUCKS_CAMPAIGN_END_TIME = 1793854740000;/);
@@ -771,7 +773,7 @@ test('shows the Starbucks Panettone launch modal and upcoming items without pric
   assert.match(html, /\.starbucks-upcoming-image--panettone-latte\s*\{\s*width:\s*100%;\s*height:\s*100%;\s*\}/);
   assert.match(productCards, /<h4 className="text-xs font-bold leading-snug text-dark">\{product\.name\}<\/h4>/);
   assert.doesNotMatch(upcomingPromotions, /\bprice\s*:/, 'upcoming Starbucks products should not have prices');
-  assert.match(productCards, /Próximamente/);
+  assert.match(productCards, /Especial de temporada/);
   assert.doesNotMatch(productCards, /onAddStarbucks|toFixed\(/, 'upcoming products should not be purchasable or display prices');
   assert.match(html, /\.starbucks-upcoming-media\s*\{[^}]*transform-origin:\s*center;[^}]*transition:\s*transform 360ms/);
   assert.match(upcomingHoverStyles, /\.starbucks-upcoming-card:has\(> \.starbucks-upcoming-media:hover\)/);

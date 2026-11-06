@@ -5166,6 +5166,7 @@
       'Shaken Espresso'
     ];
     const STARBUCKS_SECTIONS = [
+      { id: 'panettone', label: 'Navidad 🎄' },
       { id: 'bebidas', label: 'Bebidas' },
       { id: 'alimentos', label: 'Alimentos' },
       { id: 'merch', label: 'Merch & Café en Grano' },
@@ -9373,7 +9374,9 @@
                     onClick={() => setStarbucksSection(section.id)}
                     className={`shrink-0 border-b-2 px-3 py-2 text-xs font-semibold transition ${
                       starbucksSection === section.id
-                        ? 'border-[#006241] text-[#006241]'
+                        ? section.id === 'panettone'
+                          ? 'border-[#e30613] text-[#e30613]'
+                          : 'border-[#006241] text-[#006241]'
                         : 'border-transparent text-gray-500 hover:text-[#006241]'
                     }`}
                   >
@@ -9382,40 +9385,40 @@
                 ))}
               </div>
               <div id="starbucks-category-panel" role="tabpanel" aria-labelledby={`starbucks-tab-${starbucksSection}`}>
-                {starbucksSection === 'bebidas' ? (
-                  <div className="space-y-5">
-                    {matchingUpcomingPromotions.length > 0 && (
-                <section className="space-y-3" aria-labelledby="starbucks-upcoming-title">
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <h3 id="starbucks-upcoming-title" className="font-title text-lg font-bold">Fiestas de Panettone</h3>
-                      <p className="text-[11px] text-gray-500">Nuevas bebidas de temporada</p>
+                {starbucksSection === 'panettone' ? (
+                  <section className="space-y-3" aria-labelledby="starbucks-upcoming-title">
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <h3 id="starbucks-upcoming-title" className="font-title text-lg font-bold">Navidad 🎄</h3>
+                        <p className="text-[11px] text-gray-500">Bebidas especiales de temporada</p>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-[#dcefe8] px-2.5 py-1 text-[10px] font-bold text-[#1e3932]">Temporada Starbucks</span>
                     </div>
-                    <span className="shrink-0 rounded-full bg-[#dcefe8] px-2.5 py-1 text-[10px] font-bold text-[#1e3932]">Próximamente</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    {matchingUpcomingPromotions.map((product) => (
-                      <article key={product.name} className="menu-pop-card menu-pop-card--compact starbucks-upcoming-card flex min-w-0 flex-col overflow-visible rounded-2xl border border-[#ead4d9] bg-white shadow-sm">
-                        <div
-                          className="starbucks-upcoming-media mx-auto my-2 flex aspect-square w-[88%] items-center justify-center rounded-full border-2 border-[#d6bb79] bg-[#075344] p-1.5 shadow-md"
-                        >
-                          <img
-                            src={product.image}
-                            alt={`Bebida de temporada: ${product.name}`}
-                            loading="lazy"
-                            className={`starbucks-upcoming-image ${product.name === 'Panettone Latte' ? 'starbucks-upcoming-image--panettone-latte' : ''}`}
-                          />
-                        </div>
-                        <div className="flex flex-1 flex-col gap-2 p-2.5">
-                          <h4 className="text-xs font-bold leading-snug text-dark">{product.name}</h4>
-                          {product.description && <p className="text-[10px] text-gray-500">{product.description}</p>}
-                          <span className="mt-auto inline-flex w-fit rounded-full bg-[#f7e9ed] px-2 py-1 text-[9px] font-extrabold uppercase tracking-wide text-[#9b1238]">Próximamente</span>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                </section>
+                    <div className="grid grid-cols-2 gap-4">
+                      {matchingUpcomingPromotions.map((product) => (
+                        <article key={product.name} className="menu-pop-card menu-pop-card--compact starbucks-upcoming-card flex min-w-0 flex-col overflow-visible rounded-2xl border border-[#ead4d9] bg-white shadow-sm">
+                          <div className="starbucks-upcoming-media mx-auto my-2 flex aspect-square w-[88%] items-center justify-center rounded-full border-2 border-[#d6bb79] bg-[#075344] p-1.5 shadow-md">
+                            <img
+                              src={product.image}
+                              alt={`Bebida de temporada: ${product.name}`}
+                              loading="lazy"
+                              className={`starbucks-upcoming-image ${product.name === 'Panettone Latte' ? 'starbucks-upcoming-image--panettone-latte' : ''}`}
+                            />
+                          </div>
+                          <div className="flex flex-1 flex-col gap-2 p-2.5">
+                            <h4 className="text-xs font-bold leading-snug text-dark">{product.name}</h4>
+                            {product.description && <p className="text-[10px] text-gray-500">{product.description}</p>}
+                            <span className="mt-auto inline-flex w-fit rounded-full bg-[#f7e9ed] px-2 py-1 text-[9px] font-extrabold uppercase tracking-wide text-[#9b1238]">Especial de temporada</span>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                    {matchingUpcomingPromotions.length === 0 && (
+                      <p className="rounded-2xl bg-gray-50 p-4 text-center text-xs text-gray-500">No encontramos productos de Navidad que coincidan con la búsqueda.</p>
                     )}
+                  </section>
+                ) : starbucksSection === 'bebidas' ? (
+                  <div className="space-y-5">
                     {STARBUCKS_MENU_CATEGORIES.map((category) => {
                 const query = searchQuery.trim().toLocaleLowerCase('es');
                 const products = STARBUCKS_PRODUCTS.filter((product) =>
