@@ -32,6 +32,56 @@ async function createReelsTestServer(t, testDataDir, reelsDeletePassword = 'test
   return server;
 }
 
+test('uses and serves the tablet app photos for the mobile order catalog', async () => {
+  const assetNames = [
+    'desayuno-emoliente-pan-queso-nueva.png',
+    'lomo-saltado-imagen.png',
+    'bowl-quinua-imagen.png',
+    'ceviche-carretillero-imagen.png',
+    'combo-herediano-imagen.png',
+    'combo-fitness-imagen.png',
+    'combo-costeno-imagen.png',
+    'combo-marino-final-imagen.png',
+    'chicha-morada-helada.png',
+    'agua-san-luis-natural.png',
+    'jugo-maracuya-helada.png'
+  ];
+  const [html, serverSource, ...assets] = await Promise.all([
+    readFile(join(process.cwd(), 'Al-toque-pe-mejorado.html'), 'utf8'),
+    readFile(join(process.cwd(), 'server.mjs'), 'utf8'),
+    ...assetNames.map((name) => readFile(join(process.cwd(), name)))
+  ]);
+  const publicAssets = serverSource.match(/const PUBLIC_ASSETS = new Set\(\[([\s\S]*?)\n\]\);/)?.[1] || '';
+  const menuImagesBlock = html.match(/window\.MENU_IMAGES = \{[\s\S]*?\n    \};/)?.[0];
+  assert.ok(menuImagesBlock, 'mobile catalog photo mapping should exist');
+  const menuImagesSource = menuImagesBlock
+    .replace('window.MENU_IMAGES = ', '')
+    .replace(/;$/, '');
+  const menuImages = JSON.parse(JSON.stringify(vm.runInNewContext(`(${menuImagesSource})`)));
+  assert.deepEqual(menuImages, {
+    herediano: './combo-herediano-imagen.png',
+    fitness: './combo-fitness-imagen.png',
+    marino: './combo-marino-final-imagen.png',
+    lomo: './lomo-saltado-imagen.png',
+    quinua: './bowl-quinua-imagen.png',
+    chicha: './chicha-morada-helada.png',
+    maracuya: './jugo-maracuya-helada.png',
+    agua: './agua-san-luis-natural.png',
+    costeno: './combo-costeno-imagen.png'
+  });
+  const initialMenu = html.match(/const INITIAL_MENU = \[([\s\S]*?)\n    \];/)?.[1] || '';
+  for (const key of Object.keys(menuImages)) {
+    assert.ok(initialMenu.includes(`image: window.MENU_IMAGES.${key}`), `${key} should use the tablet photo`);
+  }
+
+  assert.match(initialMenu, /image: '\.\/desayuno-emoliente-pan-queso-nueva\.png'/);
+  assert.match(initialMenu, /image: '\.\/ceviche-carretillero-imagen\.png'/);
+  for (const [index, asset] of assets.entries()) {
+    assert.ok(publicAssets.includes(`'${assetNames[index]}'`), `${assetNames[index]} must be served by the app`);
+    assert.equal(asset.subarray(0, 8).toString('hex'), '89504e470d0a1a0a', `${assetNames[index]} must be a valid PNG`);
+  }
+});
+
 test('records Libro de Reclamaciones submissions privately and validates required details', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);
@@ -808,11 +858,11 @@ test('shows the emoliente and cheese bread breakfast offer in Desayunos', async 
   const baseUrl = `http://127.0.0.1:${server.address().port}`;
   const response = await fetch(baseUrl);
   const html = await response.text();
-  const imageResponse = await fetch(`${baseUrl}/desayuno-emoliente-pan-queso.png`);
+  const imageResponse = await fetch(`${baseUrl}/desayuno-emoliente-pan-queso-nueva.png`);
   const image = Buffer.from(await imageResponse.arrayBuffer());
 
   assert.equal(response.status, 200);
-  assert.match(html, /id: '11',\s*name: 'Vaso de emoliente y Pan con Queso',\s*category: 'desayunos',\s*price: 5\.0,[\s\S]*?image: '\.\/desayuno-emoliente-pan-queso\.png'/);
+  assert.match(html, /id: '11',\s*name: 'Vaso de emoliente y Pan con Queso',\s*category: 'desayunos',\s*price: 5\.0,[\s\S]*?image: '\.\/desayuno-emoliente-pan-queso-nueva\.png'/);
   assert.match(html, /filter === 'desayunos' && filteredItems\.length === 0 && !searchQuery\.trim\(\)[\s\S]*?Próximamente encontrarás aquí los desayunos\./);
   assert.match(html, /className="menu-pop-card bg-white border border-gray-100 rounded-3xl p-3 shadow-sm space-y-2"/);
   assert.equal(imageResponse.status, 200);
