@@ -83,6 +83,21 @@ test('uses and serves the tablet app photos for the mobile order catalog', async
   }
 });
 
+test('expands order photos only while hovered or touched', async () => {
+  const html = await readFile(join(process.cwd(), 'Al-toque-pe-mejorado.html'), 'utf8');
+  const cartStart = html.indexOf('function CartScreen(');
+  const cartEnd = html.indexOf('\n    function ', cartStart + 1);
+  const cartScreen = html.slice(cartStart, cartEnd);
+
+  assert.ok(cartStart >= 0 && cartEnd > cartStart);
+  assert.match(cartScreen, /<div className="order-item-photo h-12 w-12 shrink-0 rounded-xl"/);
+  assert.match(cartScreen, /<img src=\{item\.image\} alt=\{item\.name\} \/>/);
+  assert.match(html, /@media \(hover: hover\) and \(pointer: fine\) \{\s*\.order-item-photo:hover/);
+  assert.match(html, /\.order-item-photo:active/);
+  assert.match(html, /transform: scale\(2\.4\)/);
+  assert.match(html, /prefers-reduced-motion: reduce[\s\S]*?\.order-item-photo img \{ transition: none; \}/);
+});
+
 test('records Libro de Reclamaciones submissions privately and validates required details', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);
