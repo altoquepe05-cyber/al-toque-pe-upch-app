@@ -1,4 +1,4 @@
-# Al Toque - UPCH Campus
+# Al Toque pe - UPCH Campus
 
 Aplicacion Node.js para pedidos, chat y Reels. El servidor sirve la interfaz y
 las rutas `/api`; no se puede alojar como una pagina estatica en GitHub Pages.
