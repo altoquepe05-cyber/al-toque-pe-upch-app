@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: al-toque-upch
+    name: al-toque-pe-upch-app
     runtime: node
     plan: free
     region: oregon
