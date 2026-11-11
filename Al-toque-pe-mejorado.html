@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Al Toque - UPCH Campus</title>
   <link rel="preload" href="/vendor/fonts/coiny-400.ttf?v=2" as="font" type="font/ttf" crossorigin />
   <link rel="preload" href="/pedido-recibido.mp4" as="video" type="video/mp4" />
@@ -29,11 +29,13 @@
           }
           .bpWebchat {
             box-sizing: border-box !important;
+            width: 100% !important;
+            height: 100dvh !important;
             min-width: 0 !important;
             min-height: 0 !important;
-            border: 1px solid #fff0c8 !important;
-            border-radius: 28px !important;
-            box-shadow: 0 2px 5px #2b17180b !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
             overflow: hidden !important;
             background: #fff !important;
           }
@@ -43,7 +45,7 @@
             min-width: 0 !important;
             min-height: 0 !important;
             background: #fff !important;
-            border-radius: 28px !important;
+            border-radius: 0 !important;
             box-shadow: none !important;
             font-family: Outfit, Arial, sans-serif !important;
           }
@@ -4039,6 +4041,33 @@
       .new-rider-message,
       .new-rider-message-sticker { animation: none; }
       .order-item-photo img { transition: none; }
+    }
+  </style>
+  <style>
+    html, body {
+      margin: 0 !important;
+      padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) !important;
+      width: 100% !important;
+      height: 100dvh !important;
+      min-height: 100dvh !important;
+      overflow-x: hidden !important;
+      box-sizing: border-box;
+    }
+
+    @media (max-width: 900px) {
+      body > div,
+      main,
+      section,
+      [class*="tablet"],
+      [class*="container"],
+      [class*="shell"],
+      [class*="wrapper"] {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-height: 100dvh !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+      }
     }
   </style>
 </head>
