@@ -5,12 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Al Toque - UPCH Campus</title>
   <link rel="preload" href="/vendor/fonts/coiny-400.ttf?v=2" as="font" type="font/ttf" crossorigin />
-  <link rel="preload" href="/pedido-recibido.mp4" as="video" type="video/mp4" />
-  <link rel="preload" href="/pedido-recibido-bicicleta.mp4" as="video" type="video/mp4" />
-  <link rel="preload" href="/pedido-recibido-caminando.mp4" as="video" type="video/mp4" />
-  <link rel="preload" href="/caminante-ruta.png" as="image" type="image/png" />
-  <script src="https://cdn.botpress.cloud/webchat/v5.0/inject.js" defer></script>
-  <script src="https://files.bpcontent.cloud/2026/10/11/22/20261011222049-IGT6DVHC.js" defer></script>
+  <link rel="preload" href="/lomo-saltado-imagen.png" as="image" type="image/png" fetchpriority="high" />
+  <link rel="preload" href="/bowl-quinua-imagen.png" as="image" type="image/png" />
   <script>
     (() => {
       const applyBotpressTheme = (root) => {
@@ -4125,7 +4121,7 @@
   <div id="root" class="w-full max-w-[390px] h-[100vh] sm:h-[844px] bg-white sm:rounded-[40px] shadow-2xl overflow-hidden flex flex-col border-0 sm:border-[8px] border-gray-800 relative"></div>
   <video
     src="/pedido-instrucciones.mp4"
-    preload="auto"
+    preload="none"
     muted
     playsinline
     aria-hidden="true"
@@ -4135,6 +4131,37 @@
 
   <script type="text/babel">
     const { useState, useEffect, useMemo, useRef } = React;
+    const botpressScriptPromises = new Map();
+    let botpressLoadPromise = null;
+    const loadExternalScript = (src) => {
+      if (botpressScriptPromises.has(src)) return botpressScriptPromises.get(src);
+      const promise = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.async = false;
+        script.onload = resolve;
+        script.onerror = () => {
+          script.remove();
+          reject(new Error(`No se pudo cargar el servicio externo ${src}.`));
+        };
+        document.head.appendChild(script);
+      });
+      botpressScriptPromises.set(src, promise);
+      promise.catch(() => botpressScriptPromises.delete(src));
+      return promise;
+    };
+    const loadBotpressScripts = () => {
+      if (window.botpress?.initialized) return Promise.resolve();
+      if (!botpressLoadPromise) {
+        botpressLoadPromise = loadExternalScript('https://cdn.botpress.cloud/webchat/v5.0/inject.js')
+          .then(() => loadExternalScript('https://files.bpcontent.cloud/2026/10/11/22/20261011222049-IGT6DVHC.js'))
+          .catch((error) => {
+            botpressLoadPromise = null;
+            throw error;
+          });
+      }
+      return botpressLoadPromise;
+    };
     const createReactElement = React.createElement;
     const lucideIconName = (name) => name
       .split('-')
@@ -7432,7 +7459,7 @@
             ) : (
               <iframe
                 key={currentTrack.url}
-                src={playerUrl.href}
+                src={isOpen ? playerUrl.href : undefined}
                 title={`Reproductor de ${isYouTubeTrack ? 'YouTube' : 'Audiomack'}: ${currentTrack.title} - ${currentTrack.artist}`}
                 scrolling="no"
                 className="block h-[250px] w-full border-0"
@@ -10146,6 +10173,9 @@
           window.botpress?.close?.();
           return undefined;
         }
+        loadBotpressScripts().catch((error) => {
+          console.error('No se pudo iniciar el chat de Botpress:', error);
+        });
 
         let rootObserver;
         let widgetStyleObserver;
@@ -13101,7 +13131,7 @@
                 loop
                 muted
                 playsInline
-                preload="auto"
+                preload="none"
                 aria-label="Animación con indicaciones para realizar un pedido"
                 className="mx-auto block w-full max-w-[420px] max-h-[220px] object-contain"
               />
@@ -15624,25 +15654,68 @@
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(
       <>
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'fixed',
-            left: '-10000px',
-            top: 0,
-            width: '390px',
-            height: '300px',
-            opacity: 0,
-            pointerEvents: 'none'
-          }}
-        >
-          <LiveRouteMapErrorBoundary className="delivery-map" label="Precarga del mapa de entregas">
-            <LiveRouteMap location={null} className="delivery-map" label="Precarga del mapa de entregas" />
-          </LiveRouteMapErrorBoundary>
-        </div>
         <App />
       </>
     );
+  </script>
+  <script>
+    (() => {
+      const connection = navigator.connection;
+      if (connection?.saveData || /(^|-)2g$/.test(connection?.effectiveType || '')) return;
+
+      const scheduleIdle = (callback) => {
+        if (window.requestIdleCallback) {
+          window.requestIdleCallback(callback, { timeout: 2500 });
+        } else {
+          window.setTimeout(callback, 1200);
+        }
+      };
+
+      const warmLocalAssets = async () => {
+        const response = await fetch('/api/assets/preload', { cache: 'no-store' });
+        if (!response.ok) throw new Error(`El servidor respondió ${response.status} al preparar los recursos locales.`);
+        const manifest = await response.json();
+        if (!Array.isArray(manifest.assets)) throw new Error('La lista de recursos locales no tiene el formato esperado.');
+
+        const loadedPaths = new Set(performance.getEntriesByType('resource').map((entry) => {
+          const resourceUrl = new URL(entry.name, window.location.href);
+          return resourceUrl.origin === window.location.origin ? resourceUrl.pathname : '';
+        }));
+        const assets = [...new Set(manifest.assets)].filter((asset) => {
+          if (typeof asset !== 'string' || !asset.startsWith('/')) return false;
+          const assetUrl = new URL(asset, window.location.origin);
+          return assetUrl.origin === window.location.origin && !loadedPaths.has(assetUrl.pathname);
+        });
+        let nextIndex = 0;
+
+        const warmNextBatch = async () => {
+          const batch = assets.slice(nextIndex, nextIndex + 2);
+          nextIndex += batch.length;
+          await Promise.all(batch.map(async (asset) => {
+            try {
+              const assetResponse = await fetch(asset, { cache: 'force-cache', priority: 'low' });
+              if (!assetResponse.ok) throw new Error(`El servidor respondió ${assetResponse.status}.`);
+              await assetResponse.arrayBuffer();
+            } catch (error) {
+              console.warn(`No se pudo preparar el recurso local ${asset}:`, error);
+            }
+          }));
+          if (nextIndex < assets.length) scheduleIdle(() => { void warmNextBatch(); });
+        };
+
+        await warmNextBatch();
+      };
+
+      const startWarmup = () => {
+        scheduleIdle(() => {
+          warmLocalAssets().catch((error) => {
+            console.error('No se pudieron preparar los recursos locales de Al Toque:', error);
+          });
+        });
+      };
+      if (document.readyState === 'complete') startWarmup();
+      else window.addEventListener('load', startWarmup, { once: true });
+    })();
   </script>
 </body>
 </html>

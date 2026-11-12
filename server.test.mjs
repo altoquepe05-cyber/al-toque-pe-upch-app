@@ -166,6 +166,23 @@ async function createReelsTestDirectory() {
   return mkdtemp(join(process.cwd(), `.reels-test-${randomUUID()}-`));
 }
 
+test('provides local images and fonts for background preload without large videos', async (t) => {
+  const testDataDir = await createReelsTestDirectory();
+  const server = await createReelsTestServer(t, testDataDir);
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const response = await fetch(`${baseUrl}/api/assets/preload`);
+  const { assets } = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.ok(assets.includes('/partykub-logo.png'));
+  assert.ok(assets.includes('/vendor/fonts/outfit-400.ttf'));
+  assert.ok(assets.includes('/mapa-upch-offline.svg'));
+  assert.ok(assets.includes('/Combo%20costa.png'));
+  assert.ok(assets.every((asset) => new URL(asset, baseUrl).origin === baseUrl));
+  assert.ok(assets.every((asset) => !asset.endsWith('.mp4')));
+  assert.ok(assets.every((asset) => !asset.endsWith('.pdf') && !asset.startsWith('/vendor/pdfjs-')));
+});
+
 test('serves the Reel watermark image as a public PNG asset', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);

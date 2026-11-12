@@ -7,6 +7,9 @@ las rutas `/api`; no se puede alojar como una pagina estatica en GitHub Pages.
 
 - Requiere Node.js 20.6 o posterior.
 - Ejecuta `npm start` y abre `http://localhost:4173`.
+- Las imagenes y fuentes locales restantes se preparan en segundo plano despues
+  del inicio. Los videos y servicios externos se cargan cuando se usan; la
+  preparacion se omite si el navegador indica ahorro de datos o red 2G.
 - Copia `.env.example` a `.env` para configurar integraciones opcionales.
 - Define `REELS_DELETE_PASSWORD` con una clave privada para habilitar la
   eliminacion de Reels. Sin ella, esa operacion falla de forma cerrada.

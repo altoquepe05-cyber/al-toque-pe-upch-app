@@ -169,6 +169,15 @@ const VENDOR_ASSETS = new Map([
   ].map((font) => [`/vendor/fonts/${font}`, [font, 'font/ttf']])
 ]);
 
+const PRELOADABLE_ASSETS = Object.freeze([
+  ...Array.from(PUBLIC_ASSETS)
+    .filter((asset) => /\.(?:png|jpe?g|webp|svg)$/i.test(asset))
+    .map((asset) => `/${encodeURIComponent(asset)}`),
+  ...Array.from(VENDOR_ASSETS.entries())
+    .filter(([, asset]) => asset[1].startsWith('font/'))
+    .map(([url]) => url)
+].sort());
+
 const rateLimits = new Map();
 const marketingEmailRateLimits = new Map();
 const youtubeSearchRateLimits = new Map();
@@ -1169,6 +1178,11 @@ async function addHubSpotMarketingSubscriber(email, accessToken, listId, subscri
 
 async function handleRequest(request, response, orders, riderLocations, idempotencyKeys, callSessions, orderChats, riderProfiles, persistRiderProfiles, persistOrders, notifyOrderChange, youtubeApiKey, openAIApiKey, gmailClientId, gmailClientSecret, gmailRefreshToken, gmailUser, marketingProvider, hubspotAccessToken, hubspotListId, hubspotSubscriptionId, fetchImpl, reels, persistReels, reelsVideosDir, reelsDeletePassword, videoStorage, maxVideoBytes, complaints, persistComplaints, now = Date.now) {
   const requestUrl = new URL(request.url || '/', `http://${request.headers.host}`);
+
+  if (requestUrl.pathname === '/api/assets/preload') {
+    if (request.method !== 'GET') return json(response, 405, { error: 'Método no permitido.' });
+    return json(response, 200, { assets: PRELOADABLE_ASSETS });
+  }
 
   if (requestUrl.pathname === '/api/reels' || requestUrl.pathname.startsWith('/api/reels/')) {
     await handleReelsRequest(request, response, requestUrl, reels, persistReels, reelsVideosDir, reelsDeletePassword, videoStorage, maxVideoBytes);
