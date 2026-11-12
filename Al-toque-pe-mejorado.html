@@ -4104,6 +4104,9 @@
         bottom: max(24px, env(safe-area-inset-bottom, 0px)) !important;
       }
 
+    }
+
+    @media (max-width: 640px), (orientation: landscape) and (max-height: 600px) and (max-width: 1200px) {
       #root::after {
         position: absolute;
         right: 0;
@@ -6005,7 +6008,7 @@
       ];
 
       return (
-        <nav className="absolute inset-x-0 bottom-0 z-40 border-t border-[#f0f0f0] bg-white/95 px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-10px_30px_rgba(0,0,0,0.08)] backdrop-blur-md" aria-label="Navegación principal">
+        <nav className="absolute inset-x-0 bottom-0 z-40 border-t border-[#f0f0f0] bg-white px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-10px_30px_rgba(0,0,0,0.08)] backdrop-blur-md" aria-label="Navegación principal">
           <div className="mx-auto flex max-w-[440px] items-center justify-between gap-1">
             {navItems.map((item) => {
               const isActive = activeTab === item.id;
