@@ -6979,7 +6979,11 @@
             isHiddenOnScroll={isPlayerHiddenOnScroll}
           />
 
-          <div ref={contentRef} className={`min-h-0 flex-1 no-scrollbar ${activeTab === 'reels' ? 'overflow-hidden p-0' : 'overflow-y-auto px-4 pb-20 pt-2'}`}>
+          <div
+            ref={contentRef}
+            className={`min-h-0 flex-1 no-scrollbar ${activeTab === 'reels' ? 'overflow-hidden p-0' : 'overflow-y-auto px-4 pb-20 pt-2'}`}
+            style={activeTab === 'reels' ? undefined : { paddingBottom: 'max(8rem, calc(8rem + env(safe-area-inset-bottom, 0px)))' }}
+          >
             {activeTab === 'home' && (
               <HomeScreen
                 onNavigate={setActiveTab}
