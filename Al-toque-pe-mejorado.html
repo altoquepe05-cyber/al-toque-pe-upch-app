@@ -2879,6 +2879,12 @@
       overflow: hidden;
       padding: 2px 4px;
     }
+    @media (max-width: 640px) {
+      #root [aria-label="Navegación principal"],
+      #root .app-watermark {
+        bottom: max(24px, env(safe-area-inset-bottom, 0px)) !important;
+      }
+    }
 
     .splash-screen {
       position: absolute;
