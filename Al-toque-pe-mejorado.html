@@ -4070,6 +4070,39 @@
         flex: 0 0 100% !important;
       }
     }
+
+    @media (orientation: landscape) and (max-height: 600px) and (max-width: 1200px) {
+      html, body {
+        height: 100dvh !important;
+        min-height: 100dvh !important;
+        padding:
+          env(safe-area-inset-top, 0px)
+          env(safe-area-inset-right, 0px)
+          env(safe-area-inset-bottom, 0px)
+          env(safe-area-inset-left, 0px) !important;
+      }
+
+      body {
+        align-items: flex-start !important;
+        justify-content: flex-start !important;
+      }
+
+      body > #root {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        flex: 0 0 100% !important;
+      }
+
+      #root [aria-label="Navegación principal"],
+      #root .app-watermark {
+        bottom: max(24px, env(safe-area-inset-bottom, 0px)) !important;
+      }
+    }
   </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-0 sm:p-4">
