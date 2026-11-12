@@ -2885,17 +2885,6 @@
         bottom: max(24px, env(safe-area-inset-bottom, 0px)) !important;
       }
 
-      #root::after {
-        position: absolute;
-        right: 0;
-        bottom: 0;
-        left: 0;
-        z-index: 41;
-        height: max(24px, env(safe-area-inset-bottom, 0px));
-        background: #fff;
-        content: "";
-        pointer-events: none;
-      }
     }
 
     .splash-screen {
@@ -4113,6 +4102,18 @@
       #root [aria-label="Navegación principal"],
       #root .app-watermark {
         bottom: max(24px, env(safe-area-inset-bottom, 0px)) !important;
+      }
+
+      #root::after {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 41;
+        height: max(24px, env(safe-area-inset-bottom, 0px));
+        background: #fff;
+        content: "";
+        pointer-events: none;
       }
     }
   </style>
