@@ -194,7 +194,7 @@ test('serves the Reel watermark image as a public PNG asset', async (t) => {
   assert.equal(image.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
 });
 
-test('serves the PartyKub logo and embeds the mobile game in the home screen', async (t) => {
+test('serves the PartyKub logo and preloads the mobile game after the home screen becomes idle', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);
   const baseUrl = `http://127.0.0.1:${server.address().port}`;
@@ -207,11 +207,15 @@ test('serves the PartyKub logo and embeds the mobile game in the home screen', a
   assert.equal(imageResponse.headers.get('content-type'), 'image/png');
   assert.equal(image.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
   assert.equal(pageResponse.status, 200);
+  assert.match(html, /<link rel="preconnect" href="https:\/\/parykub\.onrender\.com" crossorigin\s*\/?>/);
   assert.match(html, /aria-label="Jugar ParyKub móvil dentro de Al Toque"/);
   assert.match(html, /aria-haspopup="dialog"/);
   assert.match(html, /src="https:\/\/parykub\.onrender\.com\/movil\.html"/);
   assert.match(html, /allow="fullscreen"/);
-  assert.match(html, /isPartyKubOpen && ReactDOM\.createPortal\(/);
+  assert.match(html, /window\.requestIdleCallback\(preloadPartyKub/);
+  assert.match(html, /\(isPartyKubOpen \|\| isPartyKubPreloaded\) && ReactDOM\.createPortal\(/);
+  assert.match(html, /fetchpriority="low"/);
+  assert.match(html, /hidden={!isPartyKubOpen}/);
   assert.match(html, /body\[data-partykub-open="true"\] #root\s*\{\s*visibility:\s*hidden\s*!important;/);
   assert.match(html, /body\.dataset\.partykubOpen = 'true'/);
   assert.match(html, /aria-label="Cerrar ParyKub y volver a Al Toque"/);

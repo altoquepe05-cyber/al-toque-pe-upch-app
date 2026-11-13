@@ -7,6 +7,7 @@
   <link rel="preload" href="/vendor/fonts/coiny-400.ttf?v=2" as="font" type="font/ttf" crossorigin />
   <link rel="preload" href="/lomo-saltado-imagen.png" as="image" type="image/png" fetchpriority="high" />
   <link rel="preload" href="/bowl-quinua-imagen.png" as="image" type="image/png" />
+  <link rel="preconnect" href="https://parykub.onrender.com" crossorigin />
   <script>
     (() => {
       const applyBotpressTheme = (root) => {
@@ -8981,6 +8982,7 @@
     function HomeScreen({ onNavigate, onOpenCustomize, mood, setMood, isMusicPlayerOpen, onToggleMusicPlayer }) {
       const [timeString, setTimeString] = useState('');
       const [isPartyKubOpen, setIsPartyKubOpen] = useState(false);
+      const [isPartyKubPreloaded, setIsPartyKubPreloaded] = useState(false);
       const [dayPart, setDayPart] = useState(() => getDayPart(new Date().getHours()));
       const [serviceStatus, setServiceStatus] = useState(() => getCampusServiceStatus());
       const [isServiceCardExpanded, setIsServiceCardExpanded] = useState(false);
@@ -8989,6 +8991,34 @@
       const [homeCardStickerId, setHomeCardStickerId] = useState(9);
       const [cardMessageIndex, setCardMessageIndex] = useState(() => Math.floor(Math.random() * HOME_AI_CARD_MESSAGES.length));
       const seenMessagesRef = useRef(HOME_SEEN_MESSAGES_BY_MOOD);
+      const partyKubOpenedRef = useRef(false);
+
+      useEffect(() => {
+        let idleCallbackId;
+        let fallbackTimeoutId;
+        let preloadStarted = false;
+        const preloadPartyKub = () => {
+          if (preloadStarted) return;
+          preloadStarted = true;
+          window.clearTimeout(fallbackTimeoutId);
+          if (partyKubOpenedRef.current) return;
+          setIsPartyKubPreloaded(true);
+        };
+
+        if (typeof window.requestIdleCallback === 'function') {
+          idleCallbackId = window.requestIdleCallback(preloadPartyKub, { timeout: 2000 });
+          fallbackTimeoutId = window.setTimeout(preloadPartyKub, 2500);
+        } else {
+          fallbackTimeoutId = window.setTimeout(preloadPartyKub, 1200);
+        }
+
+        return () => {
+          window.clearTimeout(fallbackTimeoutId);
+          if (idleCallbackId !== undefined && typeof window.cancelIdleCallback === 'function') {
+            window.cancelIdleCallback(idleCallbackId);
+          }
+        };
+      }, []);
 
       useEffect(() => {
         if (!isPartyKubOpen) return undefined;
@@ -9105,7 +9135,11 @@
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setIsPartyKubOpen(true)}
+                onClick={() => {
+                  partyKubOpenedRef.current = true;
+                  setIsPartyKubPreloaded(false);
+                  setIsPartyKubOpen(true);
+                }}
                 aria-label="Jugar ParyKub móvil dentro de Al Toque"
                 aria-haspopup="dialog"
                 aria-expanded={isPartyKubOpen}
@@ -9343,38 +9377,44 @@
             </div>
           </div>
 
-          {isPartyKubOpen && ReactDOM.createPortal(
+          {(isPartyKubOpen || isPartyKubPreloaded) && ReactDOM.createPortal(
             <div
-              className="fixed inset-0 z-[2147483647] flex flex-col bg-[#102747] text-white"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="partykub-mobile-title"
+              className={isPartyKubOpen ? 'fixed inset-0 z-[2147483647] flex flex-col bg-[#102747] text-white' : 'hidden'}
+              hidden={!isPartyKubOpen}
+              aria-hidden={!isPartyKubOpen}
+              role={isPartyKubOpen ? 'dialog' : undefined}
+              aria-modal={isPartyKubOpen ? 'true' : undefined}
+              aria-labelledby={isPartyKubOpen ? 'partykub-mobile-title' : undefined}
             >
-              <header
-                className="relative flex min-h-14 shrink-0 items-center border-b border-white/15 bg-[#102747] px-3 py-2"
-                style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))' }}
-              >
-                <button
-                  type="button"
-                  autoFocus
-                  onClick={() => setIsPartyKubOpen(false)}
-                  aria-label="Cerrar ParyKub y volver a Al Toque"
-                  className="inline-flex min-h-10 items-center gap-2 rounded-full bg-white/10 px-3 text-sm font-bold transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+              {isPartyKubOpen && (
+                <header
+                  className="relative flex min-h-14 shrink-0 items-center border-b border-white/15 bg-[#102747] px-3 py-2"
+                  style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))' }}
                 >
-                  <span aria-hidden="true">←</span>
-                  Volver a Al Toque
-                </button>
-                <h2
-                  id="partykub-mobile-title"
-                  className="ml-auto max-w-[45%] truncate whitespace-nowrap pl-3 text-right text-sm font-bold"
-                >
-                  ParyKub móvil
-                </h2>
-              </header>
+                  <button
+                    type="button"
+                    autoFocus
+                    onClick={() => setIsPartyKubOpen(false)}
+                    aria-label="Cerrar ParyKub y volver a Al Toque"
+                    className="inline-flex min-h-10 items-center gap-2 rounded-full bg-white/10 px-3 text-sm font-bold transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                  >
+                    <span aria-hidden="true">←</span>
+                    Volver a Al Toque
+                  </button>
+                  <h2
+                    id="partykub-mobile-title"
+                    className="ml-auto max-w-[45%] truncate whitespace-nowrap pl-3 text-right text-sm font-bold"
+                  >
+                    ParyKub móvil
+                  </h2>
+                </header>
+              )}
               <iframe
                 src="https://parykub.onrender.com/movil.html"
                 title="ParyKub móvil"
                 allow="fullscreen"
+                loading="eager"
+                fetchpriority="low"
                 className="min-h-0 w-full flex-1 border-0 bg-white"
               />
             </div>,
