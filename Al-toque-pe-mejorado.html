@@ -8971,7 +8971,6 @@
 
     function HomeScreen({ onNavigate, onOpenCustomize, mood, setMood, isMusicPlayerOpen, onToggleMusicPlayer }) {
       const [timeString, setTimeString] = useState('');
-      const [partyKubNotice, setPartyKubNotice] = useState('');
       const [dayPart, setDayPart] = useState(() => getDayPart(new Date().getHours()));
       const [serviceStatus, setServiceStatus] = useState(() => getCampusServiceStatus());
       const [isServiceCardExpanded, setIsServiceCardExpanded] = useState(false);
@@ -8980,9 +8979,6 @@
       const [homeCardStickerId, setHomeCardStickerId] = useState(9);
       const [cardMessageIndex, setCardMessageIndex] = useState(() => Math.floor(Math.random() * HOME_AI_CARD_MESSAGES.length));
       const seenMessagesRef = useRef(HOME_SEEN_MESSAGES_BY_MOOD);
-      const partyKubNoticeTimerRef = useRef(null);
-
-      useEffect(() => () => clearTimeout(partyKubNoticeTimerRef.current), []);
 
       useEffect(() => {
         const updateTime = () => {
@@ -9085,19 +9081,16 @@
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setPartyKubNotice('PartyKub estará disponible próximamente.');
-                  clearTimeout(partyKubNoticeTimerRef.current);
-                  partyKubNoticeTimerRef.current = setTimeout(() => setPartyKubNotice(''), 2800);
-                }}
-                aria-label="PartyKub, juego próximamente"
-                title="PartyKub: próximamente"
+              <a
+                href="https://parykub.onrender.com/movil.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Abrir ParyKub móvil con guía de orientación vertical y horizontal"
+                title="Jugar ParyKub móvil"
                 className="partykub-launcher"
               >
                 <img src="/partykub-logo.png" alt="" aria-hidden="true" />
-              </button>
+              </a>
               <button
                 type="button"
                 onClick={() => onNavigate('reels')}
@@ -9131,12 +9124,6 @@
               </button>
             </div>
           </div>
-
-          {partyKubNotice && (
-            <p className="rounded-xl bg-[#fff3d1] px-3 py-2 text-center text-xs font-semibold text-[#2b1718]" role="status">
-              {partyKubNotice}
-            </p>
-          )}
 
           <p className="text-[11px] font-bold text-brand tracking-wider uppercase mb-1">{timeString || 'LUNES, 12:38 P. M.'}</p>
 
