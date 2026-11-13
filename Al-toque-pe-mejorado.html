@@ -8971,6 +8971,7 @@
 
     function HomeScreen({ onNavigate, onOpenCustomize, mood, setMood, isMusicPlayerOpen, onToggleMusicPlayer }) {
       const [timeString, setTimeString] = useState('');
+      const [isPartyKubOpen, setIsPartyKubOpen] = useState(false);
       const [dayPart, setDayPart] = useState(() => getDayPart(new Date().getHours()));
       const [serviceStatus, setServiceStatus] = useState(() => getCampusServiceStatus());
       const [isServiceCardExpanded, setIsServiceCardExpanded] = useState(false);
@@ -9081,16 +9082,17 @@
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <a
-                href="https://parykub.onrender.com/movil.html"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Abrir ParyKub móvil con guía de orientación vertical y horizontal"
+              <button
+                type="button"
+                onClick={() => setIsPartyKubOpen(true)}
+                aria-label="Jugar ParyKub móvil dentro de Al Toque"
+                aria-haspopup="dialog"
+                aria-expanded={isPartyKubOpen}
                 title="Jugar ParyKub móvil"
                 className="partykub-launcher"
               >
                 <img src="/partykub-logo.png" alt="" aria-hidden="true" />
-              </a>
+              </button>
               <button
                 type="button"
                 onClick={() => onNavigate('reels')}
@@ -9319,6 +9321,44 @@
               ))}
             </div>
           </div>
+
+          {isPartyKubOpen && (
+            <div
+              className="fixed inset-0 z-[200] flex flex-col bg-[#102747] text-white"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="partykub-mobile-title"
+            >
+              <header
+                className="relative flex min-h-14 shrink-0 items-center border-b border-white/15 bg-[#102747] px-3 py-2"
+                style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))' }}
+              >
+                <button
+                  type="button"
+                  autoFocus
+                  onClick={() => setIsPartyKubOpen(false)}
+                  aria-label="Cerrar ParyKub y volver a Al Toque"
+                  className="inline-flex min-h-10 items-center gap-2 rounded-full bg-white/10 px-3 text-sm font-bold transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                >
+                  <span aria-hidden="true">←</span>
+                  Volver a Al Toque
+                </button>
+                <h2
+                  id="partykub-mobile-title"
+                  className="absolute left-1/2 -translate-x-1/2 text-sm font-bold"
+                >
+                  ParyKub móvil
+                </h2>
+              </header>
+              <iframe
+                src="https://parykub.onrender.com/movil.html"
+                title="ParyKub móvil"
+                allow="fullscreen; screen-orientation"
+                allowFullScreen
+                className="min-h-0 w-full flex-1 border-0 bg-white"
+              />
+            </div>
+          )}
 
         </div>
       );

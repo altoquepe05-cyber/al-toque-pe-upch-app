@@ -194,7 +194,7 @@ test('serves the Reel watermark image as a public PNG asset', async (t) => {
   assert.equal(image.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
 });
 
-test('serves the PartyKub logo and links to the mobile game from the home screen', async (t) => {
+test('serves the PartyKub logo and embeds the mobile game in the home screen', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);
   const baseUrl = `http://127.0.0.1:${server.address().port}`;
@@ -207,7 +207,11 @@ test('serves the PartyKub logo and links to the mobile game from the home screen
   assert.equal(imageResponse.headers.get('content-type'), 'image/png');
   assert.equal(image.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
   assert.equal(pageResponse.status, 200);
-  assert.match(html, /<a href="https:\/\/parykub\.onrender\.com\/movil\.html" target="_blank" rel="noopener noreferrer" aria-label="Abrir ParyKub móvil con guía de orientación vertical y horizontal" title="Jugar ParyKub móvil" className="partykub-launcher">/);
+  assert.match(html, /aria-label="Jugar ParyKub móvil dentro de Al Toque"/);
+  assert.match(html, /aria-haspopup="dialog"/);
+  assert.match(html, /src="https:\/\/parykub\.onrender\.com\/movil\.html"/);
+  assert.match(html, /allow="fullscreen; screen-orientation"/);
+  assert.match(html, /aria-label="Cerrar ParyKub y volver a Al Toque"/);
   assert.match(html, /<img src="\/partykub-logo\.png" alt="" aria-hidden="true" \/>/);
   assert.match(html, /\.partykub-launcher\s*\{\s*display:\s*grid;\s*width:\s*52px;\s*height:\s*52px;/);
 });
