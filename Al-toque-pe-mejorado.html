@@ -438,6 +438,15 @@
       -webkit-tap-highlight-color: transparent;
     }
 
+    body[data-partykub-open="true"] {
+      overflow: hidden !important;
+      background: #102747 !important;
+    }
+
+    body[data-partykub-open="true"] #root {
+      visibility: hidden !important;
+    }
+
     .partykub-launcher img {
       width: 100%;
       height: 100%;
@@ -8982,6 +8991,18 @@
       const seenMessagesRef = useRef(HOME_SEEN_MESSAGES_BY_MOOD);
 
       useEffect(() => {
+        if (!isPartyKubOpen) return undefined;
+        const body = document.body;
+        const previousOverflow = body.style.overflow;
+        body.dataset.partykubOpen = 'true';
+        body.style.overflow = 'hidden';
+        return () => {
+          body.style.overflow = previousOverflow;
+          delete body.dataset.partykubOpen;
+        };
+      }, [isPartyKubOpen]);
+
+      useEffect(() => {
         const updateTime = () => {
           const now = new Date();
           const days = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
@@ -9322,9 +9343,9 @@
             </div>
           </div>
 
-          {isPartyKubOpen && (
+          {isPartyKubOpen && ReactDOM.createPortal(
             <div
-              className="fixed inset-0 z-[200] flex flex-col bg-[#102747] text-white"
+              className="fixed inset-0 z-[2147483647] flex flex-col bg-[#102747] text-white"
               role="dialog"
               aria-modal="true"
               aria-labelledby="partykub-mobile-title"
@@ -9356,7 +9377,8 @@
                 allow="fullscreen"
                 className="min-h-0 w-full flex-1 border-0 bg-white"
               />
-            </div>
+            </div>,
+            document.body
           )}
 
         </div>

@@ -211,6 +211,9 @@ test('serves the PartyKub logo and embeds the mobile game in the home screen', a
   assert.match(html, /aria-haspopup="dialog"/);
   assert.match(html, /src="https:\/\/parykub\.onrender\.com\/movil\.html"/);
   assert.match(html, /allow="fullscreen"/);
+  assert.match(html, /isPartyKubOpen && ReactDOM\.createPortal\(/);
+  assert.match(html, /body\[data-partykub-open="true"\] #root\s*\{\s*visibility:\s*hidden\s*!important;/);
+  assert.match(html, /body\.dataset\.partykubOpen = 'true'/);
   assert.match(html, /aria-label="Cerrar ParyKub y volver a Al Toque"/);
   assert.match(html, /<img src="\/partykub-logo\.png" alt="" aria-hidden="true" \/>/);
   assert.match(html, /\.partykub-launcher\s*\{\s*display:\s*grid;\s*width:\s*52px;\s*height:\s*52px;/);
