@@ -12,6 +12,7 @@ const APP_DIR = fileURLToPath(new URL('.', import.meta.url));
 const HTML_FILE = 'Al-toque-pe-mejorado.html';
 const AUDIOMACK_TERMS_FILE = 'audiomack-player-terms.html';
 const COIN_FILE = 'Moneda Al Toque.html';
+const PARTYKUB_INTRO_FILE = 'parykub-animado-9x16.html';
 const PORT = Number(process.env.PORT || 4173);
 const HOST = process.env.HOST || '0.0.0.0';
 const APP_SERVER_URL = (process.env.APP_SERVER_URL || '').replace(/\/+$/, '');
@@ -106,6 +107,7 @@ const PUBLIC_ASSETS = new Set([
   'promo-profesor-martin-referencia.png',
   'promo-al-toque-banner.png',
   'partykub-logo.png',
+  PARTYKUB_INTRO_FILE,
   'gorritos-welcome-hat.png',
   'politica-cancelacion-reembolso.pdf',
   'starbucks-panettone-latte.png',
@@ -2267,9 +2269,14 @@ async function handleRequest(request, response, orders, riderLocations, idempote
         return;
       }
       const content = await readFile(filePath);
-      if (assetName === HTML_FILE || assetName === AUDIOMACK_TERMS_FILE || assetName === COIN_FILE) {
+      if (
+        assetName === HTML_FILE
+        || assetName === AUDIOMACK_TERMS_FILE
+        || assetName === COIN_FILE
+        || assetName === PARTYKUB_INTRO_FILE
+      ) {
         return sendHtml(request, response, content, {
-          allowSameOriginFrame: assetName === COIN_FILE,
+          allowSameOriginFrame: assetName === COIN_FILE || assetName === PARTYKUB_INTRO_FILE,
           cacheKey: `html:${assetName}`
         });
       }

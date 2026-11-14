@@ -9004,6 +9004,7 @@
       const [timeString, setTimeString] = useState('');
       const [isPartyKubOpen, setIsPartyKubOpen] = useState(false);
       const [isPartyKubPreloaded, setIsPartyKubPreloaded] = useState(false);
+      const [hasStartedPartyKub, setHasStartedPartyKub] = useState(false);
       const [dayPart, setDayPart] = useState(() => getDayPart(new Date().getHours()));
       const [serviceStatus, setServiceStatus] = useState(() => getCampusServiceStatus());
       const [isServiceCardExpanded, setIsServiceCardExpanded] = useState(false);
@@ -9013,6 +9014,7 @@
       const [cardMessageIndex, setCardMessageIndex] = useState(() => Math.floor(Math.random() * HOME_AI_CARD_MESSAGES.length));
       const seenMessagesRef = useRef(HOME_SEEN_MESSAGES_BY_MOOD);
       const partyKubOpenedRef = useRef(false);
+      const partyKubIntroFrameRef = useRef(null);
 
       useEffect(() => {
         let idleCallbackId;
@@ -9045,9 +9047,19 @@
         if (!isPartyKubOpen) return undefined;
         const body = document.body;
         const previousOverflow = body.style.overflow;
+        const handleIntroMessage = (event) => {
+          if (
+            event.origin !== window.location.origin
+            || event.source !== partyKubIntroFrameRef.current?.contentWindow
+            || event.data?.type !== 'partykub-intro-start'
+          ) return;
+          setHasStartedPartyKub(true);
+        };
+        window.addEventListener('message', handleIntroMessage);
         body.dataset.partykubOpen = 'true';
         body.style.overflow = 'hidden';
         return () => {
+          window.removeEventListener('message', handleIntroMessage);
           body.style.overflow = previousOverflow;
           delete body.dataset.partykubOpen;
         };
@@ -9159,6 +9171,7 @@
                 onClick={() => {
                   partyKubOpenedRef.current = true;
                   setIsPartyKubPreloaded(false);
+                  setHasStartedPartyKub(false);
                   setIsPartyKubOpen(true);
                 }}
                 aria-label="Jugar ParyKub móvil dentro de Al Toque"
@@ -9415,7 +9428,10 @@
                   <button
                     type="button"
                     autoFocus
-                    onClick={() => setIsPartyKubOpen(false)}
+                    onClick={() => {
+                      setHasStartedPartyKub(false);
+                      setIsPartyKubOpen(false);
+                    }}
                     aria-label="Cerrar ParyKub y volver a Al Toque"
                     className="inline-flex min-h-10 items-center gap-2 rounded-full bg-white/10 px-3 text-sm font-bold transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                   >
@@ -9430,14 +9446,24 @@
                   </h2>
                 </header>
               )}
-              <iframe
-                src="https://parykub.onrender.com/movil.html"
-                title="ParyKub móvil"
-                allow="fullscreen"
-                loading="eager"
-                fetchpriority="low"
-                className="min-h-0 w-full flex-1 border-0 bg-white"
-              />
+              {isPartyKubOpen && (hasStartedPartyKub ? (
+                <iframe
+                  src="https://parykub.onrender.com/movil.html"
+                  title="ParyKub móvil"
+                  allow="fullscreen"
+                  loading="eager"
+                  fetchpriority="low"
+                  className="min-h-0 w-full flex-1 border-0 bg-white"
+                />
+              ) : (
+                <iframe
+                  ref={partyKubIntroFrameRef}
+                  src="/parykub-animado-9x16.html"
+                  title="Introducción animada de ParyKub"
+                  loading="eager"
+                  className="min-h-0 w-full flex-1 border-0 bg-[#041a3a]"
+                />
+              ))}
             </div>,
             document.body
           )}

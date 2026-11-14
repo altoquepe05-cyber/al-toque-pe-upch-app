@@ -16,6 +16,8 @@ las rutas `/api`; no se puede alojar como una pagina estatica en GitHub Pages.
   cuenta siguen requiriendo conexion.
 - Al cambiar la lista de recursos o publicar una nueva version del Service
   Worker, incrementa `CACHE_VERSION` en `sw.js` para invalidar la cache anterior.
+- Al abrir ParyKub desde la pantalla principal, se muestra primero la animacion
+  vertical 9:16; al pulsar «A JUGAR» se carga la partida movil.
 - Copia `.env.example` a `.env` para configurar integraciones opcionales.
 - Define `REELS_DELETE_PASSWORD` con una clave privada para habilitar la
   eliminacion de Reels. Sin ella, esa operacion falla de forma cerrada.

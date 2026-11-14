@@ -282,22 +282,36 @@ test('serves the Reel watermark image as a public PNG asset', async (t) => {
   assert.equal(image.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
 });
 
-test('serves the PartyKub logo and preloads the mobile game after the home screen becomes idle', async (t) => {
+test('shows the ParyKub intro before loading the mobile game', async (t) => {
   const testDataDir = await createReelsTestDirectory();
   const server = await createReelsTestServer(t, testDataDir);
   const baseUrl = `http://127.0.0.1:${server.address().port}`;
   const imageResponse = await fetch(`${baseUrl}/partykub-logo.png`);
   const image = Buffer.from(await imageResponse.arrayBuffer());
-  const pageResponse = await fetch(baseUrl);
-  const html = await pageResponse.text();
+  const [introResponse, pageResponse] = await Promise.all([
+    fetch(`${baseUrl}/parykub-animado-9x16.html`),
+    fetch(baseUrl)
+  ]);
+  const [intro, html] = await Promise.all([introResponse.text(), pageResponse.text()]);
 
   assert.equal(imageResponse.status, 200);
   assert.equal(imageResponse.headers.get('content-type'), 'image/png');
   assert.equal(image.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
+  assert.equal(introResponse.status, 200);
+  assert.match(introResponse.headers.get('content-type'), /text\/html/);
+  assert.match(introResponse.headers.get('cache-control'), /no-cache, no-store, must-revalidate/);
+  assert.equal(introResponse.headers.get('x-frame-options'), 'SAMEORIGIN');
+  assert.match(intro, /id="stage"/);
+  assert.match(intro, /window\.parent\.postMessage\(\{ type: 'partykub-intro-start' \}, window\.location\.origin\)/);
   assert.equal(pageResponse.status, 200);
   assert.match(html, /<link rel="preconnect" href="https:\/\/parykub\.onrender\.com" crossorigin\s*\/?>/);
   assert.match(html, /aria-label="Jugar ParyKub móvil dentro de Al Toque"/);
   assert.match(html, /aria-haspopup="dialog"/);
+  assert.match(html, /src="\/parykub-animado-9x16\.html"/);
+  assert.match(html, /hasStartedPartyKub \? \(/);
+  assert.match(html, /event\.source !== partyKubIntroFrameRef\.current\?\.contentWindow/);
+  assert.match(html, /event\.data\?\.type !== 'partykub-intro-start'/);
+  assert.match(html, /setHasStartedPartyKub\(true\)/);
   assert.match(html, /src="https:\/\/parykub\.onrender\.com\/movil\.html"/);
   assert.match(html, /allow="fullscreen"/);
   assert.match(html, /window\.requestIdleCallback\(preloadPartyKub/);
