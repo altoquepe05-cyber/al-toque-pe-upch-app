@@ -302,6 +302,7 @@ test('shows the ParyKub intro before loading the mobile game', async (t) => {
   assert.match(introResponse.headers.get('cache-control'), /no-cache, no-store, must-revalidate/);
   assert.equal(introResponse.headers.get('x-frame-options'), 'SAMEORIGIN');
   assert.match(intro, /id="stage"/);
+  assert.doesNotMatch(intro, /id="replay"/);
   assert.match(intro, /window\.parent\.postMessage\(\{ type: 'partykub-intro-start' \}, window\.location\.origin\)/);
   assert.equal(pageResponse.status, 200);
   assert.match(html, /<link rel="preconnect" href="https:\/\/parykub\.onrender\.com" crossorigin\s*\/?>/);

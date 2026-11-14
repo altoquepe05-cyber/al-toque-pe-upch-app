@@ -88,11 +88,6 @@
   .stage:not(.run) .cta{animation:none}
   @keyframes ctaIn{to{opacity:1;transform:translateX(-50%) scale(1)}}
   @keyframes ctaPulse{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.1)}}
-  .replay{
-    position:absolute;right:3cqw;top:3cqw;z-index:5;border:0;border-radius:99cqw;cursor:pointer;
-    background:rgba(255,255,255,.16);color:#fff;padding:1cqw 3cqw;font:700 3.2cqw Arial,sans-serif;
-  }
-  .replay:hover{background:rgba(255,255,255,.3)}
 </style>
 </head>
 <body>
@@ -128,7 +123,6 @@
     <canvas id="txt" width="2904" height="1634" aria-label="ParyKub" role="img"></canvas>
   </div>
 
-  <button class="replay" id="replay" type="button">↻ Repetir</button>
   <button class="cta" id="cta" type="button">▶ ¡A JUGAR!</button>
   <div class="bar"><i></i></div>
 </main>
@@ -201,7 +195,6 @@
     raf = requestAnimationFrame(loop);
   }
 
-  document.getElementById('replay').addEventListener('click', play);
   document.getElementById('cta').addEventListener('click', () => {
     window.parent.postMessage({ type: 'partykub-intro-start' }, window.location.origin);
   });
