@@ -9,7 +9,13 @@ las rutas `/api`; no se puede alojar como una pagina estatica en GitHub Pages.
 - Ejecuta `npm start` y abre `http://localhost:4173`.
 - Las imagenes y fuentes locales restantes se preparan en segundo plano despues
   del inicio. Los videos y servicios externos se cargan cuando se usan; la
-  preparacion se omite si el navegador indica ahorro de datos o red 2G.
+  preparacion usa lotes pequenos en conexiones lentas o con ahorro de datos.
+- La PWA almacena la interfaz y los recursos estaticos en el dispositivo.
+  Reels usa IndexedDB para mostrar primero la ultima respuesta disponible y
+  actualizarla en segundo plano. Los pedidos, el chat y las operaciones de
+  cuenta siguen requiriendo conexion.
+- Al cambiar la lista de recursos o publicar una nueva version del Service
+  Worker, incrementa `CACHE_VERSION` en `sw.js` para invalidar la cache anterior.
 - Copia `.env.example` a `.env` para configurar integraciones opcionales.
 - Define `REELS_DELETE_PASSWORD` con una clave privada para habilitar la
   eliminacion de Reels. Sin ella, esa operacion falla de forma cerrada.

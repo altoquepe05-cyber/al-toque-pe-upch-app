@@ -3,7 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#6d260f" />
   <title>Al Toque - UPCH Campus</title>
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="preload" href="/vendor/tailwind.js" as="script" />
+  <link rel="preload" href="/vendor/react.development.js" as="script" />
+  <link rel="preload" href="/vendor/react-dom.development.js" as="script" />
+  <link rel="preload" href="/vendor/babel.min.js" as="script" />
+  <link rel="preload" href="/vendor/lucide.js" as="script" />
+  <link rel="preload" href="/vendor/fonts.css?v=2" as="style" />
   <link rel="preload" href="/vendor/fonts/coiny-400.ttf?v=2" as="font" type="font/ttf" crossorigin />
   <link rel="preload" href="/lomo-saltado-imagen.png" as="image" type="image/png" fetchpriority="high" />
   <link rel="preload" href="/bowl-quinua-imagen.png" as="image" type="image/png" />
@@ -354,6 +362,7 @@
       }
     })();
   </script>
+  <script src="/offline-data.js?v=1"></script>
   <script src="/vendor/tailwind.js" defer></script>
   <link href="/vendor/fonts.css?v=2" rel="stylesheet" />
 
@@ -7918,19 +7927,27 @@
       useEffect(() => {
         let active = true;
         const loadFeed = async (showSpinner = false) => {
-          const reelsBackendError = getReelsBackendError();
-          if (reelsBackendError) {
-            if (active) {
-              setError(reelsBackendError);
-              setLoading(false);
-            }
-            return;
-          }
           if (showSpinner && active) setLoading(true);
-          try {
+          const fetchFeed = async () => {
+            const reelsBackendError = getReelsBackendError();
+            if (reelsBackendError) throw new Error(reelsBackendError);
             const response = await fetch(`/api/reels?profileId=${encodeURIComponent(profileId)}`, { cache: 'no-store' });
             const payload = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(payload.error || `No se pudieron cargar los Reels (${response.status}).`);
+            return payload;
+          };
+          let hasCachedFeed = false;
+          try {
+            const feedRequest = window.AlToqueOfflineData
+              ? await window.AlToqueOfflineData.staleWhileRevalidate(`reels:${profileId}`, fetchFeed)
+              : { cached: null, refresh: fetchFeed() };
+            if (feedRequest.cached && active) {
+              hasCachedFeed = true;
+              setPosts(Array.isArray(feedRequest.cached.posts) ? feedRequest.cached.posts : []);
+              setError('');
+              if (showSpinner) setLoading(false);
+            }
+            const payload = await feedRequest.refresh;
             if (!active) return;
             const nextPosts = Array.isArray(payload.posts) ? payload.posts : [];
             const seenReelIds = seenReelIdsRef.current;
@@ -7993,7 +8010,11 @@
             }
             setError('');
           } catch (loadError) {
-            if (active) setError(loadError.message || 'No se pudo conectar con Reels.');
+            if (active) {
+              setError(hasCachedFeed
+                ? 'Sin conexión: se muestran los últimos Reels guardados en este dispositivo.'
+                : loadError.message || 'No se pudo conectar con Reels.');
+            }
           } finally {
             if (active) setLoading(false);
           }
@@ -15753,13 +15774,14 @@
   <script>
     (() => {
       const connection = navigator.connection;
-      if (connection?.saveData || /(^|-)2g$/.test(connection?.effectiveType || '')) return;
+      const constrainedConnection = connection?.saveData || /(^|-)2g$/.test(connection?.effectiveType || '');
+      const batchSize = constrainedConnection ? 1 : 2;
 
       const scheduleIdle = (callback) => {
         if (window.requestIdleCallback) {
-          window.requestIdleCallback(callback, { timeout: 2500 });
+          window.requestIdleCallback(callback, { timeout: constrainedConnection ? 8000 : 2500 });
         } else {
-          window.setTimeout(callback, 1200);
+          window.setTimeout(callback, constrainedConnection ? 4000 : 1200);
         }
       };
 
@@ -15769,19 +15791,15 @@
         const manifest = await response.json();
         if (!Array.isArray(manifest.assets)) throw new Error('La lista de recursos locales no tiene el formato esperado.');
 
-        const loadedPaths = new Set(performance.getEntriesByType('resource').map((entry) => {
-          const resourceUrl = new URL(entry.name, window.location.href);
-          return resourceUrl.origin === window.location.origin ? resourceUrl.pathname : '';
-        }));
         const assets = [...new Set(manifest.assets)].filter((asset) => {
           if (typeof asset !== 'string' || !asset.startsWith('/')) return false;
           const assetUrl = new URL(asset, window.location.origin);
-          return assetUrl.origin === window.location.origin && !loadedPaths.has(assetUrl.pathname);
+          return assetUrl.origin === window.location.origin;
         });
         let nextIndex = 0;
 
         const warmNextBatch = async () => {
-          const batch = assets.slice(nextIndex, nextIndex + 2);
+          const batch = assets.slice(nextIndex, nextIndex + batchSize);
           nextIndex += batch.length;
           await Promise.all(batch.map(async (asset) => {
             try {
@@ -15800,11 +15818,27 @@
 
       const startWarmup = () => {
         scheduleIdle(() => {
-          warmLocalAssets().catch((error) => {
+          offlineSetup.then(() => warmLocalAssets()).catch((error) => {
             console.error('No se pudieron preparar los recursos locales de Al Toque:', error);
           });
         });
       };
+      const offlineSetup = 'serviceWorker' in navigator
+        ? navigator.serviceWorker.register('/sw.js')
+          .then(() => Promise.race([
+            navigator.serviceWorker.ready,
+            new Promise((resolve) => window.setTimeout(resolve, 15000))
+          ]))
+          .then(async () => {
+            if (navigator.storage && typeof navigator.storage.persist === 'function') {
+              const persisted = await navigator.storage.persist();
+              if (!persisted) console.info('El navegador no concedió almacenamiento persistente para Al Toque.');
+            }
+          })
+          .catch((error) => {
+            console.error('No se pudo activar el modo sin conexión de Al Toque:', error);
+          })
+        : Promise.resolve();
       if (document.readyState === 'complete') startWarmup();
       else window.addEventListener('load', startWarmup, { once: true });
     })();

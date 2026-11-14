@@ -84,6 +84,11 @@ const MENU_ALIASES = [
 
 const PUBLIC_ASSETS = new Set([
   HTML_FILE,
+  'manifest.json',
+  'sw.js',
+  'offline-data.js',
+  'pwa-icon-192.png',
+  'pwa-icon-512.png',
   AUDIOMACK_TERMS_FILE,
   COIN_FILE,
   'pedido-instrucciones.mp4',
@@ -578,7 +583,7 @@ function sendStaticContent(request, response, content, headers, cacheKey) {
 function sendHtml(request, response, content, { allowSameOriginFrame = false, cacheKey } = {}) {
   const headers = {
     'Content-Type': 'text/html; charset=utf-8',
-    'Cache-Control': 'no-store',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
     'X-Content-Type-Options': 'nosniff',
     'Referrer-Policy': 'same-origin',
     'X-Frame-Options': allowSameOriginFrame ? 'SAMEORIGIN' : 'DENY'
@@ -2269,6 +2274,10 @@ async function handleRequest(request, response, orders, riderLocations, idempote
         });
       }
       const types = {
+        '.html': 'text/html; charset=utf-8',
+        '.js': 'text/javascript; charset=utf-8',
+        '.json': 'application/json; charset=utf-8',
+        '.webmanifest': 'application/manifest+json; charset=utf-8',
         '.jpg': 'image/jpeg',
         '.jpeg': 'image/jpeg',
         '.png': 'image/png',
@@ -2280,7 +2289,11 @@ async function handleRequest(request, response, orders, riderLocations, idempote
       return sendStaticContent(request, response, content, {
         'Content-Type': types[extname(assetName)] || 'application/octet-stream',
         'X-Content-Type-Options': 'nosniff',
-        'Cache-Control': 'public, max-age=3600'
+        'Cache-Control': assetName === 'sw.js'
+          ? 'no-cache, no-store, must-revalidate'
+          : assetName === 'manifest.json'
+            ? 'no-cache'
+            : 'public, max-age=31536000, immutable'
       }, `asset:${assetName}`);
     } catch (error) {
       if (error.code === 'ENOENT') return json(response, 404, { error: 'No se encontró el recurso solicitado.' });

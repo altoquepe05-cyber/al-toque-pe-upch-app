@@ -32,6 +32,94 @@ async function createReelsTestServer(t, testDataDir, reelsDeletePassword = 'test
   return server;
 }
 
+test('serves the PWA shell, manifest, and immutable local assets', async (t) => {
+  const testDataDir = await mkdtemp(join(tmpdir(), 'al-toque-pwa-test-'));
+  const server = await createReelsTestServer(t, testDataDir);
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  const [appResponse, manifestResponse, workerResponse, dataResponse, iconResponse] = await Promise.all([
+    fetch(`${origin}/`),
+    fetch(`${origin}/manifest.json`),
+    fetch(`${origin}/sw.js`),
+    fetch(`${origin}/offline-data.js?v=1`),
+    fetch(`${origin}/pwa-icon-192.png`)
+  ]);
+  const manifest = await manifestResponse.json();
+
+  assert.equal(appResponse.status, 200);
+  assert.match(appResponse.headers.get('cache-control'), /no-cache, no-store, must-revalidate/);
+  assert.equal(manifestResponse.status, 200);
+  assert.equal(manifest.start_url, '/');
+  assert.match(manifestResponse.headers.get('content-type'), /application\/json/);
+  assert.equal(workerResponse.status, 200);
+  assert.match(workerResponse.headers.get('cache-control'), /no-store/);
+  assert.equal(dataResponse.status, 200);
+  assert.match(dataResponse.headers.get('cache-control'), /immutable/);
+  assert.equal(iconResponse.status, 200);
+  assert.match(iconResponse.headers.get('content-type'), /image\/png/);
+});
+
+test('returns cached Reel data while refreshing it through IndexedDB', async () => {
+  const records = new Map();
+  const database = {
+    objectStoreNames: { contains: () => true },
+    transaction() {
+      const transaction = {
+        objectStore() {
+          return {
+            get(key) {
+              const request = {};
+              queueMicrotask(() => {
+                request.result = records.has(key) ? { value: records.get(key) } : undefined;
+                request.onsuccess?.();
+              });
+              return request;
+            },
+            put(record) {
+              records.set(record.key, record.value);
+              queueMicrotask(() => transaction.oncomplete?.());
+            }
+          };
+        }
+      };
+      return transaction;
+    }
+  };
+  const indexedDB = {
+    open() {
+      const request = { result: database };
+      queueMicrotask(() => request.onsuccess?.());
+      return request;
+    }
+  };
+  const window = { indexedDB };
+  vm.runInNewContext(await readFile(join(process.cwd(), 'offline-data.js'), 'utf8'), {
+    window,
+    indexedDB,
+    console: { warn() {} },
+    Date,
+    Promise
+  });
+  const offlineData = window.AlToqueOfflineData;
+  const first = await offlineData.staleWhileRevalidate('reels:test', async () => ({ posts: [{ id: 'first' }] }));
+  assert.equal(first.cached, null);
+  assert.equal((await first.refresh).posts[0].id, 'first');
+
+  let resolveRefresh;
+  const second = await offlineData.staleWhileRevalidate('reels:test', () => new Promise((resolve) => {
+    resolveRefresh = resolve;
+  }));
+  assert.equal(second.cached.posts[0].id, 'first');
+  resolveRefresh({ posts: [{ id: 'updated' }] });
+  await second.refresh;
+  assert.equal(records.get('reels:test').posts[0].id, 'updated');
+
+  const offline = await offlineData.staleWhileRevalidate('reels:test', async () => {
+    throw new Error('offline');
+  });
+  assert.equal(offline.cached.posts[0].id, 'updated');
+  await assert.rejects(offline.refresh, /offline/);
+});
+
 test('uses and serves the tablet app photos for the mobile order catalog', async () => {
   const assetNames = [
     'desayuno-emoliente-pan-queso-nueva.png',
